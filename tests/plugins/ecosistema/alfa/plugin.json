@@ -1,0 +1,17 @@
+{
+  "id": "alfa",
+  "version": "1.0.0",
+  "name": "Alfa",
+  "description": "Un plugin di prova. Non rappresenta niente.",
+  "author": "suite di test",
+  "tags": ["prova"],
+  "components": ["parti.py"],
+  "effects": ["vocabolario.py"],
+  "styles": ["vocabolario.py"],
+  "capabilities": [
+    { "name": "innesto_generico", "description": "un attacco senza pretese",
+      "tags": ["prova"] }
+  ],
+  "dependencies": [],
+  "metadata": { "nota": "esiste solo per i test" }
+}

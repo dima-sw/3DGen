@@ -1,0 +1,33 @@
+{
+  "id": "fish",
+  "version": "1.0.0",
+  "name": "Pesci",
+  "description": "Corpi acquatici: un tronco con pinne e coda, che puo' prendere il posto di un busto.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "pesce",
+    "low_poly"
+  ],
+  "components": [
+    "components/corpi.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "capabilities": [
+    {
+      "name": "core_mount",
+      "description": "il volume centrale di una figura"
+    },
+    {
+      "name": "limb_mount",
+      "description": "un arto"
+    },
+    {
+      "name": "tail_mount",
+      "description": "dove si attacca una coda"
+    }
+  ],
+  "dependencies": [],
+  "metadata": {}
+}

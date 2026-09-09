@@ -1,0 +1,9 @@
+{
+  "id": "beta",
+  "version": "0.3.1",
+  "name": "Beta",
+  "description": "Un secondo plugin di prova, con un componente che si chiama come uno di alfa.",
+  "tags": ["prova"],
+  "components": ["parti.py"],
+  "dependencies": []
+}

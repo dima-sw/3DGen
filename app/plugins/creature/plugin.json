@@ -1,0 +1,29 @@
+{
+  "id": "creature",
+  "version": "1.0.0",
+  "name": "Creature",
+  "description": "Teste e parti di creature: rana, drago. Sostituiscono una testa umana perche' dichiarano la stessa capability, non perche' qualcuno lo ha previsto.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "creatura",
+    "low_poly"
+  ],
+  "components": [
+    "components/teste.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "capabilities": [
+    {
+      "name": "head_mount",
+      "description": "cio' che sta in cima a un collo"
+    },
+    {
+      "name": "face_mount",
+      "description": "qualcosa che sta sulla faccia"
+    }
+  ],
+  "dependencies": [],
+  "metadata": {}
+}

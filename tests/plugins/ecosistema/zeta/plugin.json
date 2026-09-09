@@ -1,0 +1,8 @@
+{
+  "id": "zeta",
+  "version": "2.0.0",
+  "name": "Zeta",
+  "description": "Dipende da alfa, che nell'ordine alfabetico viene prima.",
+  "components": ["parti.py"],
+  "dependencies": ["alfa"]
+}

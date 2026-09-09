@@ -1,0 +1,23 @@
+# --- MVP: tutte queste sono gia' presenti nell'ambiente Python 3.13 ---
+PySide6>=6.6          # UI desktop
+moderngl>=5.10        # rendering viewport OpenGL 3.3
+trimesh>=4.0          # geometria, mesh ops, export GLB/OBJ/STL
+numpy>=1.26
+scipy>=1.11
+pydantic>=2.5         # validazione dello schema JSON prodotto dall'LLM
+python-dotenv>=1.0    # config/API key fuori dal codice
+requests>=2.31        # provider LLM (Mistral / HuggingFace router)
+pytest>=7.4
+truststore>=0.9        # usa lo store certificati di Windows (antivirus con scansione HTTPS)
+
+# --- Composizione e fusione organica (fase 1-2 della roadmap) ---
+# Verificate sul campo l'8 settembre 2026, vedi TODO.md:
+manifold3d>=2.5        # boolean robusti e watertight; senza, trimesh non ha motori
+scikit-image>=0.24     # marching cubes in C: 0.12 s su griglia 170^3
+
+# --- Opzionali ---
+# Pillow              # gia' presente; texture procedurali e immagine di riferimento
+
+# --- Solo per costruire la distribuzione Windows (non serve per usare l'app) ---
+# pyinstaller>=6.0     # packaging/build.py
+# Inno Setup 6         # non e' un pacchetto pip: https://jrsoftware.org/isdl.php

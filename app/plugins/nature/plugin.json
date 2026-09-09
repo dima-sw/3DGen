@@ -1,0 +1,21 @@
+{
+  "id": "nature",
+  "version": "1.0.0",
+  "name": "Natura",
+  "description": "Un albero, un nido, un uccello. Il minimo per il terzo scenario, non un mondo.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["natura", "vegetale", "animale"],
+
+  "components": ["components/bosco.py"],
+  "effects": [],
+  "styles": [],
+
+  "capabilities": [
+    { "name": "branch_mount", "description": "un ramo su cui posare qualcosa" },
+    { "name": "nest_mount", "description": "un nido, o qualcosa che ne fa le veci" },
+    { "name": "perch_mount", "description": "un posatoio: dove sta chi si posa" }
+  ],
+  "dependencies": [],
+  "metadata": {}
+}

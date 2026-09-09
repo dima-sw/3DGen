@@ -1,0 +1,56 @@
+{
+  "name": "limb",
+  "category": "organic",
+  "description": "Segmento di arto con massa muscolare e articolazione: coscia, stinco, braccio, coda, tentacolo, corno. Non un tubo che si assottiglia",
+  "material": "skin",
+  "tags": ["limb"],
+  "keywords": ["gamba", "braccio", "zampa", "coda", "tentacolo", "corno", "arto"],
+  "params": {
+    "length": {"default": 0.40,  "min": 0.02,  "max": 4.0,  "vary": 0.12, "desc": "lunghezza"},
+    "radius": {"default": 0.07,  "min": 0.005, "max": 0.8,  "vary": 0.15, "desc": "raggio all'attacco"},
+    "taper":  {"default": 0.45,  "min": 0.0,   "max": 0.95, "vary": 0.16, "desc": "assottigliamento verso la punta"},
+    "muscle": {"default": 0.35,  "min": 0.0,   "max": 1.2,  "vary": 0.22, "desc": "ventre muscolare nel primo terzo: 0 = tubo"},
+    "joint":  {"default": 0.25,  "min": 0.0,   "max": 0.9,  "vary": 0.18, "desc": "strozzatura all'articolazione, verso la punta"},
+    "flat":   {"default": 0.0,   "min": -0.6,  "max": 0.8,  "vary": 0.14, "desc": "sezione schiacciata: positivo = piatta di lato"},
+    "bend":   {"default": 0.0,   "min": -4.0,  "max": 4.0,  "vary": 0.28, "desc": "curvatura, radianti per metro"},
+    "twist":  {"default": 0.0,   "min": -6.0,  "max": 6.0,  "vary": 0.28, "desc": "torsione lungo l'asse"}
+  },
+  "shape": {
+    "op": "twist",
+    "amount": "twist",
+    "axis": 0,
+    "child": {
+      "op": "bend",
+      "amount": "bend",
+      "axis": 0,
+      "around": 2,
+      "child": {
+        "comment": "profilo dell'arto: spalla piena, ventre muscolare, strozzatura all'articolazione, polso sottile",
+        "op": "translate",
+        "offset": ["length*0.5", 0, 0],
+        "child": {
+          "volume": "profile",
+          "length": "length*0.5",
+          "smooth": true,
+          "stations": [
+            ["0.00", "radius*0.94", "radius*0.94*(1 + flat*0.5)"],
+            ["0.14", "radius*(1 + muscle*0.30)", "radius*(1 + muscle*0.30)*(1 + flat*0.5)"],
+            ["0.34", "radius*(1 + muscle*0.16)*(1 - taper*0.16)", "radius*(1 + muscle*0.16)*(1 - taper*0.16)*(1 + flat*0.45)"],
+            ["0.58", "radius*(1 - taper*0.42)*(1 - joint*0.28)", "radius*(1 - taper*0.42)*(1 - joint*0.28)*(1 + flat*0.35)"],
+            ["0.74", "radius*(1 - taper*0.50)*(1 - joint*0.10)", "radius*(1 - taper*0.50)*(1 - joint*0.10)*(1 + flat*0.3)"],
+            ["0.90", "radius*(1 - taper*0.74)", "radius*(1 - taper*0.74)*(1 + flat*0.2)"],
+            ["1.00", "max(radius*(1 - taper*0.92), radius*0.10)", "max(radius*(1 - taper*0.92), radius*0.10)"]
+          ]
+        }
+      }
+    }
+  },
+  "sockets": [
+    {"name": "base", "position": [0, 0, 0], "direction": [-1, 0, 0], "up": [0, 1, 0],
+     "radius": "radius", "kind": "limb"},
+
+    {"name": "tip", "position": ["length*cos(bend*length)", "length*sin(bend*length)", 0],
+     "direction": ["cos(bend*length)", "sin(bend*length)", 0], "up": [0, 1, 0],
+     "radius": "max(radius*(1 - taper*0.92), 0.004)", "kind": "limb"}
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "external_test_plugin",
+  "version": "0.9.0",
+  "name": "Strane Cose",
+  "description": "Un plugin che il core non ha mai visto, con componenti che non appartengono a nessuna categoria conosciuta.",
+  "author": "qualcuno che non siamo noi",
+  "license": "CC0",
+  "homepage": "https://example.invalid/strane-cose",
+  "tags": ["esterno", "quantistico"],
+
+  "components": ["components/strange_component.py"],
+  "effects": ["components/strange_component.py"],
+  "styles": ["components/strange_component.py"],
+
+  "capabilities": [
+    { "name": "mysterious_object",
+      "description": "una cosa di cui il core non sa niente",
+      "tags": ["quantistico"] },
+    { "name": "resonance_mount",
+      "description": "attacco per qualcosa che risuona" }
+  ],
+
+  "dependencies": [],
+  "metadata": { "origine": "terze parti" }
+}

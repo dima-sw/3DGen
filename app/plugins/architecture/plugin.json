@@ -1,0 +1,36 @@
+{
+  "id": "architecture",
+  "version": "1.0.0",
+  "name": "Architettura",
+  "description": "Edifici: casa, tetto, porta, finestra.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "edificio"
+  ],
+  "components": [
+    "components/edifici.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "capabilities": [
+    {
+      "name": "surface",
+      "description": "una superficie su cui posare qualcosa"
+    },
+    {
+      "name": "opening",
+      "description": "un'apertura in una parete"
+    },
+    {
+      "name": "roof_mount",
+      "description": "la sommita' di un edificio"
+    },
+    {
+      "name": "building",
+      "description": "un edificio"
+    }
+  ],
+  "dependencies": [],
+  "metadata": {}
+}

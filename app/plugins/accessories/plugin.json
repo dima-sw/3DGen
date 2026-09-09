@@ -1,0 +1,32 @@
+{
+  "id": "accessories",
+  "version": "1.0.0",
+  "name": "Accessori",
+  "description": "Cose che si portano addosso: piercing, mascherina, casco, visiera. Sono componenti normali, montati con un attacco facoltativo.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "accessorio"
+  ],
+  "components": [
+    "components/oggetti.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "capabilities": [
+    {
+      "name": "anchor",
+      "description": "un punto dove appendere qualcosa di piccolo"
+    },
+    {
+      "name": "gear_mount",
+      "description": "dove si appende cio' che una figura porta addosso"
+    },
+    {
+      "name": "visor_mount",
+      "description": "la fessura di un casco"
+    }
+  ],
+  "dependencies": [],
+  "metadata": {}
+}

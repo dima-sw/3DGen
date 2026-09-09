@@ -1,0 +1,25 @@
+{
+  "id": "robot",
+  "version": "1.0.0",
+  "name": "Robot",
+  "description": "Parti robotiche, dichiarate per lo stile realistico: servono a dimostrare che uno stile incompatibile viene rifiutato invece che convertito.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "robot",
+    "metallo"
+  ],
+  "components": [
+    "components/parti.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "capabilities": [
+    {
+      "name": "head_mount",
+      "description": "cio' che sta in cima a un collo"
+    }
+  ],
+  "dependencies": [],
+  "metadata": {}
+}

@@ -1,0 +1,7 @@
+{
+  "id": "esplosivo",
+  "version": "1.0.0",
+  "name": "Esplosivo",
+  "description": "Il manifest e' valido, il modulo no.",
+  "components": ["parti.py"]
+}

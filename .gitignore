@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+output/
+library/
+.pytest_cache/
+*.blend1
+.env.local
+*.log
+dist/
+build/
+*.spec

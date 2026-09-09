@@ -1,0 +1,17 @@
+{
+  "id": "fx",
+  "version": "1.0.0",
+  "name": "Effetti",
+  "description": "Deformazioni e proporzioni di base: allungare, piegare, esagerare la profondita'. Nessuna di queste sa che cosa sta deformando.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["effetto", "deformazione"],
+
+  "components": [],
+  "effects": ["effects/deformazioni.py", "effects/posa.py"],
+  "styles": [],
+
+  "capabilities": [],
+  "dependencies": [],
+  "metadata": {}
+}

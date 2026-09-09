@@ -1,0 +1,2 @@
+{ "id": "dipendenza_malformata", "version": "1.0.0",
+  "components": [], "dependencies": [{"id": "alfa", "version": ">=1"}] }

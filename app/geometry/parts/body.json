@@ -1,0 +1,82 @@
+{
+  "name": "body",
+  "category": "organic",
+  "description": "Corpo organico a sezioni controllate: pesce, lupo, drago. Peduncolo, spalle, vita e collo sono parametri, non accidenti",
+  "material": "skin",
+  "tags": ["body", "main"],
+  "keywords": ["corpo", "tronco", "busto animale"],
+  "params": {
+    "length":     {"default": 0.9,  "min": 0.05, "max": 6.0,  "vary": 0.10, "desc": "semilunghezza"},
+    "height":     {"default": 0.4,  "min": 0.03, "max": 3.0,  "vary": 0.10, "desc": "semialtezza massima"},
+    "width":      {"default": 0.25, "min": 0.02, "max": 3.0,  "vary": 0.10, "desc": "semilarghezza massima"},
+    "taper":      {"default": 0.45, "min": 0.0,  "max": 0.95, "vary": 0.18, "desc": "quanto si assottiglia verso la coda"},
+    "belly":      {"default": 0.2,  "min": -0.6, "max": 0.6,  "vary": 0.22, "desc": "pancia: positivo = ventre pieno"},
+    "peduncle":   {"default": 0.35, "min": 0.0,  "max": 1.0,  "vary": 0.16, "desc": "strozzatura davanti alla coda: alta nei pesci, bassa nei quadrupedi"},
+    "shoulder":   {"default": 0.35, "min": 0.0,  "max": 1.0,  "vary": 0.16, "desc": "pienezza del torace"},
+    "waist":      {"default": 0.20, "min": 0.0,  "max": 0.9,  "vary": 0.20, "desc": "rientranza dietro al torace"},
+    "neck":       {"default": 0.40, "min": 0.0,  "max": 1.0,  "vary": 0.14, "desc": "quanto il corpo si stringe dove attacca la testa"},
+    "flat":       {"default": 0.0,  "min": 0.0,  "max": 1.0,  "vary": 0.12, "desc": "compressione laterale verso la coda: alta nei pesci"},
+    "ring_count": {"default": 6, "min": 0, "max": 12, "desc": "socket radiali per appendici multiple"}
+  },
+  "shape": {
+    "op": "taper",
+    "amount": "-belly",
+    "axis": 1,
+    "child": {
+      "volume": "profile",
+      "length": "length",
+      "smooth": true,
+      "stations": [
+        ["0.00", "height * max(0.12, (1 - taper*0.72) * (1 - peduncle*0.70))",
+                 "width  * max(0.10, (1 - taper*0.72) * (1 - peduncle*0.70) * (1 - flat*0.55))"],
+        ["0.13", "height * max(0.13, (1 - taper*0.62) * (1 - peduncle*0.62))",
+                 "width  * max(0.11, (1 - taper*0.62) * (1 - peduncle*0.62) * (1 - flat*0.45))"],
+        ["0.30", "height * (1 - taper*0.40) * (1 - waist*0.22)",
+                 "width  * (1 - taper*0.40) * (1 - waist*0.22) * (1 - flat*0.25)"],
+        ["0.47", "height * (0.97 - waist*0.30)",
+                 "width  * (0.97 - waist*0.30) * (1 - flat*0.12)"],
+        ["0.64", "height", "width"],
+        ["0.80", "height * (0.86 + shoulder*0.14)", "width * (0.88 + shoulder*0.12)"],
+        ["0.92", "height * (0.74 - neck*0.22)", "width * (0.76 - neck*0.22)"],
+        ["1.00", "height * (0.58 - neck*0.30)", "width * (0.60 - neck*0.30)"]
+      ]
+    }
+  },
+  "sockets": [
+    {"name": "base", "position": ["-length*0.90", 0, 0], "direction": [-1, 0, 0],
+     "up": [0, 1, 0], "radius": "height*0.40", "kind": "body"},
+
+    {"name": "head", "position": ["length*0.92", "height*0.10", 0], "direction": [1, 0, 0],
+     "up": [0, 1, 0], "radius": "height * (0.58 - neck*0.30)", "kind": "head"},
+
+    {"name": "tail", "position": ["-length*0.94", 0, 0], "direction": [-1, 0, 0],
+     "up": [0, 1, 0],
+     "radius": "height * max(0.12, (1 - taper*0.72) * (1 - peduncle*0.70))", "kind": "tail"},
+
+    {"name": "dorsal", "position": ["length*0.12", "height*0.86", 0], "direction": [0, 1, 0],
+     "up": [-1, 0, 0], "radius": "height*0.42", "kind": "fin"},
+
+    {"name": "ventral", "position": ["-length*0.34", "-height*0.72", 0], "direction": [0, -1, 0],
+     "up": [1, 0, 0], "radius": "height*0.32", "kind": "fin"},
+
+    {"name": "side", "arrangement": "pair", "axis": 2,
+     "position": ["length*0.50", "-height*0.28", "width*0.80"], "direction": [0, -0.25, 1],
+     "up": [0, 1, 0], "radius": "height*0.28", "kind": "limb"},
+
+    {"name": "leg_front", "arrangement": "pair", "axis": 2,
+     "position": ["length*0.52", "-height*0.66", "width*0.66"], "direction": [0, -1, 0.22],
+     "up": [1, 0, 0], "radius": "height*0.28", "kind": "limb"},
+
+    {"name": "leg_rear", "arrangement": "pair", "axis": 2,
+     "position": ["-length*0.42", "-height*0.62", "width*0.66"], "direction": [0, -1, 0.18],
+     "up": [1, 0, 0], "radius": "height*0.30", "kind": "limb"},
+
+    {"name": "wing", "arrangement": "pair", "axis": 2,
+     "position": ["length*0.18", "height*0.60", "width*0.70"], "direction": [0, 0.35, 1],
+     "up": [-1, 0, 0], "radius": "height*0.28", "kind": "wing"},
+
+    {"name": "ring", "arrangement": "radial", "axis": 0, "count": "ring_count",
+     "ring": "height*0.60", "position": ["length*0.55", 0, 0], "direction": [1, 0, 0],
+     "radius": "height*0.18", "kind": "limb"}
+  ]
+}

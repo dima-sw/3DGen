@@ -1,0 +1,209 @@
+{
+  "body": {
+    "texture": "metal",
+    "tiling": 0.55,
+    "normal_strength": 0.5,
+    "roughness_mix": 0.35,
+    "detail": 0.18
+  },
+  "tire": {
+    "texture": "rubber",
+    "tiling": 0.16,
+    "normal_strength": 1.4,
+    "roughness_mix": 0.8,
+    "detail": 0.85
+  },
+  "rim": {
+    "texture": "metal",
+    "tiling": 0.25,
+    "normal_strength": 0.7,
+    "roughness_mix": 0.6,
+    "detail": 0.35
+  },
+  "chrome": {
+    "texture": "metal",
+    "tiling": 0.2,
+    "normal_strength": 0.4,
+    "roughness_mix": 0.5,
+    "detail": 0.3
+  },
+  "trim": {
+    "texture": "rubber",
+    "tiling": 0.3,
+    "normal_strength": 0.6,
+    "roughness_mix": 0.5,
+    "detail": 0.45
+  },
+  "glass": {
+    "texture": "glass",
+    "tiling": 1.2,
+    "normal_strength": 0.2,
+    "roughness_mix": 0.4,
+    "detail": 0.1
+  },
+  "light": {
+    "texture": "glass",
+    "tiling": 0.3,
+    "normal_strength": 0.2,
+    "roughness_mix": 0.3,
+    "detail": 0.1
+  },
+  "light_red": {
+    "texture": "glass",
+    "tiling": 0.3,
+    "normal_strength": 0.2,
+    "roughness_mix": 0.3,
+    "detail": 0.1
+  },
+  "wood": {
+    "texture": "wood",
+    "tiling": 0.6,
+    "normal_strength": 0.9,
+    "roughness_mix": 0.6,
+    "detail": 0.8
+  },
+  "fabric": {
+    "texture": "fur",
+    "tiling": 0.12,
+    "normal_strength": 0.8,
+    "roughness_mix": 0.8,
+    "detail": 0.7
+  },
+  "metal": {
+    "texture": "metal",
+    "tiling": 0.4,
+    "normal_strength": 0.7,
+    "roughness_mix": 0.6,
+    "detail": 0.45
+  },
+  "wall": {
+    "texture": "plaster",
+    "tiling": 0.8,
+    "normal_strength": 1.0,
+    "roughness_mix": 0.7,
+    "detail": 0.75
+  },
+  "stone": {
+    "texture": "concrete",
+    "tiling": 0.8,
+    "normal_strength": 1.2,
+    "roughness_mix": 0.7,
+    "detail": 0.85
+  },
+  "roof": {
+    "texture": "concrete",
+    "tiling": 0.4,
+    "normal_strength": 1.0,
+    "roughness_mix": 0.7,
+    "detail": 0.75
+  },
+  "blade": {
+    "texture": "metal",
+    "tiling": 0.35,
+    "normal_strength": 0.5,
+    "roughness_mix": 0.5,
+    "detail": 0.25
+  },
+  "guard": {
+    "texture": "metal",
+    "tiling": 0.2,
+    "normal_strength": 0.6,
+    "roughness_mix": 0.5,
+    "detail": 0.3
+  },
+  "grip": {
+    "texture": "fur",
+    "tiling": 0.08,
+    "normal_strength": 1.0,
+    "roughness_mix": 0.8,
+    "detail": 0.7
+  },
+  "fuller": {
+    "texture": "metal",
+    "tiling": 0.3,
+    "normal_strength": 0.5,
+    "roughness_mix": 0.5,
+    "detail": 0.25
+  },
+  "skin": {
+    "texture": "skin",
+    "tiling": 0.3,
+    "normal_strength": 0.7,
+    "roughness_mix": 0.6,
+    "detail": 0.45
+  },
+  "armor": {
+    "texture": "metal",
+    "tiling": 0.3,
+    "normal_strength": 0.8,
+    "roughness_mix": 0.6,
+    "detail": 0.4
+  },
+  "membrane": {
+    "texture": "skin",
+    "tiling": 0.18,
+    "normal_strength": 1.1,
+    "roughness_mix": 0.7,
+    "detail": 0.6
+  },
+  "horn": {
+    "texture": "wood",
+    "tiling": 0.15,
+    "normal_strength": 0.8,
+    "roughness_mix": 0.6,
+    "detail": 0.55
+  },
+  "eye": {
+    "texture": "",
+    "tiling": 1.0
+  },
+  "bark": {
+    "texture": "wood",
+    "tiling": 0.22,
+    "normal_strength": 1.3,
+    "roughness_mix": 0.8,
+    "detail": 0.95
+  },
+  "leaves": {
+    "texture": "fur",
+    "tiling": 0.35,
+    "normal_strength": 0.9,
+    "roughness_mix": 0.8,
+    "detail": 0.7
+  },
+  "rock": {
+    "texture": "concrete",
+    "tiling": 0.55,
+    "normal_strength": 1.3,
+    "roughness_mix": 0.8,
+    "detail": 0.9
+  },
+  "surface": {
+    "texture": "plaster",
+    "tiling": 0.5,
+    "normal_strength": 0.8,
+    "roughness_mix": 0.6,
+    "detail": 0.55
+  },
+  "visor": {
+    "texture": "glass",
+    "tiling": 0.4,
+    "normal_strength": 0.2,
+    "roughness_mix": 0.3,
+    "detail": 0.1
+  },
+  "joint": {
+    "texture": "metal",
+    "tiling": 0.2,
+    "normal_strength": 0.7,
+    "roughness_mix": 0.6,
+    "detail": 0.4
+  },
+  "accent": {
+    "texture": "metal",
+    "tiling": 0.3,
+    "normal_strength": 0.6,
+    "roughness_mix": 0.5,
+    "detail": 0.3
+  }
+}

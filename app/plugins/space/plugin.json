@@ -1,0 +1,24 @@
+{
+  "id": "space",
+  "version": "1.0.0",
+  "name": "Spazio",
+  "description": "Corpi celesti. Un pianeta e' una superficie molto grande, e il sistema non ha bisogno di sapere altro.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "astronomia"
+  ],
+  "components": [
+    "components/corpi_celesti.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "capabilities": [
+    {
+      "name": "surface",
+      "description": "una superficie su cui posare qualcosa"
+    }
+  ],
+  "dependencies": [],
+  "metadata": {}
+}

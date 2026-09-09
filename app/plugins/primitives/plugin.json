@@ -1,0 +1,45 @@
+{
+  "id": "primitives",
+  "version": "1.0.0",
+  "name": "Primitives",
+  "description": "Solidi elementari low poly: blocco e tubo. Il vocabolario di partenza, che qualunque altro plugin puo' annidare senza dipendere da un dominio.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "primitive",
+    "low_poly",
+    "solido"
+  ],
+  "components": [
+    "components/solids.py"
+  ],
+  "effects": [],
+  "styles": [
+    "styles/low_poly.py"
+  ],
+  "capabilities": [
+    {
+      "name": "solid",
+      "description": "geometria chiusa, senza significato dichiarato",
+      "tags": [
+        "geometria"
+      ]
+    },
+    {
+      "name": "end_mount",
+      "description": "innesto a un'estremita', lungo l'asse di crescita",
+      "tags": [
+        "geometria"
+      ]
+    },
+    {
+      "name": "surface_mount",
+      "description": "innesto su una faccia laterale",
+      "tags": [
+        "geometria"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "metadata": {}
+}

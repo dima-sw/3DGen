@@ -1,0 +1,29 @@
+{
+  "id": "weapon",
+  "version": "1.0.0",
+  "name": "Armi",
+  "description": "Armi bianche: lama, guardia, impugnatura. Una spada dichiara di essere un arto, e tanto basta per metterla al posto di una gamba.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "arma",
+    "metallo"
+  ],
+  "components": [
+    "components/lame.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "capabilities": [
+    {
+      "name": "limb_mount",
+      "description": "un arto"
+    },
+    {
+      "name": "grip_mount",
+      "description": "dove si impugna"
+    }
+  ],
+  "dependencies": [],
+  "metadata": {}
+}

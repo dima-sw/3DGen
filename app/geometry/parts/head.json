@@ -1,0 +1,370 @@
+{
+  "name": "head",
+  "category": "organic",
+  "description": "Testa con cranio, arcata sopraccigliare, muso e mascella distinti. Non una sfera con una bozza davanti",
+  "material": "skin",
+  "tags": [
+    "head"
+  ],
+  "keywords": [
+    "testa",
+    "cranio",
+    "muso",
+    "capo"
+  ],
+  "params": {
+    "size": {
+      "default": 0.18,
+      "min": 0.02,
+      "max": 1.5,
+      "vary": 0.1,
+      "desc": "raggio del cranio"
+    },
+    "snout": {
+      "default": 0.55,
+      "min": 0.0,
+      "max": 2.2,
+      "vary": 0.18,
+      "desc": "sporgenza del muso"
+    },
+    "snout_size": {
+      "default": 0.5,
+      "min": 0.15,
+      "max": 1.1,
+      "vary": 0.14,
+      "desc": "grossezza del muso"
+    },
+    "flat": {
+      "default": 0.9,
+      "min": 0.4,
+      "max": 1.4,
+      "vary": 0.1,
+      "desc": "schiacciamento laterale"
+    },
+    "jaw": {
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.4,
+      "vary": 0.16,
+      "desc": "quanto la mascella e' pronunciata"
+    },
+    "brow": {
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.4,
+      "vary": 0.18,
+      "desc": "arcata sopraccigliare: da' lo sguardo"
+    },
+    "cranium": {
+      "default": 1.0,
+      "min": 0.5,
+      "max": 1.6,
+      "vary": 0.1,
+      "desc": "volume della calotta"
+    }
+  },
+  "shape": {
+    "union": [
+      {
+        "comment": "cranio e muso: un profilo solo, con la strozzatura all'altezza degli occhi",
+        "op": "translate",
+        "offset": [
+          "size * (snout*0.34 - 0.06)",
+          0,
+          0
+        ],
+        "child": {
+          "volume": "profile",
+          "length": "size * (0.92 + snout*0.46)",
+          "smooth": true,
+          "stations": [
+            [
+              "0.00",
+              "size*0.30*cranium",
+              "size*flat*0.30*cranium"
+            ],
+            [
+              "0.14",
+              "size*0.72*cranium",
+              "size*flat*0.68*cranium"
+            ],
+            [
+              "0.32",
+              "size*0.86*cranium",
+              "size*flat*0.80*cranium"
+            ],
+            [
+              "0.50",
+              "size*0.74",
+              "size*flat*0.64"
+            ],
+            [
+              "0.62",
+              "size*0.58",
+              "size*flat*0.50"
+            ],
+            [
+              "0.78",
+              "size*snout_size*0.98",
+              "size*flat*snout_size*0.92"
+            ],
+            [
+              "0.92",
+              "size*snout_size*0.88",
+              "size*flat*snout_size*0.80"
+            ],
+            [
+              "1.00",
+              "size*snout_size*0.50",
+              "size*flat*snout_size*0.46"
+            ]
+          ]
+        }
+      },
+      {
+        "comment": "arcata sopraccigliare: attraversa la testa sopra gli occhi",
+        "op": "translate",
+        "offset": [
+          "size*0.34",
+          "size*0.40",
+          0
+        ],
+        "child": {
+          "op": "rotate",
+          "angles": [
+            0,
+            90,
+            0
+          ],
+          "child": {
+            "volume": "profile",
+            "length": "size*flat*0.62",
+            "smooth": false,
+            "stations": [
+              [
+                "0.00",
+                "size*brow*0.16",
+                "size*brow*0.11"
+              ],
+              [
+                "0.30",
+                "size*brow*0.22",
+                "size*brow*0.15"
+              ],
+              [
+                "0.70",
+                "size*brow*0.22",
+                "size*brow*0.15"
+              ],
+              [
+                "1.00",
+                "size*brow*0.16",
+                "size*brow*0.11"
+              ]
+            ]
+          }
+        }
+      },
+      {
+        "comment": "mascella: da' la linea della bocca e il mento",
+        "op": "translate",
+        "offset": [
+          "size * (0.16 + snout*0.34)",
+          "-size*0.34",
+          0
+        ],
+        "child": {
+          "op": "rotate",
+          "angles": [
+            0,
+            0,
+            -4
+          ],
+          "child": {
+            "volume": "profile",
+            "length": "size * (0.52 + snout*0.40)",
+            "smooth": true,
+            "stations": [
+              [
+                "0.00",
+                "size*jaw*0.30",
+                "size*flat*jaw*0.44"
+              ],
+              [
+                "0.30",
+                "size*jaw*0.34",
+                "size*flat*jaw*0.50"
+              ],
+              [
+                "0.62",
+                "size*jaw*0.30",
+                "size*flat*snout_size*0.80"
+              ],
+              [
+                "0.86",
+                "size*jaw*0.22",
+                "size*flat*snout_size*0.64"
+              ],
+              [
+                "1.00",
+                "size*jaw*0.12",
+                "size*flat*snout_size*0.36"
+              ]
+            ]
+          }
+        }
+      }
+    ],
+    "blend": [
+      "size*0.10",
+      "size*0.05",
+      "size*0.13"
+    ]
+  },
+  "sockets": [
+    {
+      "name": "base",
+      "position": [
+        "-size*0.80",
+        0,
+        0
+      ],
+      "direction": [
+        -1,
+        0,
+        0
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "radius": "size*0.55",
+      "kind": "head"
+    },
+    {
+      "name": "neck",
+      "position": [
+        0,
+        "-size*0.72",
+        0
+      ],
+      "direction": [
+        0,
+        -1,
+        0
+      ],
+      "up": [
+        1,
+        0,
+        0
+      ],
+      "radius": "size*0.45",
+      "kind": "head"
+    },
+    {
+      "name": "eye",
+      "arrangement": "pair",
+      "axis": 2,
+      "position": [
+        "size*(0.28 + snout*0.16)",
+        "size*0.26",
+        "size*flat*0.56"
+      ],
+      "direction": [
+        0.25,
+        0.2,
+        1
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "radius": "size*0.16",
+      "kind": "eye"
+    },
+    {
+      "name": "horn",
+      "arrangement": "pair",
+      "axis": 2,
+      "position": [
+        "-size*0.04",
+        "size*0.82",
+        "size*flat*0.34"
+      ],
+      "direction": [
+        -0.2,
+        1,
+        0.25
+      ],
+      "up": [
+        1,
+        0,
+        0
+      ],
+      "radius": "size*0.20",
+      "kind": "horn"
+    },
+    {
+      "name": "crest",
+      "position": [
+        "size*0.06",
+        "size*0.92",
+        0
+      ],
+      "direction": [
+        0,
+        1,
+        0
+      ],
+      "up": [
+        -1,
+        0,
+        0
+      ],
+      "radius": "size*0.34",
+      "kind": "fin"
+    },
+    {
+      "name": "jaw",
+      "position": [
+        "size*(0.35 + snout*0.72)",
+        "-size*0.46",
+        0
+      ],
+      "direction": [
+        1,
+        -0.35,
+        0
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "radius": "size*0.26",
+      "kind": "mouth"
+    },
+    {
+      "name": "face",
+      "position": [
+        "size*(0.34 + snout*0.20)",
+        "size*0.26",
+        0
+      ],
+      "direction": [
+        0.92,
+        0.3,
+        0
+      ],
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "radius": "size*0.52",
+      "kind": "face"
+    }
+  ]
+}

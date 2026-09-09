@@ -1,0 +1,41 @@
+{
+  "id": "humanoid",
+  "version": "1.0.0",
+  "name": "Umanoide",
+  "description": "Vocabolario umanoide low poly: busto, testa, arti, e cio' di cui sono fatti. Ogni parte e' sostituibile con una di un altro plugin che fornisca la stessa capability.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["personaggio", "umanoide", "low_poly"],
+
+  "components": ["components/corpo.py", "components/testa.py",
+                 "components/arti.py"],
+  "effects": [],
+  "styles": [],
+
+  "capabilities": [
+    { "name": "core_mount",
+      "description": "il volume centrale di una figura: busto, tronco, scafo",
+      "tags": ["struttura"] },
+    { "name": "head_mount",
+      "description": "cio' che sta in cima a un collo",
+      "tags": ["struttura"] },
+    { "name": "limb_mount",
+      "description": "un arto: braccio, gamba, pinna, spada al posto di una gamba",
+      "tags": ["struttura"] },
+    { "name": "face_mount",
+      "description": "qualcosa che sta sulla faccia: naso, bocca, occhi",
+      "tags": ["dettaglio"] },
+    { "name": "segment",
+      "description": "una sezione interna di una parte piu' grande",
+      "tags": ["struttura"] },
+    { "name": "gear_mount",
+      "description": "dove si appende cio' che una figura porta addosso",
+      "tags": ["accessorio"] },
+    { "name": "hair_mount",
+      "description": "la calotta del cranio, dove crescono i capelli",
+      "tags": ["dettaglio"] }
+  ],
+
+  "dependencies": [],
+  "metadata": { "convenzione": "le parti del busto crescono lungo +Y, gli arti lungo +X" }
+}
