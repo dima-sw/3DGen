@@ -45,41 +45,59 @@ class Hardware:
 
 @dataclass(frozen=True)
 class Quality:
-    """Un profilo di qualita': quanto fitta la griglia, quanto grandi le texture.
+    """Un profilo di qualita': quanto puo' costare un modello su questa macchina.
 
-    I nomi sono quelli che l'utente vede. `resolution` e' la risoluzione del
-    marching cubes, che e' il costo dominante di ogni generazione.
+    Il numero che conta e' il **budget di triangoli**: il tetto oltre il quale
+    si smette di aggiungere pezzi facoltativi. `detail_level` e' il livello che
+    questo profilo **suggerisce** a chi non ne chiede uno — la riga di comando,
+    l'interfaccia — e non e' un tetto: quante parti costruire lo dice il piano,
+    e due tetti sulla stessa cosa vorrebbero dire non sapere mai quale ha
+    tagliato.
+
+    Erano tarati per il marching cubes, dove il costo dominante era la
+    risoluzione della griglia. Quella pipeline non esiste piu': un modello
+    composto costa quanto le parti che ha, e i numeri sono stati **rimisurati**
+    su cio' che il sistema produce adesso — qualche centinaio di triangoli per
+    un modello semplice, qualche migliaio per uno dettagliato.
     """
 
     name: str
-    resolution: int
     texture_size: int
-    smooth: int
     triangle_budget: int
+    detail_level: int = 2
     reason: str = ""
 
     def describe(self) -> str:
-        return ("%s: griglia %d, texture %dpx, budget %d triangoli"
-                % (self.name, self.resolution, self.texture_size, self.triangle_budget))
+        return ("%s: dettaglio %d, texture %dpx, budget %d triangoli"
+                % (self.name, self.detail_level, self.texture_size,
+                   self.triangle_budget))
 
     @property
     def factor(self) -> float:
-        """Quanto scalare le risoluzioni scelte dallo stile.
+        """Quanto questa macchina puo' spingere, rispetto a quella di riferimento.
 
-        Lo stile e' una scelta dell'utente ("lowpoly", "realistic") e va
-        rispettata; il profilo dice solo quanto quella macchina puo' spingere.
-        Moltiplicare invece di sostituire tiene separate le due cose.
+        Lo stile e' una scelta di chi genera e va rispettata; il profilo dice
+        solo quanto quella macchina regge. Moltiplicare invece di sostituire
+        tiene separate le due cose.
         """
-        return self.resolution / PROFILES[FALLBACK].resolution
+        return self.triangle_budget / PROFILES[FALLBACK].triangle_budget
+
+    def budget(self):
+        """Il budget di costruzione che questa macchina si puo' permettere."""
+        from app.core.budget import Budget, standard
+
+        base = standard()
+        base.triangles = self.triangle_budget
+        return base
 
 
 PROFILES: dict[str, Quality] = {
-    "basso": Quality("basso", resolution=80, texture_size=128, smooth=3,
-                     triangle_budget=25_000),
-    "medio": Quality("medio", resolution=112, texture_size=256, smooth=5,
-                     triangle_budget=60_000),
-    "alto": Quality("alto", resolution=160, texture_size=512, smooth=6,
-                    triangle_budget=150_000),
+    "basso": Quality("basso", texture_size=128, triangle_budget=500,
+                     detail_level=1),
+    "medio": Quality("medio", texture_size=256, triangle_budget=3_000,
+                     detail_level=2),
+    "alto": Quality("alto", texture_size=512, triangle_budget=12_000,
+                    detail_level=3),
 }
 FALLBACK = "medio"
 
@@ -191,8 +209,8 @@ def choose(hardware: Hardware | None = None) -> Quality:
 
 
 def _con_motivo(base: Quality, motivo: str) -> Quality:
-    return Quality(base.name, base.resolution, base.texture_size, base.smooth,
-                   base.triangle_budget, reason=motivo)
+    return Quality(base.name, base.texture_size, base.triangle_budget,
+                   base.detail_level, reason=motivo)
 
 
 def resolve(name: str = "auto") -> Quality:
@@ -235,6 +253,10 @@ def use(name: str) -> Quality:
     return _CURRENT
 
 
-def scaled(resolution: int, low: int = 24, high: int = 224) -> int:
-    """Una risoluzione di stile riportata alle possibilita' della macchina."""
-    return int(min(max(round(resolution * current().factor), low), high))
+def scaled(value: int, low: int = 24, high: int = 20_000) -> int:
+    """Un numero di stile riportato alle possibilita' della macchina.
+
+    Serve a chi ha un tetto proprio — un budget, una dimensione di texture — e
+    vuole rispettarlo senza ignorare la macchina su cui gira.
+    """
+    return int(min(max(round(value * current().factor), low), high))

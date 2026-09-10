@@ -66,4 +66,4 @@ SWORD = Component(
     mounts=(mount("grip_mount", socket_id="impugnatura"),
             mount("anchor", socket_id="punta")),
     role="lama", material="metal",
-    tags=frozenset({"arma", "metallo", "spada"}))
+    tags=frozenset({"arma", "weapon", "metallo", "metal", "spada", "sword", "lama", "blade"}))

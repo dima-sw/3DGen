@@ -49,7 +49,7 @@ WING = Component(
     mounts=(mount("anchor", socket_id="punta"),
             mount("gear_mount", socket_id="dorso", capacity=0)),
     role="ala", material="membrane",
-    tags=frozenset({"fantasia", "ala", "arto", "volo"}))
+    tags=frozenset({"fantasia", "fantasy", "ala", "wing", "arto", "limb", "volo", "flight"}))
 
 
 def _cristallo(v, ctx) -> Piece:
@@ -80,4 +80,4 @@ CRYSTAL = Component(
     mounts=(mount("anchor", socket_id="punta"),),
     role="cristallo", material="crystal",
     requires=frozenset({"faceted", "watertight"}),
-    tags=frozenset({"fantasia", "cristallo", "luminoso", "gemma"}))
+    tags=frozenset({"fantasia", "fantasy", "cristallo", "crystal", "luminoso", "glowing", "gemma", "gem"}))

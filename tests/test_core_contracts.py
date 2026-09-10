@@ -511,24 +511,53 @@ def test_the_new_pipeline_never_reaches_for_the_old_one():
     assert not colpevoli, "\n".join(colpevoli)
 
 
-def test_the_session_is_the_only_bridge_between_the_two_roads():
-    """Un solo file tiene tutte e due le strade, e si vede quale.
+def test_the_old_road_is_gone():
+    """La pipeline storica non esiste piu': ne' i file, ne' chi li importava.
 
-    La `Session` importa ancora il builder storico, perche' `generate_legacy`,
-    la libreria e l'animazione ci girano sopra; `project` lo importa per
-    riaprire una cronologia salvata. Sono i due ponti rimasti, e questo test li
-    fissa: quando la strada vecchia verra' tolta ci saranno due posti da
-    cambiare, e finche' non lo si fa nessun terzo modulo puo' aggiungersi.
+    Era il debito piu' grande rimasto — due sistemi di generazione paralleli, e
+    una `Session` che faceva da ponte fra i due. Questo test tiene chiusa la
+    porta: se uno di quei moduli tornasse, tornerebbe anche la duplicazione.
     """
     import pathlib
     import re
 
-    ponte = re.compile(r"from\s+app\.build\.builder\s+import")
     radice = pathlib.Path(__file__).resolve().parents[1] / "app"
-    files = sorted(p.relative_to(radice).as_posix()
-                   for p in (radice / "core").rglob("*.py")
-                   if ponte.search(p.read_text(encoding="utf-8")))
-    # `project` ricostruisce le scene di una cronologia salvata, che sono fatte
-    # di `GenerationPlan`: finche' esistono progetti vecchi da riaprire, quel
-    # ponte serve. Sono due, sono questi, e non devono diventare tre.
-    assert files == ["core/project.py", "core/session.py"], files
+    spariti = [
+        "build/builder.py", "build/strategy.py", "build/validation.py",
+        "geometry/composition.py", "geometry/recipe.py", "geometry/sdf.py",
+        "geometry/surface.py", "geometry/lowpoly.py", "geometry/primitives.py",
+        "geometry/templates", "ai/planner.py", "ai/creature.py",
+        "ai/offline.py", "ai/prompts.py", "ai/variation.py", "ai/reference.py",
+        "ai/shape_match.py", "ai/mesh_provider.py", "core/spec.py",
+        "core/style.py",
+    ]
+    rimasti = [nome for nome in spariti if (radice / nome).exists()]
+    assert not rimasti, rimasti
+
+    vecchi = re.compile(
+        r"(from|import)\s+app\.(build\.(builder|strategy|validation)"
+        r"|geometry\.(composition|recipe|sdf|surface|lowpoly|primitives|templates)"
+        r"|ai\.(planner|creature|offline|prompts|variation|reference|shape_match"
+        r"|mesh_provider)|core\.(spec|style))")
+    colpevoli = []
+    for file in radice.rglob("*.py"):
+        for numero, riga in enumerate(file.read_text(encoding="utf-8").splitlines(), 1):
+            if vecchi.search(riga):
+                colpevoli.append("%s:%d  %s" % (file.name, numero, riga.strip()))
+    assert not colpevoli, chr(10).join(colpevoli)
+
+
+def test_the_session_is_the_only_public_door():
+    """UI, riga di comando e test passano tutti da `Session`.
+
+    Non e' una regola di stile: e' cio' che impedisce che nasca una seconda
+    pipeline. Chi vuole un modello chiede alla sessione; chi vuole i pezzi
+    interni li trova nel `GenerationResult`, non li ricostruisce da capo.
+    """
+    from app.core.session import Session
+
+    for nome in ("generate", "plan", "build", "regenerate", "save_project",
+                 "open_project", "save_to_library", "load_from_library",
+                 "export", "skeleton", "animations", "checks", "catalog",
+                 "vocabulary"):
+        assert callable(getattr(Session, nome, None)), nome

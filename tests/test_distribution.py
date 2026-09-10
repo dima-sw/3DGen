@@ -10,7 +10,8 @@ import pytest
 from app.ai.provider import OfflineProvider
 from app.core import hardware, recovery
 from app.core.hardware import PROFILES, Hardware, Quality
-from app.core.session import Session
+from app.core.planner.planner import MockPlanner
+from app.core.session import Options, Session
 
 
 @pytest.fixture(autouse=True)
@@ -23,8 +24,8 @@ def profilo_pulito():
 
 @pytest.fixture
 def sessione():
-    sessione = Session(provider=OfflineProvider())
-    sessione.generate_legacy("una sedia di legno", seed=5)
+    sessione = Session(provider=OfflineProvider(), planner=MockPlanner())
+    sessione.generate("una sedia di legno")
     return sessione
 
 
@@ -74,7 +75,8 @@ def test_unknown_memory_is_treated_with_caution():
 
 def test_every_profile_is_ordered():
     ordine = [PROFILES[n] for n in ("basso", "medio", "alto")]
-    assert [p.resolution for p in ordine] == sorted(p.resolution for p in ordine)
+    assert [p.triangle_budget for p in ordine] == sorted(
+        p.triangle_budget for p in ordine)
     assert [p.texture_size for p in ordine] == sorted(p.texture_size for p in ordine)
 
 
@@ -90,60 +92,74 @@ def test_an_unknown_profile_falls_back_instead_of_failing():
 # --------------------------------------------------------------------------- #
 # Effetto sulla generazione
 # --------------------------------------------------------------------------- #
-def test_the_profile_scales_the_density_it_does_not_replace_it():
-    """La densita' e' una scelta, il profilo dice quanto quella macchina regge.
+def test_the_profile_gives_a_budget_it_does_not_choose_the_model():
+    """La macchina impone un tetto, non decide che cosa costruire.
 
-    Le due cose si moltiplicano: chiedere meno dettaglio su una macchina veloce
-    deve comunque dare meno dettaglio, e la stessa richiesta su una macchina
-    lenta deve costare meno.
+    Il profilo hardware da' un **budget di triangoli**, e quando quel budget
+    non basta lo si legge nel referto invece di scoprirlo guardando il modello.
+    Il livello di dettaglio resta una scelta del piano: due tetti sulla stessa
+    cosa vorrebbero dire non sapere mai quale dei due ha tagliato.
     """
-    from app.build.builder import surface_settings
+    prompt = "un albero con un nido e un uccello"
+    hardware.use("alto")
+    veloce = Session(provider=OfflineProvider(), planner=MockPlanner())
+    largo = veloce.generate(prompt, Options(detail_level=3))
+    assert "BUDGET_EXCEEDED" not in {d.code for d in largo.diagnostics}
 
     hardware.use("basso")
-    basso_normale, _ = surface_settings(1.0)
-    basso_rado, _ = surface_settings(0.5)
-    hardware.use("alto")
-    alto_normale, _ = surface_settings(1.0)
-    alto_rado, _ = surface_settings(0.5)
-
-    assert basso_normale < alto_normale, "la macchina conta"
-    assert basso_rado < basso_normale and alto_rado < alto_normale, "la densita' conta"
+    lenta = Session(provider=OfflineProvider(), planner=MockPlanner())
+    stretto = lenta.generate(prompt, Options(detail_level=3))
+    assert stretto.plan.detail_level == 3, "il dettaglio chiesto resta quello"
+    assert stretto.triangles <= largo.triangles
 
 
-def test_the_smoothing_does_not_depend_on_the_machine():
-    """Una macchina lenta fa lo stesso modello con meno triangoli, non piu'
-    liscio: la lisciatura appartiene allo stile."""
-    from app.build.builder import surface_settings
+def test_a_budget_that_does_not_fit_is_declared():
+    """Un modello che non ci sta nel budget lo dice, e si costruisce lo stesso."""
+    from app.core.budget import Budget
 
+    sessione = Session(provider=OfflineProvider(), planner=MockPlanner())
+    risultato = sessione.generate("un albero con un nido e un uccello",
+                                  Options(budget=Budget(triangles=50)))
+    assert "BUDGET_EXCEEDED" in {d.code for d in risultato.diagnostics}
+    assert risultato.build.meshes(), "il modello c'e' lo stesso"
+
+
+def test_the_style_does_not_depend_on_the_machine():
+    """Una macchina lenta fa lo stesso modello con meno parti, non un altro stile."""
     hardware.use("basso")
-    _, liscio_basso = surface_settings(1.0)
+    lenta = Session(provider=OfflineProvider(), planner=MockPlanner())
+    basso = lenta.generate("una casa")
     hardware.use("alto")
-    _, liscio_alto = surface_settings(1.0)
-    assert liscio_basso == liscio_alto
+    veloce = Session(provider=OfflineProvider(), planner=MockPlanner())
+    alto = veloce.generate("una casa")
+    assert basso.plan.style == alto.plan.style == "low_poly"
 
 
-def test_resolutions_stay_inside_sane_limits():
-    hardware.use("alto")
-    assert hardware.scaled(400) <= 224
+def test_the_profile_gives_a_budget_and_it_is_a_ceiling():
     hardware.use("basso")
+    stretto = hardware.current().budget()
+    hardware.use("alto")
+    largo = hardware.current().budget()
+    assert stretto.triangles < largo.triangles
     assert hardware.scaled(1) >= 24
 
 
-def test_a_low_profile_really_builds_something_lighter():
+def test_a_low_profile_never_builds_more_than_a_high_one():
+    prompt = "un albero con un nido e un uccello"
     hardware.use("alto")
-    pesante = Session(provider=OfflineProvider())
-    pesante.generate_legacy("un pesce", seed=3)
+    pesante = Session(provider=OfflineProvider(), planner=MockPlanner())
+    pesante.generate(prompt, Options(detail_level=3))
     hardware.use("basso")
-    leggero = Session(provider=OfflineProvider())
-    leggero.generate_legacy("un pesce", seed=3)
-    assert leggero.scene.triangle_count < pesante.scene.triangle_count
+    leggero = Session(provider=OfflineProvider(), planner=MockPlanner())
+    leggero.generate(prompt, Options(detail_level=3))
+    assert leggero.scene.triangle_count <= pesante.scene.triangle_count
 
 
 # --------------------------------------------------------------------------- #
 # Salvataggio periodico
 # --------------------------------------------------------------------------- #
 def test_an_empty_session_saves_nothing(tmp_path):
-    vuota = recovery.AutoSave(Session(provider=OfflineProvider()),
+    vuota = recovery.AutoSave(Session(provider=OfflineProvider(), planner=MockPlanner()),
                               interval=0.0, root=tmp_path)
     assert vuota.due() is False
     assert vuota.save() is None
@@ -201,17 +217,17 @@ def test_a_clean_exit_leaves_nothing_to_recover(sessione, tmp_path):
 
 
 def test_a_recovered_session_has_all_its_versions(tmp_path):
-    originale = Session(provider=OfflineProvider())
-    originale.generate_legacy("una sedia", seed=1)
-    originale.revariate(seed=2)
-    originale.generate_legacy("un tavolo", seed=3)
+    originale = Session(provider=OfflineProvider(), planner=MockPlanner())
+    originale.generate("una casa")
+    originale.generate("un albero")
+    originale.generate("un pesce")
     recovery.AutoSave(originale, interval=0.0, root=tmp_path).save()
 
-    ripresa = Session(provider=OfflineProvider())
+    ripresa = Session(provider=OfflineProvider(), planner=MockPlanner())
     recovery.restore(recovery.pending(tmp_path)[0], ripresa)
     assert len(ripresa.history) == 3
     assert [v.label for v in ripresa.history] == [v.label for v in originale.history]
-    assert ripresa.current_plan.template == originale.current_plan.template
+    assert ripresa.current_plan.to_dict() == originale.current_plan.to_dict()
 
 
 def test_a_discarded_recovery_is_not_deleted_immediately(sessione, tmp_path):
@@ -234,8 +250,8 @@ def test_an_unreadable_state_does_not_hide_the_others(sessione, tmp_path):
 
 def test_old_closed_sessions_are_pruned(tmp_path):
     for indice in range(6):
-        sessione = Session(provider=OfflineProvider())
-        sessione.generate_legacy("oggetto %d" % indice, seed=indice)
+        sessione = Session(provider=OfflineProvider(), planner=MockPlanner())
+        sessione.generate("oggetto %d" % indice, Options(seed=indice))
         auto = recovery.AutoSave(sessione, interval=0.0, root=tmp_path)
         auto.slot = tmp_path / ("sessione_%d" % (1000 + indice))
         auto.save()
@@ -256,14 +272,14 @@ def test_an_open_session_is_never_pruned(sessione, tmp_path):
 # --------------------------------------------------------------------------- #
 def test_autosave_is_off_by_default():
     """Chi genera un oggetto e esce non deve lasciare file di recupero."""
-    assert Session(provider=OfflineProvider())._autosave is None
+    assert Session(provider=OfflineProvider(), planner=MockPlanner())._autosave is None
 
 
 def test_autosave_follows_the_work(tmp_path, monkeypatch):
     monkeypatch.setattr(recovery, "recovery_dir", lambda: tmp_path)
-    sessione = Session(provider=OfflineProvider())
+    sessione = Session(provider=OfflineProvider(), planner=MockPlanner())
     sessione.start_autosave(interval=0.0)
-    sessione.generate_legacy("una sedia", seed=7)
+    sessione.generate("una sedia")
     assert recovery.pending(tmp_path), "salvato subito dopo l'azione"
     sessione.stop_autosave()
     assert recovery.pending(tmp_path) == []

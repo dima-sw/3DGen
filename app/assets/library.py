@@ -3,13 +3,16 @@
 Ogni asset e' una cartella autosufficiente:
 
     library/<id>/
-        asset.json     metadati + il GenerationPlan che lo ha prodotto
+        asset.json     metadati + il piano di composizione che lo ha prodotto
         model.glb      la mesh gia' cotta, per Blender, Unity, Unreal, web
         preview.png    anteprima per la griglia della UI
 
 Conservare il *piano* oltre alla mesh e' la scelta che conta: ricaricando un
-asset non si ottiene un blocco morto ma un modello ancora parametrico, che si
-puo' modificare a voce e da cui si possono generare altre varianti.
+asset non si ottiene un blocco morto ma un modello ancora componibile, a cui si
+puo' cambiare un pezzo, alzare il dettaglio o aggiungere un accessorio.
+
+Il piano e' un `CompositionGraph` in JSON, la stessa forma che il planner
+produce e che un progetto salva: una sola grammatica per l'intero sistema.
 
 Il filesystem e' la fonte di verita': l'indice e' solo una cache che si
 ricostruisce da solo. Cancellare una cartella a mano non rompe niente.
@@ -30,7 +33,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.core.config import SETTINGS
 from app.core.logging_setup import get
 from app.core.scene import Scene
-from app.core.spec import GenerationPlan
 
 log = get("assets.library")
 
@@ -67,9 +69,13 @@ class AssetRecord(BaseModel):
 
     id: str
     name: str
+    # Da che vocabolario viene la radice: `humanoid`, `architecture`, `nature`.
+    # Non e' una tassonomia del mondo, e' il plugin che ha fornito il pezzo
+    # principale — l'unica classificazione che il sistema conosce davvero.
     category: str = "altro"
-    template: str = ""
-    density: float = 1.0
+    root_ref: str = ""              # il componente della radice, per esteso
+    detail_level: int = 2
+    style: str = "low_poly"
     tags: list[str] = Field(default_factory=list)
     prompt: str = ""
     seed: int = 0
@@ -77,7 +83,12 @@ class AssetRecord(BaseModel):
     parts: int = 0
     dimensions: tuple[float, float, float] = (0.0, 0.0, 0.0)
     created: str = ""
-    plan: GenerationPlan | None = None
+    # Il piano, in JSON: `CompositionGraph.to_dict()`. Un dizionario e non un
+    # oggetto tipizzato, perche' un asset deve poter essere riletto anche se il
+    # piano contiene qualcosa che questa versione non conosce.
+    plan: dict = Field(default_factory=dict)
+    options: dict = Field(default_factory=dict)
+    plugins: dict = Field(default_factory=dict)
 
     def summary(self) -> str:
         return "%d parti | %d triangoli | %.2f x %.2f x %.2f m" % (
@@ -89,35 +100,65 @@ class AssetRecord(BaseModel):
 
     def weak_terms(self) -> list[str]:
         """Sinonimi e classificazione: fanno trovare l'asset, ma senza dominare."""
-        return _words(" ".join(self.tags) + " " + self.template + " "
+        return _words(" ".join(self.tags) + " " + self.root_ref + " "
                       + self.category)
 
+    def payload(self) -> dict:
+        """Quello che serve a rimettere l'asset in una sessione."""
+        return {"graph": dict(self.plan), "options": dict(self.options),
+                "prompt": self.prompt, "label": self.name}
 
-def auto_tags(plan: GenerationPlan, scene: Scene | None = None) -> list[str]:
-    """Etichette derivate dal piano: rendono l'asset ritrovabile senza sforzo."""
-    from app.geometry.templates import TEMPLATES, load_all
 
-    load_all()
-    tags: set[str] = {plan.template}
-    tmpl = TEMPLATES.get(plan.template)
-    if tmpl is not None:
-        tags.add(tmpl.category)
-        # I sinonimi che il template usa per farsi riconoscere dal planner
-        # servono anche qui: senza, "albero" non troverebbe un asset salvato
-        # come "pino". E' ricerca testuale, non semantica: quella e' la voce 2.
-        tags.update(tmpl.keywords)
+def auto_tags(plan=None, scene: Scene | None = None, prompt: str = "") -> list[str]:
+    """Etichette derivate dal piano: rendono l'asset ritrovabile senza sforzo.
 
-    for key, value in plan.params.items():
-        if isinstance(value, bool):
-            if value and key.startswith("has_"):
-                tags.add(key[4:])
-        elif isinstance(value, str):
-            tags.add(value)
-
-    tags.update(_words(plan.prompt))
+    Vengono da tre posti, e nessuno dei tre e' un elenco di categorie del
+    mondo: i **riferimenti** usati nel piano (`humanoid:body` da' `humanoid` e
+    `body`), le **etichette dei pezzi** costruiti, e le parole della richiesta.
+    Un plugin nuovo porta con se' i propri tag senza che nessuno venga qui a
+    scriverli.
+    """
+    tags: set[str] = set()
+    for ref in _refs(plan):
+        plugin, _, nome = ref.partition(":")
+        tags.update({plugin, nome})
     if scene is not None:
         tags.update(t for node in scene.nodes for t in node.tags if len(t) > 3)
-    return sorted(t for t in tags if t)
+    tags.update(_words(prompt))
+    return sorted(t for t in tags if t and len(t) > 2)
+
+
+def _refs(plan) -> list[str]:
+    """Tutti i riferimenti a componente di un piano, grafo o JSON che sia."""
+    fuori: list[str] = []
+    if plan is None:
+        return fuori
+    if hasattr(plan, "providers"):
+        return sorted(set(plan.providers().values()))
+
+    def scendi(nodo) -> None:
+        if not isinstance(nodo, dict):
+            return
+        for chiave in ("ref", "swap"):
+            if nodo.get(chiave):
+                fuori.append(str(nodo[chiave]))
+        for figlio in nodo.get("children") or ():
+            scendi(figlio)
+
+    scendi(plan.get("root") if isinstance(plan, dict) else None)
+    return sorted(set(fuori))
+
+
+def _radice(plan) -> str:
+    """Il riferimento del componente radice di un piano. Vuoto se non c'e'."""
+    if plan is None:
+        return ""
+    if hasattr(plan, "root_id"):
+        return plan.resolved_ref(plan.root_id) if plan.root_id else ""
+    radice = (plan or {}).get("root") if isinstance(plan, dict) else None
+    if not isinstance(radice, dict):
+        return ""
+    return str(radice.get("swap") or radice.get("ref") or "")
 
 
 class AssetLibrary:
@@ -138,40 +179,44 @@ class AssetLibrary:
     def preview_path(self, asset_id: str) -> Path:
         return self.path(asset_id) / PREVIEW_FILE
 
-    def _new_id(self, name: str, template: str) -> str:
-        base = "%s-%s" % (slugify(template, "asset"), slugify(name, "senza-nome"))
+    def _new_id(self, name: str, categoria: str) -> str:
+        base = "%s-%s" % (slugify(categoria, "asset"), slugify(name, "senza-nome"))
         # l'id contiene sempre un suffisso casuale, quindi non puo' coincidere
         # con un nome di dispositivo di Windows: resta valido come cartella
         return "%s-%s" % (base[:52], uuid.uuid4().hex[:6])
 
     # -------------------------------------------------------------- scrivi #
     def save(self, scene: Scene, name: str = "", tags: Iterable[str] = (),
-             preview: Path | str | bytes | None = None) -> AssetRecord:
+             preview: Path | str | bytes | None = None, plan=None,
+             prompt: str = "", options: dict | None = None,
+             plugins: dict | None = None) -> AssetRecord:
         """Salva scena, piano e anteprima. Restituisce il record creato."""
-        plan = scene.plan
-        label = (name or plan.object_type or plan.template).strip()[:60]
-        asset_id = self._new_id(label, plan.template)
+        piano = plan if plan is not None else scene.plan
+        radice = _radice(piano)
+        label = (name or prompt or radice.partition(":")[2] or "modello").strip()[:60]
+        categoria = radice.partition(":")[0] or "altro"
+        asset_id = self._new_id(label, categoria)
         folder = self.path(asset_id)
         folder.mkdir(parents=True, exist_ok=True)
 
-        from app.geometry.templates import TEMPLATES, load_all
-
-        load_all()
-        tmpl = TEMPLATES.get(plan.template)
         record = AssetRecord(
             id=asset_id,
             name=label,
-            category=tmpl.category if tmpl else "altro",
-            template=plan.template,
-            density=plan.density,
-            tags=sorted(set(auto_tags(plan, scene)) | {t.strip() for t in tags if t.strip()}),
-            prompt=plan.prompt,
-            seed=plan.seed,
+            category=categoria,
+            root_ref=radice,
+            detail_level=int(getattr(piano, "detail_level", 2) or 2),
+            style=str(getattr(piano, "style", "low_poly") or "low_poly"),
+            tags=sorted(set(auto_tags(piano, scene, prompt))
+                        | {t.strip() for t in tags if t.strip()}),
+            prompt=prompt,
+            seed=int(getattr(piano, "seed", 0) or 0),
             triangles=scene.triangle_count,
             parts=len(scene.nodes),
             dimensions=scene.dimensions(),
             created=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            plan=plan,
+            plan=piano.to_dict() if hasattr(piano, "to_dict") else dict(piano or {}),
+            options=dict(options or {}),
+            plugins=dict(plugins or {}),
         )
 
         try:
@@ -303,13 +348,21 @@ class AssetLibrary:
         return sorted({r.category for r in self.all()})
 
     # -------------------------------------------------------------- carica #
-    def load_plan(self, asset_id: str) -> GenerationPlan:
+    def load_plan(self, asset_id: str) -> dict:
+        """Il piano di un asset, pronto per `Session.restore`.
+
+        Torna un dizionario e non un grafo: chi lo rimette in una sessione lo
+        fa passare dalla stessa validazione di qualunque piano che arriva da
+        fuori, perche' un file sul disco e' esattamente questo — qualcosa che
+        arriva da fuori.
+        """
         record = self.get(asset_id)
         if record is None:
             raise KeyError("asset inesistente: %s" % asset_id)
-        if record.plan is None:
-            raise ValueError("l'asset %s non ha un piano: e' solo una mesh" % asset_id)
-        return record.plan.model_copy(deep=True)
+        if not record.plan:
+            raise ValueError("l'asset %s non ha un piano: e' solo una mesh"
+                             % asset_id)
+        return record.payload()
 
     def load_mesh(self, asset_id: str):
         import trimesh

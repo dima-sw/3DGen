@@ -7,61 +7,111 @@ import struct
 import numpy as np
 import pytest
 
-from app.ai.creature import build_assembly, parse_creature
+from app.ai.provider import OfflineProvider
 from app.anim import clip as clip_module
 from app.anim import gltf, pose
 from app.anim import skeleton as skeleton_module
 from app.anim.clip import Clip, quaternion, swing
 from app.anim.gltf import GltfError
 from app.anim.skeleton import Joint, Skeleton
-from app.build.builder import build_scene
-from app.core.spec import GenerationPlan
+from app.core.capability import Requirement
+from app.core.graph import CompositionGraph
+from app.core.planner.planner import MockPlanner
+from app.core.session import Options, Session
 
-DRAGO = "un drago con quattro zampe, due ali e una lunga coda"
+def chiedi(capability: str = "", **kwargs) -> Requirement:
+    return Requirement(capability=capability, **kwargs)
 
 
-def scena(prompt: str):
-    assembly, materials = build_assembly(parse_creature(prompt))
-    return build_scene(GenerationPlan(prompt=prompt, template="freeform",
-                                      strategy="assembly", assembly=assembly,
-                                      materials=materials))
+def sessione() -> Session:
+    return Session(provider=OfflineProvider(), planner=MockPlanner())
+
+
+def costruisci(grafo) -> tuple:
+    """Un piano, il modello e la sessione che lo tiene. Dalla porta unica."""
+    s = sessione()
+    risultato = s.build(grafo, Options(check=False))
+    s._push(s._versione(risultato))
+    return s, risultato.scene(s.catalog())
+
+
+def piano_figura(detail_level: int = 3) -> CompositionGraph:
+    """Una figura con due gambe, due braccia e una testa. Serve al passo."""
+    g = CompositionGraph(detail_level=detail_level)
+    g.set_root("corpo", "humanoid:body", height=1.8)
+    g.add_child("torso", "humanoid:torso", "corpo", level=1,
+                requirement=chiedi("core_mount"))
+    g.add_child("collo", "humanoid:neck", "torso", level=1, insert=0.3,
+                requirement=chiedi("head_mount"))
+    g.add_child("testa", "humanoid:head", "collo", level=1, insert=0.25,
+                requirement=chiedi("head_mount"))
+    for nome, lato in (("braccio_l", "l"), ("braccio_r", "r")):
+        g.add_child(nome, "humanoid:arm", "torso", level=1, insert=1.15,
+                    requirement=chiedi("limb_mount", side=lato,
+                                       tags=frozenset({"alto"})))
+    for nome, lato in (("gamba_l", "l"), ("gamba_r", "r")):
+        g.add_child(nome, "humanoid:leg", "torso", level=1, insert=0.9,
+                    requirement=chiedi("limb_mount", side=lato,
+                                       tags=frozenset({"basso"})))
+    return g
+
+
+def piano_alato() -> CompositionGraph:
+    """Un corpo con due ali e una coda: per il battito e per i lati."""
+    g = CompositionGraph()
+    g.set_root("corpo", "fish:fish_body")
+    for nome, lato in (("ala_l", "l"), ("ala_r", "r")):
+        g.add_child(nome, "fantasy:wing", "corpo", scale_mode="socket",
+                    requirement=chiedi("limb_mount", side=lato))
+    g.add_child("coda", "fish:tail", "corpo", requirement=chiedi("tail_mount"))
+    return g
 
 
 @pytest.fixture(scope="module")
-def drago():
-    return scena(DRAGO)
+def figura():
+    return costruisci(piano_figura())[1]
 
 
 @pytest.fixture(scope="module")
-def ossa(drago):
-    return skeleton_module.from_scene(drago)
+def alato():
+    return costruisci(piano_alato())[1]
+
+
+@pytest.fixture(scope="module")
+def ossa(figura):
+    return skeleton_module.from_scene(figura)
+
+
+@pytest.fixture(scope="module")
+def ossa_alate(alato):
+    return skeleton_module.from_scene(alato)
 
 
 # --------------------------------------------------------------------------- #
 # Scheletro
 # --------------------------------------------------------------------------- #
-def test_the_skeleton_is_the_part_graph(drago, ossa):
-    assert len(ossa) == len(drago.placements)
+def test_the_skeleton_is_the_part_graph(figura, ossa):
+    assert len(ossa) == len(figura.placements)
     assert ossa.root is not None and ossa.root.name == "corpo"
     assert sum(1 for j in ossa.joints if j.parent is None) == 1, "una sola radice"
 
 
-def test_a_joint_sits_on_the_socket_it_hangs_from(drago, ossa):
+def test_a_joint_sits_on_the_socket_it_hangs_from(figura, ossa):
     """Il pivot deve essere l'anca, non il centro della coscia.
 
-    Le pose sono nel sistema della composizione; la scena e' stata alzata per
+    Le pose sono nel sistema del modello; la scena e' stata alzata per
     appoggiarla a terra, e i giunti devono stare con le mesh, non con le pose.
     """
-    coscia = drago.placements["coscia_0"]
-    corpo = drago.placements[coscia.parent]
-    atteso = corpo.placement.socket_world(
-        corpo.part.socket(coscia.parent_socket)).position
-    assert np.allclose(ossa.get("coscia_0").pivot, atteso + drago.ground_offset)
+    coscia = figura.placements["gamba_l/coscia"]
+    padre = figura.placements[coscia.parent]
+    atteso = padre.socket_world(coscia.parent_socket).position
+    assert np.allclose(ossa.get("gamba_l/coscia").pivot,
+                       atteso + figura.ground_offset)
 
 
-def test_a_joint_sits_inside_its_own_part(drago, ossa):
+def test_a_joint_sits_inside_its_own_part(figura, ossa):
     """Verifica indipendente dell'appoggio: ogni giunto e' dentro la sua mesh."""
-    per_id = {n.id: n for n in drago.nodes}
+    per_id = {n.id: n for n in figura.nodes}
     for giunto in ossa.joints:
         nodo = per_id.get(giunto.name)
         if nodo is None:
@@ -71,16 +121,18 @@ def test_a_joint_sits_inside_its_own_part(drago, ossa):
         assert fuori < 0.15, "%s e' a %.2f m dalla propria parte" % (giunto.name, fuori)
 
 
-def test_an_assembly_stands_on_the_ground(drago):
+def test_an_assembly_stands_on_the_ground(figura):
     """Come ogni altro modello: sotto lo zero non c'e' niente."""
-    fuso = drago.to_trimesh_scene(textured=False).to_geometry()
+    fuso = figura.to_trimesh_scene(textured=False).to_geometry()
     assert float(fuso.bounds[0][1]) == pytest.approx(0.0, abs=1e-6)
 
 
 def test_a_limb_is_a_chain(ossa):
-    figli = [j.name for j in ossa.descendants("coscia_0")]
-    assert figli == ["stinco_0", "piede_0"] or set(figli) == {"stinco_0", "piede_0"}
-    assert ossa.get("piede_0").parent == "stinco_0"
+    """Una gamba porta i propri segmenti: il grafo delle parti e' gia' l'albero."""
+    figli = {j.name for j in ossa.descendants("gamba_l")}
+    assert {"gamba_l/coscia", "gamba_l/polpaccio", "gamba_l/piede"} <= figli
+    for segmento in ("gamba_l/coscia", "gamba_l/polpaccio", "gamba_l/piede"):
+        assert ossa.get(segmento).parent == "gamba_l"
 
 
 def test_the_frame_of_a_joint_is_orthonormal(ossa):
@@ -90,35 +142,45 @@ def test_the_frame_of_a_joint_is_orthonormal(ossa):
         assert abs(float(np.dot(giunto.forward, giunto.side))) < 1e-6
 
 
-def test_the_long_axis_is_read_from_the_head(ossa):
+def test_the_lateral_axis_is_read_from_the_declared_sides(ossa):
+    """Il lato non si indovina: lo dichiarano gli innesti.
+
+    Prima l'asse laterale veniva dedotto da dove stava la testa rispetto al
+    corpo. Su un quadrupede funzionava; su una figura in piedi la testa sta
+    **sopra**, non davanti, e l'indizio non dice niente. Gli innesti invece
+    dicono `side="l"` e `side="r"`, ed e' un dato.
+    """
     lungo, laterale = ossa.axes()
     assert lungo != laterale and 1 not in (lungo, laterale), "la verticale e' Y"
-    testa, corpo = ossa.get("testa"), ossa.get("corpo")
-    assert abs(testa.pivot[lungo] - corpo.pivot[lungo]) > \
-           abs(testa.pivot[laterale] - corpo.pivot[laterale])
+    sinistra, destra = ossa.get("gamba_l"), ossa.get("gamba_r")
+    assert abs(sinistra.pivot[laterale] - destra.pivot[laterale]) > \
+        abs(sinistra.pivot[lungo] - destra.pivot[lungo])
+    assert ossa.lateral_sign(sinistra) == -1.0
+    assert ossa.lateral_sign(destra) == 1.0
 
 
-def test_diagonal_legs_move_together(ossa):
+def test_without_declared_sides_the_axis_is_guessed_from_the_head():
+    """Senza lato dichiarato resta l'indizio di prima, e va detto che e' un indizio."""
+    corpo = Joint("corpo", None, np.zeros(3), np.array([0., 0., 1.]),
+                  np.array([0., 1., 0.]), np.array([1., 0., 0.]), ["body"])
+    testa = Joint("testa", "corpo", np.array([0., 0.1, 0.8]),
+                  np.array([0., 0., 1.]), np.array([0., 1., 0.]),
+                  np.array([1., 0., 0.]), ["head"])
+    lungo, laterale = Skeleton(joints=[corpo, testa]).axes()
+    assert (lungo, laterale) == (2, 0), "la testa e' davanti lungo Z"
+
+
+def test_the_two_legs_of_a_figure_alternate(ossa):
+    """Due gambe, due fasi opposte: e' un'andatura, non due gambe sincrone."""
     fasi = ossa.gait_phases("leg")
-    lungo, laterale = ossa.axes()
-    cosce = [ossa.get(n) for n in fasi if n.startswith("coscia")]
-    per_fase = {}
-    for coscia in cosce:
-        per_fase.setdefault(fasi[coscia.name], []).append(coscia)
-    assert len(per_fase) == 2, "due gruppi: e' un'andatura alternata"
-    for gruppo in per_fase.values():
-        assert len(gruppo) == 2
-        a, b = gruppo
-        # In diagonale: le due zampe che si muovono insieme stanno una davanti
-        # e una dietro, e su lati opposti. Quale delle due diagonali sia, non
-        # importa: contano solo i due scambi di segno.
-        assert a.pivot[lungo] != b.pivot[lungo], "una davanti e una dietro"
-        assert a.pivot[laterale] != b.pivot[laterale], "su lati opposti"
+    assert set(fasi.values()) == {0.0, 0.5}
+    assert fasi["gamba_l"] != fasi["gamba_r"]
 
 
 def test_a_whole_limb_shares_one_phase(ossa):
     fasi = ossa.gait_phases("leg")
-    assert fasi["coscia_0"] == fasi["stinco_0"] == fasi["piede_0"]
+    assert fasi["gamba_l"] == fasi["gamba_l/coscia"] \
+        == fasi["gamba_l/polpaccio"] == fasi["gamba_l/piede"]
 
 
 def test_two_legs_alternate(ossa):
@@ -136,10 +198,10 @@ def test_two_legs_alternate(ossa):
     assert set(fasi.values()) == {0.0, 0.5}
 
 
-def test_the_two_wings_are_on_opposite_sides(ossa):
-    ali = ossa.find("wing")
+def test_the_two_wings_are_on_opposite_sides(ossa_alate):
+    ali = ossa_alate.find("wing")
     assert len(ali) == 2
-    assert ossa.lateral_sign(ali[0]) == -ossa.lateral_sign(ali[1])
+    assert ossa_alate.lateral_sign(ali[0]) == -ossa_alate.lateral_sign(ali[1])
 
 
 def test_an_orphan_joint_is_reattached():
@@ -152,31 +214,36 @@ def test_an_orphan_joint_is_reattached():
 
 
 def _finto(parent, parent_socket):
-    class FintaParte:
-        def socket(self, name):
-            return None
-
     class FintaPosa:
         translation = np.zeros(3)
 
-        def socket_world(self, socket):
-            return socket
-
     class Finto:
-        pass
+        def socket_world(self, nome):
+            return None
 
     finto = Finto()
     finto.parent = parent
     finto.parent_socket = parent_socket
-    finto.part = FintaParte()
     finto.placement = FintaPosa()
     finto.tags = []
     return finto
 
 
-def test_a_template_model_has_no_skeleton():
-    """Una scena da template non e' un grafo di parti, e non deve fingere di esserlo."""
-    scene = build_scene(GenerationPlan(template="chair"))
+def test_a_scene_without_parts_has_no_skeleton():
+    """Una scena che non viene da una composizione non ha giunti, e lo dice.
+
+    Succede con una mesh caricata da un file o con una scena decimata: c'e' la
+    geometria e non c'e' la struttura. Meglio uno scheletro vuoto che uno
+    inventato.
+    """
+    import trimesh
+
+    from app.core.material import MaterialSpec
+    from app.core.scene import Scene, SceneNode
+
+    scene = Scene(plan=None)
+    scene.add(SceneNode(id="x", name="X", mesh=trimesh.creation.box(),
+                        material=MaterialSpec(name="skin")))
     assert len(skeleton_module.from_scene(scene)) == 0
 
 
@@ -202,15 +269,16 @@ def test_a_cycle_closes_on_itself(ossa):
         assert animazione.is_closed(), "%s scatta a ogni giro" % nome
 
 
-def test_only_the_animations_the_model_can_do(ossa):
-    nomi = [c.name for c in clip_module.default_clips(ossa)]
-    assert nomi == ["idle", "walk", "wing_beat"]
+def test_only_the_animations_the_model_can_do(ossa, ossa_alate):
+    """Una figura cammina e non batte le ali; un corpo alato il contrario."""
+    assert [c.name for c in clip_module.default_clips(ossa)] == ["idle", "walk"]
+    assert [c.name for c in clip_module.default_clips(ossa_alate)] \
+        == ["idle", "wing_beat"]
 
 
-def test_a_finned_creature_does_not_walk():
-    pesce = skeleton_module.from_scene(scena("un pesce con quattro pinne"))
-    nomi = [c.name for c in clip_module.default_clips(pesce)]
-    assert "walk" not in nomi, "un pesce non cammina"
+def test_a_finned_creature_does_not_walk(ossa_alate):
+    nomi = [c.name for c in clip_module.default_clips(ossa_alate)]
+    assert "walk" not in nomi, "un corpo senza gambe non cammina"
     assert "idle" in nomi, "ma respira"
 
 
@@ -219,11 +287,22 @@ def test_an_unknown_animation_is_an_error(ossa):
         clip_module.make("moonwalk", ossa)
 
 
-def test_the_amplitude_decreases_along_the_limb(ossa):
+def test_the_amplitude_decreases_from_the_root_of_the_limb(ossa):
+    """L'anca fa il passo, i segmenti lo rifiniscono.
+
+    Nel modello nuovo coscia, polpaccio e piede sono **fratelli** appesi ai
+    socket della gamba, non una catena: la gamba li porta tutti e loro
+    oscillano insieme. Vuol dire che un ginocchio non si piega — e' una
+    conseguenza vera di come l'arto e' composto, e il test la fissa invece di
+    fingere che ci sia una gerarchia che non c'e'.
+    """
     passo = clip_module.walk(ossa)
-    ampiezze = [max(abs(_angle(q)) for q in passo.channel(n).rotations)
-                for n in ("coscia_0", "stinco_0", "piede_0")]
-    assert ampiezze[0] > ampiezze[1] > ampiezze[2], "l'anca fa il passo"
+    def ampiezza(nome):
+        return max(abs(_angle(q)) for q in passo.channel(nome).rotations)
+
+    assert ampiezza("gamba_l") > ampiezza("gamba_l/coscia")
+    assert ampiezza("gamba_l/coscia") == pytest.approx(
+        ampiezza("gamba_l/piede"), rel=1e-6)
 
 
 def test_idle_stays_small(ossa):
@@ -254,41 +333,48 @@ def test_the_rest_pose_puts_everything_back(ossa):
 
 
 def test_a_rotating_joint_stays_where_it_is(ossa):
+    """Un giunto ruota **attorno a se stesso**: il suo pivot non si sposta.
+
+    Vale per la radice di un arto; i suoi figli invece si spostano, ed e'
+    esattamente cio' che deve succedere.
+    """
     passo = clip_module.walk(ossa)
-    anca = ossa.get("coscia_0").pivot
+    anca = ossa.get("gamba_l").pivot
     for t in (0.0, 0.2, 0.45, 0.9):
-        assert np.allclose(pose.pose(ossa, passo, t)["coscia_0"][:3, 3], anca, atol=1e-9)
+        assert np.allclose(pose.pose(ossa, passo, t)["gamba_l"][:3, 3], anca,
+                           atol=1e-9)
 
 
 def test_the_end_of_a_limb_moves_more_than_its_root(ossa):
     passo = clip_module.walk(ossa)
     riposo = pose.pose(ossa, passo, 0.0)
     mosso = pose.pose(ossa, passo, 0.25)
-    anca = np.linalg.norm(mosso["coscia_0"][:3, 3] - riposo["coscia_0"][:3, 3])
-    piede = np.linalg.norm(mosso["piede_0"][:3, 3] - riposo["piede_0"][:3, 3])
+    anca = np.linalg.norm(mosso["gamba_l"][:3, 3] - riposo["gamba_l"][:3, 3])
+    piede = np.linalg.norm(mosso["gamba_l/piede"][:3, 3]
+                           - riposo["gamba_l/piede"][:3, 3])
     assert piede > anca + 0.01
 
 
-def test_diagonal_legs_swing_in_opposite_directions(ossa):
+def test_the_two_legs_swing_in_opposite_directions(ossa):
     passo = clip_module.walk(ossa)
     lungo, _ = ossa.axes()
     riposo, mosso = pose.pose(ossa, passo, 0.0), pose.pose(ossa, passo, 0.25)
-    davanti = mosso["piede_0"][lungo, 3] - riposo["piede_0"][lungo, 3]
-    dietro = mosso["piede_2"][lungo, 3] - riposo["piede_2"][lungo, 3]
-    assert davanti * dietro < 0, "una gamba avanza mentre l'altra arretra"
+    sinistra = mosso["gamba_l/piede"][lungo, 3] - riposo["gamba_l/piede"][lungo, 3]
+    destra = mosso["gamba_r/piede"][lungo, 3] - riposo["gamba_r/piede"][lungo, 3]
+    assert sinistra * destra < 0, "una gamba avanza mentre l'altra arretra"
 
 
 def test_the_animation_loops(ossa):
     passo = clip_module.walk(ossa)
-    assert np.allclose(pose.sample(passo, "coscia_0", 0.0),
-                       pose.sample(passo, "coscia_0", 1.0), atol=1e-6)
+    assert np.allclose(pose.sample(passo, "gamba_l", 0.0),
+                       pose.sample(passo, "gamba_l", 1.0), atol=1e-6)
 
 
 def test_sampling_interpolates_between_keys(ossa):
     passo = clip_module.walk(ossa)
-    canale = passo.channel("coscia_0")
+    canale = passo.channel("gamba_l")
     meta = (canale.times[0] + canale.times[1]) / 2.0
-    interpolato = pose.sample(passo, "coscia_0", meta)
+    interpolato = pose.sample(passo, "gamba_l", meta)
     assert not np.allclose(interpolato, canale.rotations[0], atol=1e-6)
     assert np.linalg.norm(interpolato) == pytest.approx(1.0, abs=1e-6)
 
@@ -298,13 +384,13 @@ def test_a_missing_channel_means_no_rotation(ossa):
     assert np.allclose(pose.sample(vuota, "corpo", 0.3), [0, 0, 0, 1])
 
 
-def test_a_posed_scene_keeps_every_part(drago, ossa):
-    posata = pose.posed_scene(drago, ossa, clip_module.walk(ossa), 0.25)
-    assert len(posata.nodes) == len(drago.nodes)
-    assert posata.triangle_count == drago.triangle_count
-    originali = {n.id: n.mesh.bounds.tolist() for n in drago.nodes}
+def test_a_posed_scene_keeps_every_part(figura, ossa):
+    posata = pose.posed_scene(figura, ossa, clip_module.walk(ossa), 0.25)
+    assert len(posata.nodes) == len(figura.nodes)
+    assert posata.triangle_count == figura.triangle_count
+    originali = {n.id: n.mesh.bounds.tolist() for n in figura.nodes}
     assert any(n.mesh.bounds.tolist() != originali[n.id] for n in posata.nodes)
-    assert drago.nodes[0].mesh.bounds.tolist() == originali[drago.nodes[0].id], \
+    assert figura.nodes[0].mesh.bounds.tolist() == originali[figura.nodes[0].id], \
         "la scena di partenza non viene toccata"
 
 
@@ -312,9 +398,9 @@ def test_a_posed_scene_keeps_every_part(drago, ossa):
 # Esportazione glTF
 # --------------------------------------------------------------------------- #
 @pytest.fixture(scope="module")
-def glb(tmp_path_factory, drago):
-    path = tmp_path_factory.mktemp("anim") / "drago.glb"
-    return gltf.export_animated(drago, path)
+def glb(tmp_path_factory, figura):
+    path = tmp_path_factory.mktemp("anim") / "figura.glb"
+    return gltf.export_animated(figura, path)
 
 
 def documento(path) -> dict:
@@ -343,13 +429,15 @@ def test_chunks_are_aligned(glb):
 
 
 def test_the_hierarchy_is_exported(glb, ossa):
+    """La gerarchia del glTF e' quella dei giunti, non una inventata."""
     doc = documento(glb)
     assert len(doc["nodes"]) == len(ossa)
     per_nome = {n["name"]: i for i, n in enumerate(doc["nodes"])}
-    coscia = doc["nodes"][per_nome["coscia_0"]]
-    assert per_nome["stinco_0"] in coscia.get("children", [])
-    radice = doc["nodes"][per_nome["corpo"]]
-    assert per_nome["coscia_0"] in radice.get("children", [])
+    gamba = doc["nodes"][per_nome["gamba_l"]]
+    for segmento in ("gamba_l/coscia", "gamba_l/polpaccio", "gamba_l/piede"):
+        assert per_nome[segmento] in gamba.get("children", []), segmento
+    torso = doc["nodes"][per_nome["torso"]]
+    assert per_nome["gamba_l"] in torso.get("children", [])
 
 
 def test_a_node_sits_at_its_own_joint(glb, ossa):
@@ -357,14 +445,14 @@ def test_a_node_sits_at_its_own_joint(glb, ossa):
     doc = documento(glb)
     per_nome = {n["name"]: n for n in doc["nodes"]}
     somma = np.zeros(3)
-    for nome in ("corpo", "coscia_0", "stinco_0", "piede_0"):
+    for nome in ("corpo", "torso", "gamba_l", "gamba_l/piede"):
         somma = somma + np.array(per_nome[nome]["translation"])
-    assert np.allclose(somma, ossa.get("piede_0").pivot, atol=1e-5)
+    assert np.allclose(somma, ossa.get("gamba_l/piede").pivot, atol=1e-5)
 
 
 def test_the_animations_are_rotations_only(glb):
     doc = documento(glb)
-    assert {a["name"] for a in doc["animations"]} == {"idle", "walk", "wing_beat"}
+    assert {a["name"] for a in doc["animations"]} == {"idle", "walk"}
     for animazione in doc["animations"]:
         assert animazione["channels"]
         for canale in animazione["channels"]:
@@ -382,51 +470,52 @@ def test_no_skinning_data_is_written(glb):
             assert "WEIGHTS_0" not in primitiva["attributes"]
 
 
-def test_the_rest_pose_is_identical_to_the_source(glb, drago):
+def test_the_rest_pose_is_identical_to_the_source(glb, figura):
     """Aprire il file animato e non animarlo deve dare il modello di partenza."""
     import trimesh
 
     riletto = trimesh.load(str(glb)).to_geometry()
-    originale = drago.to_trimesh_scene(textured=False).to_geometry()
+    originale = figura.to_trimesh_scene(textured=False).to_geometry()
     assert np.abs(riletto.bounds - originale.bounds).max() < 1e-5
     assert len(riletto.faces) == len(originale.faces)
 
 
-def test_materials_are_reused_not_duplicated(glb, drago):
+def test_materials_are_reused_not_duplicated(glb, figura):
     doc = documento(glb)
     tinte = {tuple(m["pbrMetallicRoughness"]["baseColorFactor"]) for m in doc["materials"]}
     assert len(doc["materials"]) == len(tinte), "un materiale per colore, non per parte"
 
 
 def test_a_model_without_a_skeleton_cannot_be_animated(tmp_path):
-    scene = build_scene(GenerationPlan(template="chair"))
+    import trimesh
+
+    from app.core.material import MaterialSpec
+    from app.core.scene import Scene, SceneNode
+
+    scene = Scene(plan=None)
+    scene.add(SceneNode(id="x", name="X", mesh=trimesh.creation.box(),
+                        material=MaterialSpec(name="skin")))
     with pytest.raises(GltfError, match="scheletro|grafo"):
-        gltf.export_animated(scene, tmp_path / "sedia.glb")
+        gltf.export_animated(scene, tmp_path / "cubo.glb")
 
 
-def test_only_the_requested_animations_are_written(tmp_path, drago):
-    path = gltf.export_animated(drago, tmp_path / "solo_idle.glb", clips=["idle"])
+def test_only_the_requested_animations_are_written(tmp_path, figura):
+    path = gltf.export_animated(figura, tmp_path / "solo_idle.glb", clips=["idle"])
     assert {a["name"] for a in documento(path)["animations"]} == {"idle"}
 
 
 # --------------------------------------------------------------------------- #
 # Dalla sessione
 # --------------------------------------------------------------------------- #
-def test_the_session_exposes_what_can_be_animated(drago):
-    from app.ai.provider import OfflineProvider
-    from app.core.session import Session, Version
-
-    session = Session(provider=OfflineProvider())
-    session._push(Version(label="drago", plan=drago.plan, scene=drago,
-                          message="", seconds=0.0))
-    assert session.animations() == ["idle", "walk", "wing_beat"]
-    assert len(session.skeleton()) == len(drago.placements)
+def test_the_session_exposes_what_can_be_animated():
+    sessione, scena = costruisci(piano_figura())
+    assert sessione.animations() == ["idle", "walk"]
+    assert len(sessione.skeleton()) == len(scena.placements)
 
 
-def test_a_template_session_offers_no_animation():
-    from app.ai.provider import OfflineProvider
-    from app.core.session import Session
-
-    session = Session(provider=OfflineProvider())
-    session.generate_legacy("una sedia di legno", seed=4)
-    assert session.animations() == []
+def test_a_single_piece_model_can_only_breathe():
+    """Un pezzo solo non cammina e non batte le ali: respira, e basta."""
+    g = CompositionGraph()
+    g.set_root("cubo", "primitives:block")
+    sessione, _ = costruisci(g)
+    assert sessione.animations() == ["idle"]

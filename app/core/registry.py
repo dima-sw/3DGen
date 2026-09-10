@@ -44,6 +44,7 @@ from typing import Any, Iterable
 from app.core.capability import Capability, Mount
 from app.core.component import Component
 from app.core.errors import Report
+from app.core.material import MaterialSpec
 from app.core.vocabulary import EffectSpec, StyleProfile
 
 MANIFEST = "plugin.json"
@@ -133,6 +134,10 @@ class Registry:
         self._components: dict[str, Component] = {}
         self._effects: dict[str, EffectSpec] = {}
         self._styles: dict[str, StyleProfile] = {}
+        # I materiali stanno per **nome nudo**: `skin` e' un nome condiviso,
+        # non il pezzo di un plugin. Chi lo dichiara per primo lo definisce.
+        self._materials: dict[str, MaterialSpec] = {}
+        self._material_source: dict[str, str] = {}
         self._declared: dict[str, dict[str, Any]] = {}
         self._paths: dict[str, str] = {}          # plugin id -> cartella caricata
         self._frozen = False
@@ -211,6 +216,36 @@ class Registry:
     def register_style(self, style: StyleProfile, plugin_id: str = "") -> bool:
         return self._register(style, self._styles, plugin_id,
                               "DUPLICATE_STYLE", "stile")
+
+    def register_material(self, material: MaterialSpec,
+                          plugin_id: str = "") -> bool:
+        """Un materiale si registra per **nome nudo**, non qualificato.
+
+        `skin` e' un nome che piu' plugin usano volendo la stessa cosa, come
+        una capability: qualificarlo darebbe `humanoid:skin` e `creature:skin`,
+        cioe' due pelli diverse dove ne serviva una. Chi lo dichiara per primo
+        lo definisce; chi lo ridichiara **diverso** viene riferito, perche' un
+        colore che cambia a seconda dell'ordine di caricamento e' il genere di
+        cosa che si scopre guardando il modello.
+        """
+        self._guard()
+        if not material.name:
+            self.report.add("INVALID_MANIFEST", "materiale senza nome")
+            return False
+        gia = self._materials.get(material.name)
+        if gia is not None:
+            if gia.base_color != material.base_color:
+                self.report.note(
+                    "MATERIAL_REDECLARED",
+                    "'%s' e' gia' dichiarato come %s" % (material.name,
+                                                         gia.base_color),
+                    where=plugin_id,
+                    why="vale la prima dichiarazione: %s resta fuori"
+                        % material.base_color)
+            return False
+        self._materials[material.name] = material
+        self._material_source[material.name] = plugin_id
+        return True
 
     def _register(self, item, table: dict, plugin_id: str, code: str,
                   what: str) -> bool:
@@ -319,13 +354,18 @@ class Registry:
             return None
         self._paths[info.id] = str(cartella.resolve())
 
-        for item in sorted(raccolti, key=lambda o: (type(o).__name__, o.id)):
+        # ordine stabile: i materiali si chiamano per nome, tutto il resto per id
+        for item in sorted(raccolti, key=lambda o: (type(o).__name__,
+                                                    getattr(o, "id", "")
+                                                    or getattr(o, "name", ""))):
             if isinstance(item, Component):
                 self.register_component(item, info.id)
             elif isinstance(item, EffectSpec):
                 self.register_effect(item, info.id)
             elif isinstance(item, StyleProfile):
                 self.register_style(item, info.id)
+            elif isinstance(item, MaterialSpec):
+                self.register_material(item, info.id)
 
         if not raccolti:
             self.report.note("PLUGIN_EMPTY",
@@ -373,7 +413,7 @@ class Registry:
             return None
 
         sorgenti: list[str] = []
-        for chiave in ("components", "effects", "styles"):
+        for chiave in ("components", "effects", "styles", "materials"):
             valore = dati.get(chiave, [])
             if not isinstance(valore, list):
                 self.report.add("INVALID_MANIFEST",
@@ -480,6 +520,21 @@ class Registry:
 
     def styles(self) -> list[StyleProfile]:
         return self._all(self._styles)
+
+    # ---------------------------------------------------------- materiali #
+    def material(self, name: str) -> MaterialSpec:
+        """L'aspetto di una superficie. Sempre uno: un nome sconosciuto e'
+        un grigio, non un errore — un modello grigio e' meglio di un modello
+        mancante."""
+        from app.core.material import default_material
+
+        return self._materials.get(name) or default_material(name)
+
+    def materials(self) -> list[MaterialSpec]:
+        return [self._materials[n] for n in sorted(self._materials)]
+
+    def knows_material(self, name: str) -> bool:
+        return name in self._materials
 
     # --------------------------------------------------------- capability #
     def providers(self, capability: str = "", side: str = "",
@@ -667,7 +722,8 @@ def _harvest(modulo) -> list:
     fuori, visti = [], set()
 
     def aggiungi(valore) -> None:
-        if isinstance(valore, (Component, EffectSpec, StyleProfile)):
+        if isinstance(valore, (Component, EffectSpec, StyleProfile,
+                               MaterialSpec)):
             if id(valore) not in visti:
                 visti.add(id(valore))
                 fuori.append(valore)

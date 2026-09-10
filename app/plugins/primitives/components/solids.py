@@ -96,7 +96,7 @@ BLOCCO = Component(
     },
     provides=(SOLID,),
     mounts=INNESTI,
-    tags=frozenset({"primitiva", "spigoloso"}),
+    tags=frozenset({"primitiva", "primitive", "spigoloso", "boxy", "blocco", "block"}),
 )
 
 TUBO = Component(
@@ -112,5 +112,5 @@ TUBO = Component(
     },
     provides=(SOLID,),
     mounts=INNESTI,
-    tags=frozenset({"primitiva", "tondo"}),
+    tags=frozenset({"primitiva", "primitive", "tondo", "round", "tubo", "tube"}),
 )

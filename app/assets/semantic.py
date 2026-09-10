@@ -238,7 +238,8 @@ class SemanticIndex:
         """Il testo che descrive un asset. Il nome pesa doppio: e' la scelta
         dell'utente, non una classificazione automatica."""
         return " ".join([record.name, record.name, record.prompt,
-                         record.template, record.category, " ".join(record.tags)])
+                         record.root_ref.replace(":", " "), record.category,
+                         " ".join(record.tags)])
 
     @staticmethod
     def fingerprint_of(records: Sequence) -> str:

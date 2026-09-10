@@ -12,7 +12,7 @@ import numpy as np
 import trimesh
 
 from app.core.logging_setup import get
-from app.core.spec import GenerationPlan, MaterialSpec
+from app.core.material import MaterialSpec
 
 log = get("scene")
 
@@ -32,7 +32,11 @@ class SceneNode:
 
 @dataclass
 class Scene:
-    plan: GenerationPlan
+    # Il piano da cui la scena viene. Non e' tipizzato apposta: puo' essere un
+    # `CompositionGraph` (la strada nuova) o qualunque cosa lo sostituisca. La
+    # scena ne legge **un campo solo**, il seme, e non deve saperne altro —
+    # legarla a una classe di piano vorrebbe dire rifarla a ogni cambiamento.
+    plan: Any
     nodes: list[SceneNode] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     # Pose delle parti composte (PlacedPart), quando la scena viene da un
@@ -94,10 +98,12 @@ class Scene:
         cartoon low poly vive di tinte piatte e silhouette, non di superfici. Le
         texture restano disponibili, ma sono una richiesta esplicita.
         """
+        # `None` vuol dire "come vuole lo stile", e lo stile lo conosce chi ha
+        # il registry — non una scena. Qui il predefinito e' il linguaggio del
+        # prodotto: tinte piatte. Chi vuole le texture le chiede, e chi legge
+        # un `StyleProfile` passa un booleano vero.
         if textured is None:
-            from app.core.style import current
-
-            textured = not current().flat_materials
+            textured = False
         from app.geometry.uv import box_uv, uv_bounds_are_reasonable
         from app.materials.library import maps_for
 

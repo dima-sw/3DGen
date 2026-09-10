@@ -80,7 +80,7 @@ TREE = Component(
             mount("surface", socket_id="fondamenta", side="bottom"),
             mount("branch_mount", socket_id="ramo_l", side="l"),
             mount("branch_mount", socket_id="ramo_r", side="r")),
-    role="albero", material="wood", tags=frozenset({"natura", "albero", "pianta"}))
+    role="albero", material="wood", tags=frozenset({"natura", "nature", "albero", "tree", "pianta", "plant"}))
 
 
 def _chioma(v, ctx) -> Piece:
@@ -104,7 +104,7 @@ FOLIAGE = Component(
                                 semantic_role="length")},
     provides=(Capability("crown_mount"),),
     mounts=(mount("branch_mount", socket_id="cima"),),
-    role="chioma", material="leaf", tags=frozenset({"natura", "chioma", "foglie"}))
+    role="chioma", material="leaf", tags=frozenset({"natura", "nature", "chioma", "foliage", "foglie", "leaves"}))
 
 
 # --------------------------------------------------------------------------- #
@@ -142,7 +142,7 @@ NEST = Component(
                                 semantic_role="length")},
     provides=(Capability("branch_mount"), Capability("nest_mount")),
     mounts=(mount("perch_mount", socket_id="dentro", capacity=0),),
-    role="nido", material="straw", tags=frozenset({"natura", "nido"}))
+    role="nido", material="straw", tags=frozenset({"natura", "nature", "nido", "nest"}))
 
 
 # --------------------------------------------------------------------------- #
@@ -189,4 +189,4 @@ BIRD = Component(
             mount("limb_mount", socket_id="ala_r", side="r", tags=("alto",)),
             mount("head_mount", socket_id="testa")),
     role="uccello", material="feather",
-    tags=frozenset({"natura", "uccello", "animale"}))
+    tags=frozenset({"natura", "nature", "uccello", "bird", "animale", "animal"}))

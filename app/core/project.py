@@ -1,17 +1,36 @@
 """Formato di progetto `.my3d`.
 
 Un archivio zip che contiene tutto il lavoro: la cronologia completa, non solo
-l'ultimo modello. Dentro ci sono i **piani**, non le mesh: la geometria si
-ricostruisce da sola, e' deterministica a parita' di seme, e un piano pesa
-qualche kilobyte contro i megabyte di un GLB.
+l'ultimo modello. Dentro ci sono i **piani**, non le mesh — la geometria si
+ricostruisce da sola, e' deterministica a parita' di seme e di plugin, e un
+piano pesa qualche kilobyte contro i megabyte di un GLB.
 
     progetto.my3d
-        project.json          nome, date, versione del formato, indice corrente
-        history/0001.json     un piano per versione, con etichetta e messaggio
+        project.json          nome, date, versione del formato, plugin usati
+        history/0001.json     un piano per versione, con etichetta e opzioni
         preview.png           anteprima dell'ultima versione
 
-Il numero di versione del formato serve a non rompere i progetti vecchi quando
-il formato cambia: il caricatore sa migrare all'indietro.
+## Perche' il piano e non la mesh
+
+Perche' un progetto deve poter essere **ripreso**, non solo riaperto. Con il
+piano si puo' cambiare un parametro, alzare il dettaglio, aggiungere un pezzo e
+ricostruire; con una mesh si puo' solo guardarla. La mesh e' un risultato, e i
+risultati si rigenerano.
+
+Il prezzo e' che un progetto dipende dai plugin installati. Per questo il
+formato scrive **quali plugin, e in che versione**, erano presenti: se domani ne
+manca uno, chi riapre il progetto lo sa e legge il nome di cio' che manca invece
+di un modello con dei buchi. Non e' un gestore di pacchetti e non vuole
+diventarlo: e' l'informazione minima per capire perche' due aperture dello
+stesso file danno due modelli diversi.
+
+## Le versioni del formato
+
+`FORMAT_VERSION = 2`. La versione 1 conteneva `GenerationPlan`, il piano della
+pipeline storica, e non e' piu' leggibile perche' quella pipeline non esiste
+piu': un progetto v1 viene rifiutato con un messaggio che lo dice, invece di
+essere aperto a meta'. Il caricatore non si fida mai di cio' che trova, e un
+progetto salvato da una versione futura non deve far esplodere niente.
 """
 from __future__ import annotations
 
@@ -23,12 +42,12 @@ from pathlib import Path
 from typing import Any
 
 from app.core.logging_setup import get
-from app.core.spec import GenerationPlan
 
 log = get("core.project")
 
 SUFFIX = ".my3d"
-FORMAT_VERSION = 1
+FORMAT_VERSION = 2
+PRIMA_VERSIONE_LEGGIBILE = 2
 PROJECT_FILE = "project.json"
 HISTORY_DIR = "history"
 PREVIEW_FILE = "preview.png"
@@ -40,31 +59,47 @@ class ProjectError(ValueError):
 
 @dataclass
 class ProjectInfo:
-    """Metadati di un progetto, leggibili senza aprire tutto."""
+    """Metadati di un progetto, leggibili senza ricostruire niente."""
 
     name: str = "Senza titolo"
     created: str = ""
     modified: str = ""
     format_version: int = FORMAT_VERSION
-    app_version: str = "0.2"
+    app_version: str = "0.3"
     cursor: int = 0
     versions: int = 0
     labels: list[str] = field(default_factory=list)
+    # plugin presenti quando il progetto e' stato salvato: id -> versione.
+    # Serve alla riproducibilita', non a installare niente.
+    plugins: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def now(cls, name: str) -> "ProjectInfo":
         stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
         return cls(name=name, created=stamp, modified=stamp)
 
+    def missing_plugins(self, registry) -> list[str]:
+        """I plugin che il progetto usava e che adesso non ci sono."""
+        presenti = {p.id: p.version for p in registry.plugins()}
+        return sorted("%s@%s" % (id, versione)
+                      for id, versione in sorted(self.plugins.items())
+                      if id not in presenti)
+
 
 def _entry_name(index: int) -> str:
     return "%s/%04d.json" % (HISTORY_DIR, index + 1)
 
 
+def plugins_of(registry) -> dict[str, str]:
+    """id -> versione, per tutti i plugin installati. Ordinato e stabile."""
+    return {p.id: p.version for p in sorted(registry.plugins(), key=lambda p: p.id)}
+
+
 # --------------------------------------------------------------------------- #
 # Salvataggio
 # --------------------------------------------------------------------------- #
-def save(session, path: str | Path, name: str = "", preview: bytes | Path | None = None) -> Path:
+def save(session, path: str | Path, name: str = "",
+         preview: bytes | Path | None = None) -> Path:
     """Scrive l'intera sessione: ogni versione, non solo quella corrente."""
     out = Path(path)
     if out.suffix.lower() != SUFFIX:
@@ -78,24 +113,41 @@ def save(session, path: str | Path, name: str = "", preview: bytes | Path | None
     info.cursor = max(0, min(session.cursor, len(session.history) - 1))
     info.versions = len(session.history)
     info.labels = [v.label for v in session.history]
+    info.plugins = plugins_of(session.catalog())
 
     with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr(PROJECT_FILE, json.dumps(info.__dict__, indent=2, ensure_ascii=False))
+        archive.writestr(PROJECT_FILE,
+                         json.dumps(info.__dict__, indent=2, ensure_ascii=False))
         for index, version in enumerate(session.history):
-            payload = {
-                "label": version.label,
-                "message": version.message,
-                "seconds": version.seconds,
-                "plan": version.plan.model_dump(),
-            }
             archive.writestr(_entry_name(index),
-                             json.dumps(payload, indent=2, ensure_ascii=False))
+                             json.dumps(_versione(version), indent=2,
+                                        ensure_ascii=False))
         data = _preview_bytes(preview)
         if data:
             archive.writestr(PREVIEW_FILE, data)
 
-    log.info("progetto salvato: %s (%d versioni)", out, info.versions)
+    log.info("progetto salvato: %s (%d versioni, %d plugin)",
+             out, info.versions, len(info.plugins))
     return out
+
+
+def _versione(version) -> dict[str, Any]:
+    """Una versione della cronologia, in JSON.
+
+    Il piano e le **opzioni**: lo stile, il dettaglio e il seme stanno nel
+    piano, il budget no — e' una decisione di chi genera, non del piano. Senza
+    di quello un progetto riaperto potrebbe costruire piu' pezzi di quanti ne
+    aveva, e nessuno capirebbe perche'.
+    """
+    piano = getattr(version, "plan", None)
+    return {
+        "label": version.label,
+        "message": getattr(version, "message", ""),
+        "seconds": float(getattr(version, "seconds", 0.0) or 0.0),
+        "prompt": getattr(version, "prompt", ""),
+        "graph": piano.to_dict() if piano is not None else {},
+        "options": dict(getattr(version, "options", {}) or {}),
+    }
 
 
 def _preview_bytes(preview: bytes | Path | None) -> bytes | None:
@@ -117,21 +169,26 @@ def read_info(path: str | Path) -> ProjectInfo:
         try:
             raw = json.loads(archive.read(PROJECT_FILE).decode("utf-8"))
         except KeyError as exc:
-            raise ProjectError("non e' un progetto 3DGen: manca %s" % PROJECT_FILE) from exc
+            raise ProjectError("non e' un progetto 3DGen: manca %s"
+                               % PROJECT_FILE) from exc
     return migrate(raw)
 
 
 def migrate(raw: dict[str, Any]) -> ProjectInfo:
     """Porta i metadati alla versione corrente del formato.
 
-    Oggi c'e' una sola versione, ma il punto e' che il caricatore non si fidi
-    mai di quello che trova: un progetto salvato da una versione futura non
-    deve far esplodere l'applicazione.
+    Un progetto piu' vecchio della prima versione leggibile viene rifiutato con
+    un messaggio che dice cosa e': conteneva i piani di una pipeline che non
+    esiste piu', e aprirlo a meta' sarebbe peggio che non aprirlo.
     """
-    version = int(raw.get("format_version", 0) or 0)
-    if version > FORMAT_VERSION:
+    versione = int(raw.get("format_version", 0) or 0)
+    if versione < PRIMA_VERSIONE_LEGGIBILE:
+        raise ProjectError(
+            "progetto in formato %d: conteneva i piani della pipeline storica, "
+            "che non esiste piu'. Va rigenerato dal prompt." % versione)
+    if versione > FORMAT_VERSION:
         log.warning("progetto in formato %d, piu' recente di quello noto (%d): "
-                    "provo a leggerlo lo stesso", version, FORMAT_VERSION)
+                    "provo a leggerlo lo stesso", versione, FORMAT_VERSION)
     known = {f for f in ProjectInfo.__dataclass_fields__}
     info = ProjectInfo(**{k: v for k, v in raw.items() if k in known})
     info.format_version = FORMAT_VERSION
@@ -139,9 +196,13 @@ def migrate(raw: dict[str, Any]) -> ProjectInfo:
 
 
 def load(path: str | Path, session=None, provider=None, library=None):
-    """Ricostruisce una sessione completa dal file di progetto."""
-    from app.build.builder import build_scene
-    from app.core.session import Session, Version
+    """Ricostruisce una sessione completa dal file di progetto.
+
+    Ogni versione viene **ricostruita**, non riletta: e' il senso di salvare i
+    piani. Una versione che non si ricostruisce non fa cadere il progetto —
+    viene saltata con una diagnosi, e le altre si aprono.
+    """
+    from app.core.session import Session
 
     source = Path(path)
     if not source.is_file():
@@ -151,29 +212,32 @@ def load(path: str | Path, session=None, provider=None, library=None):
         info = migrate(json.loads(archive.read(PROJECT_FILE).decode("utf-8")))
         entries = sorted(n for n in archive.namelist()
                          if n.startswith(HISTORY_DIR + "/") and n.endswith(".json"))
-        payloads = [json.loads(archive.read(name).decode("utf-8")) for name in entries]
+        payloads = [json.loads(archive.read(name).decode("utf-8"))
+                    for name in entries]
 
-    target = session if session is not None else Session(provider=provider, library=library)
+    target = session if session is not None \
+        else Session(provider=provider, library=library)
     target.history = []
     target.cursor = -1
 
+    mancanti = info.missing_plugins(target.catalog())
+    if mancanti:
+        log.warning("plugin non installati: %s", ", ".join(mancanti))
+
     for payload in payloads:
-        try:
-            plan = GenerationPlan.model_validate(payload["plan"])
-        except Exception as exc:
-            log.warning("versione saltata, piano illeggibile: %s", exc)
+        grafo = payload.get("graph") or {}
+        if not grafo:
+            log.warning("versione saltata: non contiene un piano")
             continue
-        target.history.append(Version(
-            label=payload.get("label", plan.object_type),
-            plan=plan,
-            scene=build_scene(plan),
-            message=payload.get("message", ""),
-            seconds=float(payload.get("seconds", 0.0)),
-        ))
+        try:
+            target.restore(payload)
+        except Exception as exc:                      # noqa: BLE001
+            log.warning("versione saltata, piano non ricostruibile: %s", exc)
 
     if not target.history:
-        raise ProjectError("il progetto non contiene versioni leggibili")
+        raise ProjectError("il progetto non contiene versioni ricostruibili")
     target.cursor = max(0, min(int(info.cursor), len(target.history) - 1))
+    target.missing_plugins = mancanti
     log.info("progetto aperto: %s (%d versioni, corrente %d)",
              source.name, len(target.history), target.cursor + 1)
     return target

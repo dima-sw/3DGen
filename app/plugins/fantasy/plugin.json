@@ -5,12 +5,19 @@
   "description": "Ali e cristalli: due pezzi che non appartengono a nessun animale in particolare.",
   "author": "3DGen",
   "license": "MIT",
-  "tags": ["fantasia", "cristallo", "ala"],
-
-  "components": ["components/pezzi.py"],
+  "tags": [
+    "fantasia",
+    "cristallo",
+    "ala"
+  ],
+  "components": [
+    "components/pezzi.py"
+  ],
   "effects": [],
   "styles": [],
-
+  "materials": [
+    "materials/tinte.py"
+  ],
   "capabilities": [],
   "dependencies": [],
   "metadata": {}

@@ -86,7 +86,7 @@ FISH_BODY = Component(
             mount("segment", socket_id="corpo", capacity=0),
             mount("gear_mount", socket_id="dorso")),
     role="torso", material="scale", requires=frozenset({"connected"}),
-    tags=frozenset({"pesce", "torso", "acquatico"}))
+    tags=frozenset({"pesce", "fish", "torso", "body", "acquatico", "aquatic"}))
 
 
 def _coda(v, ctx) -> Piece:
@@ -118,7 +118,7 @@ TAIL = Component(
                                 semantic_role="girth")},
     provides=(Capability("tail_mount"), Capability("limb_mount")),
     mounts=(mount("anchor", socket_id="punta"),),
-    role="tail", material="scale", tags=frozenset({"pesce", "coda"}))
+    role="tail", material="scale", tags=frozenset({"pesce", "fish", "coda", "tail"}))
 
 
 def _pinna(v, ctx) -> Piece:
@@ -144,4 +144,4 @@ FIN = Component(
     # e' cio' che permette di usarla come ala senza inventare un componente
     provides=(Capability("limb_mount"), Capability("gear_mount")),
     mounts=(mount("anchor", socket_id="punta"),),
-    role="fin", material="scale", tags=frozenset({"pesce", "pinna", "arto"}))
+    role="fin", material="scale", tags=frozenset({"pesce", "fish", "pinna", "fin", "arto", "limb", "ala", "wing"}))

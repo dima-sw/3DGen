@@ -33,6 +33,11 @@ class Joint:
     side: np.ndarray                # laterale, = forward x up
     tags: list[str] = field(default_factory=list)
     radius: float = 0.1
+    # "l" o "r", quando l'innesto lo dichiara. E' un dato, non una deduzione
+    # dalla posizione: un'ala attaccata a un innesto sinistro sta a sinistra
+    # anche se la geometria l'ha portata altrove. Si chiama `side_tag` perche'
+    # `side` e' gia' il versore laterale della terna del giunto.
+    side_tag: str = ""
 
     def axis(self, nome: str) -> np.ndarray:
         """Asse di rotazione per nome, nella terna del giunto."""
@@ -83,6 +88,19 @@ class Skeleton:
         La verticale e' sempre Y, per convenzione del catalogo.
         """
         orizzontali = (0, 2)
+        # Se i giunti **dichiarano** un lato, l'asse laterale e' quello su cui
+        # i sinistri e i destri si separano di piu'. E' un dato, non un
+        # indizio: meglio di qualunque ipotesi ricavata dagli ingombri, e
+        # risolve il caso in cui un corpo e' piu' largo che lungo.
+        sinistri = [j.pivot for j in self.joints if j.side_tag.lower().startswith("l")]
+        destri = [j.pivot for j in self.joints if j.side_tag.lower().startswith("r")]
+        if sinistri and destri:
+            centro_s = np.mean(np.asarray(sinistri, dtype=float), axis=0)
+            centro_d = np.mean(np.asarray(destri, dtype=float), axis=0)
+            distanza = np.abs(centro_s - centro_d)
+            laterale = orizzontali[int(np.argmax([distanza[0], distanza[2]]))]
+            return (2 if laterale == 0 else 0), laterale
+
         teste = self.find("head")
         radice = self.root
         if teste and radice is not None:
@@ -122,7 +140,15 @@ class Skeleton:
         return asse
 
     def lateral_sign(self, joint: Joint) -> float:
-        """Da che parte del corpo sta un arto: +1 o -1, mai 0."""
+        """Da che parte del corpo sta un arto: +1 o -1, mai 0.
+
+        Se l'innesto lo **dichiara** — `side="l"` o `"r"` — si usa quello: e'
+        un dato scritto da chi ha costruito il componente, e non dipende da
+        come la geometria e' finita nel mondo. Solo quando nessuno lo dichiara
+        si guarda la posizione, che e' un'ipotesi e va trattata come tale.
+        """
+        if joint.side_tag:
+            return -1.0 if joint.side_tag.lower().startswith("l") else 1.0
         _, laterale = self.axes()
         centro = float(np.median([j.pivot[laterale] for j in self.joints])) \
             if self.joints else 0.0
@@ -146,7 +172,10 @@ class Skeleton:
         mediana_lon = float(np.median([j.pivot[lungo] for j in radici]))
         fasi: dict[str, float] = {}
         for arto in radici:
-            destra = arto.pivot[laterale] > mediana_lat
+            # il lato dichiarato vince sulla posizione, per la stessa ragione
+            # per cui vince in `lateral_sign`
+            destra = self.lateral_sign(arto) > 0 if arto.side_tag \
+                else arto.pivot[laterale] > mediana_lat
             davanti = arto.pivot[lungo] > mediana_lon
             fase = 0.0 if destra == davanti else 0.5
             fasi[arto.name] = fase
@@ -165,7 +194,9 @@ def from_placements(placements: dict, offset=None) -> Skeleton:
     joints: list[Joint] = []
     scostamento = np.zeros(3) if offset is None else np.asarray(offset, dtype=float)
     for part_id, placed in placements.items():
-        parent = getattr(placed, "parent", None)
+        # `""` non e' un padre: e' la radice. Trattarlo come un id inesistente
+        # riattaccava la radice a se stessa, con un avviso a ogni scheletro.
+        parent = getattr(placed, "parent", None) or None
         socket = _parent_socket(placed, placements)
 
         if socket is None:
@@ -188,7 +219,8 @@ def from_placements(placements: dict, offset=None) -> Skeleton:
             name=part_id, parent=parent, pivot=pivot,
             forward=forward, up=up, side=side,
             tags=list(getattr(placed, "tags", [])),
-            radius=float(socket.radius) if socket is not None else 0.1))
+            radius=float(socket.radius) if socket is not None else 0.1,
+            side_tag=_lato(placed, socket)))
 
     _reparent_orphans(joints)
     log.info("scheletro: %d giunti, radice '%s'", len(joints),
@@ -196,16 +228,27 @@ def from_placements(placements: dict, offset=None) -> Skeleton:
     return Skeleton(joints=joints)
 
 
+def _lato(placed, socket) -> str:
+    """Il lato dichiarato: prima dall'innesto usato, poi dal socket del padre."""
+    collegamento = getattr(getattr(placed, "node", None), "link", None)
+    dichiarato = getattr(collegamento, "side", "") if collegamento is not None else ""
+    return dichiarato or getattr(socket, "side", "") or ""
+
+
 def _parent_socket(placed, placements: dict):
-    """Il socket del padre a cui questa parte e' attaccata, in coordinate mondo."""
+    """Il socket del padre a cui questa parte e' attaccata, in coordinate mondo.
+
+    Si chiede al padre, non alla parte: e' il padre a sapere dove sono i propri
+    innesti, e dopo una deformazione e' il suo socket aggiornato a dire la
+    verita'. Un pezzo che non sa a che cosa e' appeso non e' un errore — e' la
+    radice — e restituisce niente.
+    """
     parent_id = getattr(placed, "parent", None)
     if not parent_id or parent_id not in placements:
         return None
-    parent = placements[parent_id]
-    socket = parent.part.socket(getattr(placed, "parent_socket", ""))
-    if socket is None:
-        return None
-    return parent.placement.socket_world(socket)
+    padre = placements[parent_id]
+    nome = getattr(placed, "parent_socket", "")
+    return padre.socket_world(nome) if nome else None
 
 
 def _reparent_orphans(joints: list[Joint]) -> None:

@@ -8,6 +8,7 @@ import pytest
 
 from app.ai.provider import OfflineProvider
 from app.core import project
+from app.core.planner.planner import MockPlanner
 from app.core.session import Session
 
 OFFLINE = OfflineProvider()
@@ -15,11 +16,17 @@ OFFLINE = OfflineProvider()
 
 def worked_session() -> Session:
     """Una sessione con piu' versioni e un undo, come dopo mezz'ora di lavoro."""
-    session = Session(provider=OFFLINE)
-    session.generate_legacy("una jeep militare verde")
-    session.modify("fai le ruote piu grandi")
-    session.revariate()
-    session.generate_legacy("un pesce")
+    session = Session(provider=OFFLINE, planner=MockPlanner())
+    session.generate("una casa con un pianeta enorme sopra")
+
+    # cambiare un parametro **nel piano** e ricostruire: e' cosi' che adesso si
+    # modifica un modello, e una sessione salvata deve saperlo conservare
+    piano = session.current_plan
+    piano.nodes[piano.root_id].overrides["width"] = 12.0
+    session.regenerate()
+
+    session.generate("un albero con un nido e un uccello")
+    session.generate("un pesce")
     session.undo()
     return session
 
@@ -32,13 +39,13 @@ def test_work_survives_closing_the_app(tmp_path):
     original = worked_session()
     path = original.save_project(tmp_path / "lavoro", name="Prova")
 
-    ripreso = Session(provider=OFFLINE)
+    ripreso = Session(provider=OFFLINE, planner=MockPlanner())
     ripreso.open_project(path)
 
     assert len(ripreso.history) == len(original.history)
     assert ripreso.cursor == original.cursor
     assert [v.label for v in ripreso.history] == [v.label for v in original.history]
-    assert ripreso.current_plan.model_dump() == original.current_plan.model_dump()
+    assert ripreso.current_plan.to_dict() == original.current_plan.to_dict()
     assert ripreso.scene.triangle_count == original.scene.triangle_count
 
 
@@ -46,14 +53,15 @@ def test_undo_and_redo_work_after_reopening(tmp_path):
     original = worked_session()
     path = original.save_project(tmp_path / "lavoro")
 
-    ripreso = Session(provider=OFFLINE)
+    ripreso = Session(provider=OFFLINE, planner=MockPlanner())
     ripreso.open_project(path)
     assert ripreso.can_undo() and ripreso.can_redo()
 
     ripreso.redo()
-    assert ripreso.current_plan.template == original.history[original.cursor + 1].plan.template
+    atteso = original.history[original.cursor + 1].plan.to_dict()
+    assert ripreso.current_plan.to_dict() == atteso
     ripreso.undo()
-    assert ripreso.current_plan.model_dump() == original.current_plan.model_dump()
+    assert ripreso.current_plan.to_dict() == original.current_plan.to_dict()
 
 
 def test_a_project_is_small(tmp_path):
@@ -108,12 +116,12 @@ def test_preview_is_optional(tmp_path):
 # --------------------------------------------------------------------------- #
 def test_empty_session_cannot_be_saved(tmp_path):
     with pytest.raises(project.ProjectError):
-        Session(provider=OFFLINE).save_project(tmp_path / "vuoto")
+        Session(provider=OFFLINE, planner=MockPlanner()).save_project(tmp_path / "vuoto")
 
 
 def test_opening_a_missing_file_is_reported(tmp_path):
     with pytest.raises(project.ProjectError):
-        Session(provider=OFFLINE).open_project(tmp_path / "inesistente.my3d")
+        Session(provider=OFFLINE, planner=MockPlanner()).open_project(tmp_path / "inesistente.my3d")
 
 
 def test_a_foreign_zip_is_rejected(tmp_path):
@@ -137,7 +145,7 @@ def test_a_broken_version_is_skipped_not_fatal(tmp_path):
                 data = b'{"label": "rotta", "plan": {"template": 12345, "params": "no"}}'
             target.writestr(name, data)
 
-    ripreso = Session(provider=OFFLINE)
+    ripreso = Session(provider=OFFLINE, planner=MockPlanner())
     ripreso.open_project(rotto)
     assert len(ripreso.history) >= len(session.history) - 1
     assert ripreso.scene.nodes
@@ -148,7 +156,7 @@ def test_a_project_without_versions_is_refused(tmp_path):
     with zipfile.ZipFile(path, "w") as archive:
         archive.writestr("project.json", json.dumps({"name": "x", "format_version": 1}))
     with pytest.raises(project.ProjectError):
-        Session(provider=OFFLINE).open_project(path)
+        Session(provider=OFFLINE, planner=MockPlanner()).open_project(path)
 
 
 def test_a_newer_format_is_read_anyway(tmp_path, caplog):
@@ -168,15 +176,16 @@ def test_a_newer_format_is_read_anyway(tmp_path, caplog):
 
     info = project.read_info(futuro)
     assert info.format_version == project.FORMAT_VERSION
-    ripreso = Session(provider=OFFLINE)
+    ripreso = Session(provider=OFFLINE, planner=MockPlanner())
     ripreso.open_project(futuro)
     assert ripreso.history
 
 
 def test_reopening_replaces_the_current_session(tmp_path):
     path = worked_session().save_project(tmp_path / "lavoro")
-    altra = Session(provider=OFFLINE)
-    altra.generate_legacy("una sedia")
+    altra = Session(provider=OFFLINE, planner=MockPlanner())
+    altra.generate("una sedia")
     altra.open_project(path)
-    assert altra.current_plan.template == "vehicle"
+    radice = altra.current_plan.resolved_ref(altra.current_plan.root_id)
+    assert radice.startswith("nature:") or radice.startswith("architecture:")
     assert all("sedia" not in v.label for v in altra.history)

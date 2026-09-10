@@ -136,3 +136,88 @@ def _riferimento(diagnosi) -> str:
     """
     trovato = _RIFERIMENTO.search(diagnosi.message or "")
     return trovato.group(1) if trovato else ""
+
+
+# --------------------------------------------------------------------------- #
+# Quale dei due piani e' migliore
+# --------------------------------------------------------------------------- #
+# I difetti, in ordine di gravita'. Sono pesi, non soglie: servono a mettere in
+# fila due piani in modo ripetibile, non a dire quanto vale un modello.
+#
+# Distanziati perche' una categoria non possa essere pareggiata dalla somma di
+# quelle sotto: dieci parametri fuori scala restano meno gravi di un pezzo che
+# non si attacca, ed e' giusto cosi' — il primo lo aggiusta il componente, il
+# secondo lascia un buco nel modello.
+PESI = {
+    "unresolved": 1000,        # un nodo che non e' entrato nel modello
+    "fatal": 500,              # una diagnosi che ferma qualcosa
+    "attachment": 250,         # un innesto rimasto senza risposta
+    "parameter": 40,           # un nome di parametro che non esiste
+    "budget": 20,              # si e' costruito meno di quanto chiesto
+    "optional": 5,             # un accessorio lasciato fuori
+}
+
+_ATTACCO = ("SOCKET_INCOMPATIBLE", "PROVIDER_INCOMPATIBLE", "NO_MOUNTS",
+            "ON_TARGET_MISSING", "ON_TARGET_AMBIGUOUS")
+_PARAMETRO = ("PARAM_NOT_FOUND", "EFFECT_PARAM_NOT_FOUND", "PARAM_OUT_OF_RANGE",
+              "CONSTRAINT_VIOLATED")
+_BUDGET = ("BUDGET_EXCEEDED", "BUDGET_STOPPED", "MOUNT_CROWDED")
+
+
+@dataclass(frozen=True)
+class PlanScore:
+    """Quanto un piano e' andato storto. Piu' basso e' meglio.
+
+    Non e' un giudizio di qualita' e non prova a esserlo: non sa se un modello
+    e' bello, sa contare cio' che non ha funzionato. Serve a una domanda sola —
+    «la correzione ha migliorato le cose?» — e a quella risponde con dei numeri
+    che due esecuzioni danno identici.
+
+    Un modello linguistico non entra qui dentro. Se un giorno servisse un
+    confronto piu' fine, sara' comunque fatto di conteggi.
+    """
+
+    unresolved: int = 0
+    fatal: int = 0
+    attachment: int = 0
+    parameter: int = 0
+    budget: int = 0
+    optional: int = 0
+
+    @property
+    def total(self) -> int:
+        return sum(PESI[nome] * getattr(self, nome) for nome in PESI)
+
+    def describe(self) -> str:
+        difetti = ["%s=%d" % (n, getattr(self, n)) for n in PESI
+                   if getattr(self, n)]
+        return "%d (%s)" % (self.total, ", ".join(difetti) or "niente")
+
+    def __lt__(self, altro: "PlanScore") -> bool:
+        return self.total < altro.total
+
+    def __ge__(self, altro: "PlanScore") -> bool:
+        return self.total >= altro.total
+
+
+def plan_score(report, resolved=None) -> PlanScore:
+    """Il punteggio di un piano: quanti difetti, e di che genere.
+
+    Si guardano due cose. Il **referto**, che dice cosa non ha funzionato; e il
+    **risolto**, che dice quanti pezzi sono rimasti fuori — un piano che
+    risolve dieci nodi su dodici non e' come uno che ne risolve due su dodici,
+    e il referto da solo non lo direbbe.
+    """
+    conta = {nome: 0 for nome in PESI}
+    for diagnosi in getattr(report, "entries", ()) or ():
+        codice = diagnosi.code
+        if codice in _ATTACCO and diagnosi.fatal:
+            conta["attachment"] += 1
+        elif codice in _PARAMETRO:
+            conta["parameter"] += 1
+        elif codice in _BUDGET:
+            conta["budget"] += 1
+        elif getattr(diagnosi, "fatal", False):
+            conta["fatal"] += 1
+    conta["unresolved"] = len(getattr(resolved, "unresolved", ()) or ())
+    return PlanScore(**conta)

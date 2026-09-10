@@ -21,29 +21,35 @@ class GenerationWorker(QObject):
     progress = Signal(str)
 
     def __init__(self, session: Session, prompt: str, mode: str,
-                 image: str = "", front: str = "") -> None:
+                 detail: int = 0, seed: int = 0) -> None:
         super().__init__()
         self.session = session
         self.prompt = prompt
-        self.mode = mode  # "generate" | "modify" | "variant" | "image"
-        self.image = image
-        self.front = front
+        self.mode = mode  # "generate" | "variant"
+        self.detail = detail
+        self.seed = seed
 
     def run(self) -> None:
+        """Una generazione, oppure la stessa richiesta con un altro seme.
+
+        Una "variante" non e' una perturbazione della mesh: e' lo stesso prompt
+        con un seme diverso, cioe' un altro piano. Cambia quello che il sistema
+        sceglie, non quanto rumore aggiunge alla geometria.
+        """
+        from app.core.session import Options
+
         try:
-            if self.mode == "image":
-                self.progress.emit("Analizzo l'immagine di riferimento...")
-                version = self.session.generate_from_image(
-                    self.image, self.prompt, front=self.front or None)
-            elif self.mode == "variant" and self.session.current_plan is not None:
+            versione = self.session.current
+            if self.mode == "variant" and versione is not None:
                 self.progress.emit("Genero un'altra variante...")
-                version = self.session.revariate()
-            elif self.mode == "modify" and self.session.current_plan is not None:
-                self.progress.emit("Interpreto la modifica...")
-                version = self.session.modify(self.prompt)
+                seme = int(getattr(versione.plan, "seed", 0) or 0) + 1
+                prompt = versione.prompt or self.prompt
             else:
                 self.progress.emit("Interpreto la richiesta...")
-                version = self.session.generate_legacy(self.prompt)
+                seme, prompt = self.seed, self.prompt
+            self.session.generate(prompt, Options(detail_level=self.detail,
+                                                  seed=seme))
+            version = self.session.current
             self.finished.emit(version)
         except Exception as exc:  # pragma: no cover - protezione runtime
             log.error("worker fallito: %s\n%s", exc, traceback.format_exc())

@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 
 from app.core.logging_setup import get
-from app.core.spec import MaterialSpec
+from app.core.material import MaterialSpec
 from app.materials import texture as tx
 
 log = get("materials.library")

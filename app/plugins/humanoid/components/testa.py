@@ -109,7 +109,7 @@ HEAD = Component(
             mount("face_mount", socket_id="orecchio_l", side="l", tags=("orecchio",)),
             mount("face_mount", socket_id="orecchio_r", side="r", tags=("orecchio",)),
             mount("hair_mount", socket_id="cima")),
-    role="head", material="skin", tags=frozenset({"umanoide", "testa"}))
+    role="head", material="skin", tags=frozenset({"umanoide", "humanoid", "testa", "head"}))
 
 
 # --------------------------------------------------------------------------- #
@@ -164,7 +164,7 @@ EYE = Component(
     params={"size": ParamSpec(0.029, DISTANCE, min=0.002, max=0.5,
                               semantic_role="girth")},
     provides=(Capability("face_mount"),),
-    role="", material="eye", tags=frozenset({"umanoide", "viso", "occhio"}))
+    role="", material="eye", tags=frozenset({"umanoide", "humanoid", "viso", "face", "occhio", "eye"}))
 
 NOSE = Component(
     id="nose", build=_naso, description="un naso",
@@ -172,21 +172,21 @@ NOSE = Component(
                               semantic_role="girth")},
     provides=(Capability("face_mount"),),
     mounts=(mount("anchor", socket_id="punta"),),
-    role="face", material="skin", tags=frozenset({"umanoide", "viso"}))
+    role="face", material="skin", tags=frozenset({"umanoide", "humanoid", "viso", "face"}))
 
 MOUTH = Component(
     id="mouth", build=_bocca, description="una bocca",
     params={"width": ParamSpec(0.056, DISTANCE, min=0.005, max=0.5,
                                semantic_role="girth")},
     provides=(Capability("face_mount"),),
-    role="", material="mouth", tags=frozenset({"umanoide", "viso"}))
+    role="", material="mouth", tags=frozenset({"umanoide", "humanoid", "viso", "face"}))
 
 EAR = Component(
     id="ear", build=_orecchio, description="un orecchio",
     params={"size": ParamSpec(0.036, DISTANCE, min=0.003, max=0.5,
                               semantic_role="girth")},
     provides=(Capability("face_mount"),),
-    role="", material="skin", tags=frozenset({"umanoide", "viso"}))
+    role="", material="skin", tags=frozenset({"umanoide", "humanoid", "viso", "face"}))
 
 HAIR = Component(
     id="hair", build=_capelli,
@@ -198,4 +198,4 @@ HAIR = Component(
             "spike": ParamSpec(0.6, RATIO, min=0.0, max=1.5)},
     provides=(Capability("hair_mount"),),
     mounts=(mount("gear_mount", socket_id="cima"),),
-    role="head", material="hair", tags=frozenset({"umanoide", "capelli"}))
+    role="head", material="hair", tags=frozenset({"umanoide", "humanoid", "capelli", "hair"}))

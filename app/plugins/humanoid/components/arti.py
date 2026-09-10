@@ -110,7 +110,7 @@ ARM = Component(
             mount("segment", socket_id="mediale", tags=("mediale",)),
             mount("segment", socket_id="distale", tags=("distale",)),
             mount("limb_mount", socket_id="tip")),
-    role="arm", material="skin", tags=frozenset({"umanoide", "arto", "braccio"}))
+    role="arm", material="skin", tags=frozenset({"umanoide", "humanoid", "arto", "limb", "braccio", "arm"}))
 
 UPPER_ARM = Component(
     id="upper_arm",
@@ -118,7 +118,8 @@ UPPER_ARM = Component(
     description="l'omero: dalla spalla al gomito",
     params=dict(_PARAMETRI_SEGMENTO),
     provides=(Capability("segment"),),
-    role="arm", material="skin", tags=frozenset({"umanoide", "arto"}))
+    role="arm", material="skin",
+    tags=frozenset({"umanoide", "humanoid", "arto", "limb", "braccio", "arm"}))
 
 FOREARM = Component(
     id="forearm",
@@ -126,7 +127,8 @@ FOREARM = Component(
     description="l'avambraccio: dal gomito al polso",
     params=dict(_PARAMETRI_SEGMENTO),
     provides=(Capability("segment"),),
-    role="arm", material="skin", tags=frozenset({"umanoide", "arto"}))
+    role="arm", material="skin",
+    tags=frozenset({"umanoide", "humanoid", "arto", "limb", "braccio", "arm"}))
 
 
 def _mano(v, ctx) -> Piece:
@@ -152,7 +154,8 @@ HAND = Component(
                                semantic_role="girth")},
     provides=(Capability("segment"),),
     mounts=(mount("segment", socket_id="tip"),),
-    role="hand", material="skin", tags=frozenset({"umanoide", "mano", "estremita"}))
+    role="hand", material="skin", tags=frozenset({"umanoide", "humanoid", "mano", "hand", "estremita",
+                    "extremity", "braccio", "arm"}))
 
 
 # --------------------------------------------------------------------------- #
@@ -197,7 +200,7 @@ LEG = Component(
             mount("segment", socket_id="mediale", tags=("mediale",)),
             mount("segment", socket_id="distale", tags=("distale",)),
             mount("limb_mount", socket_id="tip")),
-    role="leg", material="skin", tags=frozenset({"umanoide", "arto", "gamba"}))
+    role="leg", material="skin", tags=frozenset({"umanoide", "humanoid", "arto", "limb", "gamba", "leg"}))
 
 THIGH = Component(
     id="thigh",
@@ -205,7 +208,8 @@ THIGH = Component(
     description="la coscia",
     params=dict(_PARAMETRI_SEGMENTO),
     provides=(Capability("segment"),),
-    role="leg", material="skin", tags=frozenset({"umanoide", "arto"}))
+    role="leg", material="skin",
+    tags=frozenset({"umanoide", "humanoid", "arto", "limb", "gamba", "leg"}))
 
 CALF = Component(
     id="calf",
@@ -213,7 +217,8 @@ CALF = Component(
     description="il polpaccio",
     params=dict(_PARAMETRI_SEGMENTO),
     provides=(Capability("segment"),),
-    role="leg", material="skin", tags=frozenset({"umanoide", "arto"}))
+    role="leg", material="skin",
+    tags=frozenset({"umanoide", "humanoid", "arto", "limb", "gamba", "leg"}))
 
 
 def _piede(v, ctx) -> Piece:
@@ -238,4 +243,5 @@ FOOT = Component(
                                semantic_role="girth")},
     provides=(Capability("segment"),),
     mounts=(mount("segment", socket_id="punta"),),
-    role="foot", material="skin", tags=frozenset({"umanoide", "piede", "estremita"}))
+    role="foot", material="skin", tags=frozenset({"umanoide", "humanoid", "piede", "foot", "estremita",
+                    "extremity", "gamba", "leg"}))

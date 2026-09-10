@@ -79,7 +79,7 @@ HOUSE = Component(
             mount("opening", socket_id="finestra_r", side="r", tags=("finestra",)),
             mount("roof_mount", socket_id="colmo")),
     role="edificio", material="masonry", requires=frozenset({"connected"}),
-    tags=frozenset({"edificio", "casa"}))
+    tags=frozenset({"edificio", "building", "casa", "house", "home"}))
 
 
 def _tetto(v, ctx) -> Piece:
@@ -122,7 +122,7 @@ ROOF = Component(
             "pitch": ParamSpec(0.45, RATIO, min=0.05, max=2.0)},
     provides=(Capability("roof_mount"),),
     mounts=(mount("gear_mount", socket_id="colmo"),),
-    role="tetto", material="tile", tags=frozenset({"edificio", "tetto"}))
+    role="tetto", material="tile", tags=frozenset({"edificio", "building", "tetto", "roof"}))
 
 
 def _porta(v, ctx) -> Piece:
@@ -149,7 +149,7 @@ DOOR = Component(
                                    semantic_role="girth")},
     provides=(Capability("opening"),),
     mounts=(mount("anchor", socket_id="maniglia"),),
-    role="apertura", material="wood", tags=frozenset({"edificio", "porta"}))
+    role="apertura", material="wood", tags=frozenset({"edificio", "building", "porta", "door"}))
 
 
 def _finestra(v, ctx) -> Piece:
@@ -174,4 +174,4 @@ WINDOW = Component(
             "thickness": ParamSpec(0.08, DISTANCE, min=0.01, max=1.0,
                                    semantic_role="girth")},
     provides=(Capability("opening"),),
-    role="apertura", material="wood", tags=frozenset({"edificio", "finestra"}))
+    role="apertura", material="wood", tags=frozenset({"edificio", "building", "finestra", "window"}))

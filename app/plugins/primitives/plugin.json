@@ -17,6 +17,9 @@
   "styles": [
     "styles/low_poly.py"
   ],
+  "materials": [
+    "materials/base.py"
+  ],
   "capabilities": [
     {
       "name": "solid",

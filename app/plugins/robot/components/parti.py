@@ -38,4 +38,4 @@ HEAD = Component(
             mount("gear_mount", socket_id="cima")),
     styles=frozenset({"realistic"}),
     role="head", material="metal",
-    tags=frozenset({"robot", "testa", "metallo"}))
+    tags=frozenset({"robot", "testa", "head", "metallo", "metal"}))

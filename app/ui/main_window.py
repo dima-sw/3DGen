@@ -16,7 +16,6 @@ from app.assets.library import AssetRecord
 from app.core.config import PROVIDERS, SETTINGS
 from app.core.logging_setup import get, tail
 from app.core.session import Session, Version
-from app.geometry.templates import TEMPLATES, load_all
 from app.ui.viewport import Viewport
 from app.ui.workers import ExportWorker, GenerationWorker, run_in_thread
 
@@ -194,8 +193,8 @@ class MainWindow(QMainWindow):
         # Lo stile e' uno solo — cartoon low poly — quindi non c'e' niente da
         # scegliere. Resta la densita': lo stesso modello, piu' o meno fitto.
         self.density_box = QComboBox()
-        self.density_box.addItems(["normale", "leggero", "fitto"])
-        self.density_box.setToolTip("Non cambia l'aspetto, solo quanti "
+        self.density_box.addItems(["normale", "essenziale", "dettagliato"])
+        self.density_box.setToolTip("Quante parti costruire. Non cambia lo "
                                     "triangoli servono a ottenerlo.")
         row.addWidget(self.density_box, 1)
         lay.addLayout(row)
@@ -205,14 +204,22 @@ class MainWindow(QMainWindow):
         self.btn_generate.clicked.connect(lambda: self.on_run("generate"))
         lay.addWidget(self.btn_generate)
 
+        self.btn_regenerate = QPushButton("Ricostruisci dal piano")
+        self.btn_regenerate.setToolTip(
+            "Ricostruisce la geometria dal piano corrente, senza chiedere "
+            "niente a un modello: serve dopo aver cambiato un parametro.")
+        self.btn_regenerate.clicked.connect(self.on_regenerate)
+        lay.addWidget(self.btn_regenerate)
+
         self.btn_image = QPushButton("Genera da un'immagine...")
+        self.btn_image.setVisible(False)   # la lettura di un'immagine e' da rifare
         self.btn_image.setToolTip("Da una foto si ricavano colore e proporzioni. "
                                   "La descrizione qui sopra, se c'e', vale comunque.")
         self.btn_image.clicked.connect(self.on_reference_image)
         lay.addWidget(self.btn_image)
 
         self.btn_modify = QPushButton("Modifica il modello attuale")
-        self.btn_modify.clicked.connect(lambda: self.on_run("modify"))
+        self.btn_modify.setVisible(False)   # si modifica il piano, non il modello
         self.btn_modify.setEnabled(False)
         lay.addWidget(self.btn_modify)
 
@@ -494,7 +501,8 @@ class MainWindow(QMainWindow):
         if self.session.scene is None:
             self.statusBar().showMessage("Genera prima un modello", 4000)
             return
-        suggested = (self.session.current_plan.object_type or self.session.current_plan.template)[:60]
+        versione = self.session.current
+        suggested = (versione.prompt or versione.label)[:60] if versione else ""
         name, ok = QInputDialog.getText(self, "Salva nella libreria", "Nome:",
                                         QLineEdit.EchoMode.Normal, suggested)
         if not ok:
@@ -575,16 +583,32 @@ class MainWindow(QMainWindow):
             self._log_user(text)
 
         self.last_mode = mode
-        worker = GenerationWorker(self.session, text, mode)
+        worker = GenerationWorker(self.session, text, mode,
+                                  detail=self.dettaglio())
         worker.progress.connect(lambda m: self.statusBar().showMessage(m))
         worker.finished.connect(self.on_result)
         worker.failed.connect(self.on_error)
         run_in_thread(self, worker)
 
-    def on_reference_image(self) -> None:
-        """Sceglie una o due immagini e genera partendo da quelle."""
-        if self.busy:
+    def on_regenerate(self) -> None:
+        """Ricostruisce la geometria dal piano corrente."""
+        if self.busy or self.session.current is None:
             return
+        self.session.regenerate()
+        self._log_ai("Ricostruito dal piano.")
+        self.refresh_all()
+
+    def on_reference_image(self) -> None:
+        """Genera partendo da un'immagine. Da rifare sulla strada nuova.
+
+        La lettura di un'immagine produceva un `GenerationPlan`, che non esiste
+        piu'. Il pulsante resta nascosto finche' non produrra' un piano di
+        composizione: lasciarlo visibile e rotto sarebbe peggio che toglierlo.
+        """
+        self.statusBar().showMessage(
+            "La generazione da immagine e' in attesa di essere rifatta sul "
+            "nuovo piano di composizione", 6000)
+        return
         image, _ = QFileDialog.getOpenFileName(
             self, "Immagine di riferimento (vista laterale)", "",
             "Immagini (*.png *.jpg *.jpeg *.bmp *.webp)")
@@ -606,15 +630,13 @@ class MainWindow(QMainWindow):
         worker.failed.connect(self.on_error)
         run_in_thread(self, worker)
 
-    DENSITA = {"leggero": 0.6, "normale": 1.0, "fitto": 1.6}
+    DETTAGLIO = {"essenziale": 1, "normale": 2, "dettagliato": 3}
+
+    def dettaglio(self) -> int:
+        """Il livello di dettaglio scelto nella barra."""
+        return self.DETTAGLIO.get(self.density_box.currentText(), 2)
 
     def on_result(self, version: Version) -> None:
-        voluta = self.DENSITA.get(self.density_box.currentText(), 1.0)
-        if abs(version.plan.density - voluta) > 1e-6:
-            version.plan.density = voluta
-            self.session.rebuild()
-            version = self.session.current or version
-
         self._set_busy(False)
         self._log_ai("%s  <span style='color:#6d7482'>(%.1fs)</span>"
                      % (version.message, version.seconds))
@@ -640,15 +662,21 @@ class MainWindow(QMainWindow):
         self.refresh_all()
 
     def on_apply_params(self) -> None:
+        """Cambia i parametri della radice **nel piano**, poi ricostruisce.
+
+        E' la differenza fra correggere un modello e correggerne la
+        descrizione: la mesh non si tocca, si rifa'.
+        """
         plan = self.session.current_plan
-        if plan is None:
+        if plan is None or not plan.root_id:
             return
+        radice = plan.nodes[plan.root_id]
         for name, widget in getattr(self, "_param_widgets", {}).items():
             if isinstance(widget, QDoubleSpinBox):
-                plan.params[name] = widget.value()
+                radice.overrides[name] = widget.value()
             elif isinstance(widget, QComboBox):
-                plan.params[name] = widget.currentText()
-        self.session.rebuild()
+                radice.overrides[name] = widget.currentText()
+        self.session.regenerate()
         self._log_ai("Parametri aggiornati manualmente.")
         self.refresh_all()
 
@@ -721,11 +749,13 @@ class MainWindow(QMainWindow):
         self._fill_history()
         self._sync_actions()
         if scene is not None:
-            self.status.setText("%s  |  %s / %s  |  seed %d"
-                                % (scene.summary(), version.plan.template,
-                                   "densita %.2f" % version.plan.density,
-                                   version.plan.seed))
-        self.btn_modify.setEnabled(scene is not None)
+            radice = version.plan.resolved_ref(version.plan.root_id) \
+                if version.plan is not None else "-"
+            self.status.setText("%s  |  %s  |  dettaglio %d  |  seme %d"
+                                % (scene.summary(), radice,
+                                   getattr(version.plan, "detail_level", 2),
+                                   getattr(version.plan, "seed", 0)))
+        self.btn_regenerate.setEnabled(scene is not None)
         self.btn_variant.setEnabled(scene is not None)
         self.btn_save_lib.setEnabled(scene is not None)
         self.btn_apply.setEnabled(scene is not None)
@@ -756,19 +786,26 @@ class MainWindow(QMainWindow):
             if item.widget():
                 item.widget().deleteLater()
         self._param_widgets: dict[str, QWidget] = {}
+        # I parametri sono quelli che il **componente radice** dichiara, letti
+        # dal registry: non c'e' piu' un elenco di template da tenere allineato,
+        # e un plugin installato ieri compare qui senza che nessuno lo sappia.
         plan = self.session.current_plan
-        if plan is None:
+        if plan is None or not plan.root_id:
             return
-        tmpl = TEMPLATES.get(plan.template)
-        if tmpl is None:
+        componente = self.session.catalog().component(
+            plan.resolved_ref(plan.root_id))
+        if componente is None:
             return
-        for name, spec in tmpl.params.items():
-            value = plan.params.get(name, spec.default)
+        radice = plan.nodes[plan.root_id]
+        for name, spec in sorted(componente.params.items()):
+            if spec.is_derived:
+                continue          # lo decide una formula: mostrarlo illuderebbe
+            value = radice.overrides.get(name, spec.default)
             if isinstance(spec.default, bool):
                 w = QComboBox()
                 w.addItems(["true", "false"])
                 w.setCurrentText("true" if value else "false")
-            elif spec.choices is not None:
+            elif spec.choices:
                 w = QComboBox()
                 w.addItems([str(c) for c in spec.choices])
                 w.setCurrentText(str(value))
@@ -779,7 +816,7 @@ class MainWindow(QMainWindow):
                            float(spec.max if spec.max is not None else 1e6))
                 w.setSingleStep(1.0 if isinstance(spec.default, int) else 0.05)
                 w.setValue(float(value))
-            w.setToolTip(spec.desc)
+            w.setToolTip(spec.description or "")
             self._param_widgets[name] = w
             self.params_form.addRow(name, w)
 
@@ -822,7 +859,7 @@ class MainWindow(QMainWindow):
             self.progress.setValue(0)
         self.btn_generate.setEnabled(not busy)
         self.btn_image.setEnabled(not busy)
-        self.btn_modify.setEnabled(not busy and self.session.scene is not None)
+        self.btn_regenerate.setEnabled(not busy and self.session.scene is not None)
         self.btn_variant.setEnabled(not busy and self.session.scene is not None)
         self.btn_save_lib.setEnabled(not busy and self.session.scene is not None)
         if message:

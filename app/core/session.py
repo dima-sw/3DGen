@@ -19,14 +19,19 @@ compatto e si richiede **una volta sola**. Non c'e' un ciclo, e non c'e' nessun
 giudizio di qualita' affidato a un modello: la qualita' la misura il
 validatore, con dei numeri, sempre gli stessi.
 
-## Due strade, per ora
+## Cronologia di piani, non di mesh
 
-`generate`, `plan` e `build` sono la strada nuova, e restituiscono un
-`GenerationResult`. `generate_legacy` e cio' che le gira intorno — libreria,
-progetti, animazione, varianti — sono la strada storica, quella dei template e
-del campo implicito, che regge ancora l'interfaccia. Convivono con nomi diversi
-apposta: finche' non e' migrato tutto, si deve poter vedere da ogni chiamata
-quale delle due si sta usando.
+Ogni generazione entra nella cronologia come `Version`, e una versione porta il
+**piano**. La geometria si ricostruisce: e' deterministica a parita' di piano,
+plugin e seme, e un piano si puo' correggere mentre una mesh si puo' solo
+guardare. E' anche il motivo per cui un progetto salvato pesa qualche kilobyte.
+
+## Che cosa non c'e' piu'
+
+La strada storica — `GenerationPlan`, template, campo implicito, `build_scene` —
+e' stata rimossa. Chi cercava `generate_legacy`, `modify` o `revariate` trova
+`generate`, un piano modificabile e `regenerate`: l'editing di un modello e'
+diventato l'editing del suo piano, che e' la cosa che si voleva fin dall'inizio.
 """
 from __future__ import annotations
 
@@ -35,15 +40,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from app.ai.planner import edit_plan, generate_plan, revariate
-from app.assets.library import AssetLibrary, AssetRecord
 from app.ai.provider import LLMProvider, make_provider
-from app.build.builder import build_scene
+from app.assets.library import AssetLibrary, AssetRecord
 from app.build.exporter import Check, export, validate
 from app.core.logging_setup import get
-from app.core.scene import Scene
 from app.core.planner.planner import MockPlanner
-from app.core.spec import GenerationPlan
+from app.core.scene import Scene
 
 log = get("session")
 
@@ -70,6 +72,46 @@ class Options:
     repair: bool = True             # la correzione unica, se il piano non regge
     check: bool = True              # il controllo di qualita' sulla geometria
 
+    def to_dict(self) -> dict:
+        """Le opzioni che vale la pena salvare in un progetto.
+
+        Il budget e' un oggetto e non un numero: si salva quanti triangoli
+        concedeva, che e' l'unica parte che serve a rimettere le cose come
+        stavano.
+        """
+        fuori: dict[str, Any] = {}
+        for nome in ("style", "detail_level", "seed"):
+            valore = getattr(self, nome)
+            if valore:
+                fuori[nome] = valore
+        if self.budget is not None:
+            from app.core.budget import LIMITS
+
+            tetti = {k: self.budget.limit(k) for k in LIMITS}
+            tetti = {k: v for k, v in sorted(tetti.items()) if v is not None}
+            if tetti:
+                fuori["budget"] = tetti
+        return fuori
+
+    @classmethod
+    def from_dict(cls, dati: dict | None) -> "Options":
+        dati = dati or {}
+        return cls(style=str(dati.get("style") or ""),
+                   detail_level=int(dati.get("detail_level") or 0),
+                   seed=int(dati.get("seed") or 0),
+                   budget=_budget(dati.get("budget")))
+
+
+def _budget(dati):
+    """Un budget da un dizionario di limiti, o niente."""
+    if not isinstance(dati, dict) or not dati:
+        return None
+    from app.core.budget import EXPANSIONS, NODES, SECONDS, TRIANGLES, Budget
+
+    campi = {TRIANGLES: "triangles", NODES: "nodes",
+             EXPANSIONS: "expansions", SECONDS: "seconds"}
+    return Budget(**{campi[k]: v for k, v in dati.items() if k in campi})
+
 
 @dataclass
 class GenerationResult:
@@ -78,6 +120,9 @@ class GenerationResult:
     Tutti gli strati restano accessibili — piano, risolto, effetti, geometria —
     perche' senza il primo non si capisce il secondo e senza il secondo non si
     capisce il terzo. E' la stessa regola che vale fra `graph` e `resolved`.
+
+    E' anche cio' che l'interfaccia riceve, e le basta: non deve conoscere
+    `Component`, ne' il registry, ne' il resolver.
     """
 
     prompt: str = ""
@@ -90,6 +135,7 @@ class GenerationResult:
     planner: str = ""
     repaired: bool = False
     seconds: float = 0.0
+    options: Any = None
 
     # ------------------------------------------------------------- lettura #
     @property
@@ -104,8 +150,23 @@ class GenerationResult:
     def triangles(self) -> int:
         return self.build.triangles if self.build is not None else 0
 
-    def scene(self):
-        """La geometria come scena trimesh, un nodo per componente."""
+    def scene(self, registry=None, *, ground: bool = True) -> Scene | None:
+        """La scena: nodi con nome, materiale ed etichette.
+
+        E' la forma che export, livelli di dettaglio, libreria, animazione e
+        interfaccia sanno gia' leggere. Appoggiata a terra per predefinito,
+        perche' chi chiede una scena quasi sempre la sta per mostrare o
+        esportare; chi vuole il modello dove i componenti l'hanno costruito
+        passa `ground=False`.
+        """
+        from app.build.scene import to_scene
+
+        if self.build is None:
+            return None
+        return to_scene(self.build, registry, plan=self.plan, ground=ground)
+
+    def trimesh_scene(self):
+        """La stessa geometria, cruda: un nodo per componente e nient'altro."""
         return self.build.scene() if self.build is not None else None
 
     def mesh(self):
@@ -113,12 +174,12 @@ class GenerationResult:
 
     # ---------------------------------------------------------- spiegazione #
     def explain(self) -> list[str]:
-        """Perche' il modello e\' venuto cosi\'.
+        """Perche' il modello e' venuto cosi'.
 
-        Una riga per scelta importante, in un italiano che si puo\' mostrare:
-        quale componente e\' stato usato, per quale capability, e se ha preso il
-        posto di qualcos\'altro. Serve a chi guarda un modello e non capisce da
-        dove venga un pezzo — e servira\' con migliaia di plugin installati.
+        Una riga per scelta importante, in un italiano che si puo' mostrare:
+        quale componente e' stato usato, per quale capability, e se ha preso il
+        posto di qualcos'altro. Serve a chi guarda un modello e non capisce da
+        dove venga un pezzo — e servira' con migliaia di plugin installati.
         """
         if self.resolved is None:
             return []
@@ -129,7 +190,8 @@ class GenerationResult:
                 righe.append("'%s' e' la radice: %s" % (nodo.id, nodo.ref))
                 continue
             motivo = "fornisce '%s'" % collegamento.capability \
-                if collegamento.capability else "si attacca a '%s'" % collegamento.parent_socket
+                if collegamento.capability \
+                else "si attacca a '%s'" % collegamento.parent_socket
             riga = "'%s' scelto per '%s': %s (%s)" % (
                 nodo.ref, nodo.id, motivo, collegamento.how)
             if nodo.substituted:
@@ -138,7 +200,7 @@ class GenerationResult:
         return righe
 
     def changes(self) -> list[str]:
-        """Cosa e\' cambiato rispetto a cio\' che i componenti direbbero da soli."""
+        """Cosa e' cambiato rispetto a cio' che i componenti direbbero da soli."""
         if self.resolved is None:
             return []
         from app.core.graph import FROM_DEFAULT
@@ -149,11 +211,11 @@ class GenerationResult:
                 voce = nodo.sources[nome]
                 if voce.source == FROM_DEFAULT and not voce.modified:
                     continue
-                righe.append("%s.%s %s" % (nodo.id, nome, voce.describe()))
+                righe.append("%s.%s %s" % (nodo.id, nome, voce.describe(nome)))
         return righe
 
     def skipped(self) -> list[str]:
-        """Cosa non e\' entrato nel modello, e resta da spiegare."""
+        """Cosa non e' entrato nel modello, e resta da spiegare."""
         fuori = list(getattr(self.resolved, "unresolved", ()) or ())
         fuori += [n.id for n in getattr(self.build, "skipped", ()) or ()]
         return fuori
@@ -182,13 +244,21 @@ class GenerationResult:
 
 @dataclass
 class Version:
+    """Una tappa del lavoro: il piano, e la geometria che ne era uscita."""
+
     label: str
-    plan: GenerationPlan
-    scene: Scene
-    message: str
-    seconds: float
+    plan: Any                        # CompositionGraph
+    scene: Scene | None = None
+    message: str = ""
+    seconds: float = 0.0
+    prompt: str = ""
+    options: dict = field(default_factory=dict)
+    result: GenerationResult | None = None
 
 
+# --------------------------------------------------------------------------- #
+# La sessione
+# --------------------------------------------------------------------------- #
 @dataclass
 class Session:
     provider: LLMProvider | None = None
@@ -203,6 +273,8 @@ class Session:
     registry: Any = None
     planner: Any = None
     plugin_paths: tuple = ()
+    # plugin che un progetto aperto usava e che qui non ci sono
+    missing_plugins: list = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if self.provider is None:
@@ -257,21 +329,51 @@ class Session:
         """Da un piano — grafo o JSON — al modello. Nessuna chiamata al planner."""
         opzioni = options or Options()
         inizio = time.perf_counter()
-        risultato = GenerationResult(planner="nessuno")
+        risultato = GenerationResult(planner="nessuno", options=opzioni)
         self._costruisci(plan, risultato, opzioni)
         risultato.seconds = time.perf_counter() - inizio
         return risultato
 
-    def generate(self, prompt: str, options: Options | None = None) -> GenerationResult:
+    def generate(self, prompt: str, options: Options | None = None,
+                 remember: bool = True) -> GenerationResult:
         """Il giro completo: frase, piano, risoluzione, effetti, geometria.
 
         E' l'unica porta. La UI, la riga di comando e un test passano di qui, e
         quello che ne esce e' sempre lo stesso oggetto: il modello, con accanto
         tutto cio' che serve a spiegarlo.
         """
-        return self._compose(prompt, options or Options(), costruisci=True)
+        opzioni = options or Options()
+        risultato = self._compose(prompt, opzioni, costruisci=True)
+        if remember and risultato.plan is not None:
+            self._push(self._versione(risultato))
+        return risultato
+
+    def regenerate(self, options: Options | None = None) -> GenerationResult | None:
+        """Ricostruisce la geometria dal piano corrente.
+
+        Serve dopo che qualcuno ha cambiato il piano — un parametro, un pezzo,
+        un effetto — ed e' la ragione per cui la cronologia porta i piani: un
+        modello si corregge correggendo il piano, non la mesh.
+        """
+        versione = self.current
+        if versione is None:
+            return None
+        opzioni = options or Options.from_dict(versione.options)
+        risultato = self.build(versione.plan, opzioni)
+        versione.result = risultato
+        versione.scene = risultato.scene(self.catalog())
+        return risultato
 
     # ------------------------------------------------------------- interno #
+    def _versione(self, risultato: GenerationResult) -> Version:
+        opzioni = risultato.options or Options()
+        return Version(label=risultato.prompt.strip()[:48] or "modello",
+                       plan=risultato.plan,
+                       scene=risultato.scene(self.catalog()),
+                       message="; ".join(risultato.explain()[:3]),
+                       seconds=risultato.seconds, prompt=risultato.prompt,
+                       options=opzioni.to_dict(), result=risultato)
+
     def _compose(self, prompt: str, opzioni: Options,
                  costruisci: bool) -> GenerationResult:
         from app.core.errors import Report
@@ -288,7 +390,9 @@ class Session:
         risposta = self._chiedi(planner, richiesta)
         risultato = GenerationResult(prompt=prompt, plan_json=risposta.plan,
                                      planner=risposta.source or planner.name,
-                                     report=Report())
+                                     report=Report(), options=opzioni)
+        for nota in risposta.notes:
+            risultato.report.note("PLANNER_NOTE", nota)
         grafo = self._verifica(risposta.plan, risultato, opzioni)
 
         # La correzione, e una sola. Si tenta solo se c'e' qualcosa che una
@@ -321,36 +425,44 @@ class Session:
         except Exception as exc:                          # noqa: BLE001
             log.warning("il planner ha fallito (%s): passo a quello locale", exc)
             risposta = MockPlanner().plan(richiesta)
+            risposta.source = "mock_fallback"
             risposta.notes.append("il planner remoto non ha risposto: %s" % exc)
             return risposta
 
-    def _correggi(self, planner, richiesta, risposta, rimedio, primo: GenerationResult,
-                  opzioni: Options) -> GenerationResult:
+    def _correggi(self, planner, richiesta, risposta, rimedio,
+                  primo: GenerationResult, opzioni: Options) -> GenerationResult:
         """Il secondo e ultimo tentativo.
 
-        Se anche questo non regge si tiene il **migliore dei due**: un piano con
-        tre problemi non e' migliorato da una correzione che ne lascia cinque, e
-        preferire sempre l'ultimo vorrebbe dire che una correzione puo' solo
-        peggiorare le cose senza che nessuno se ne accorga.
+        Se anche questo non regge si tiene il **migliore dei due**, misurato con
+        un punteggio deterministico: preferire sempre l'ultimo vorrebbe dire che
+        una correzione puo' solo peggiorare le cose senza che nessuno se ne
+        accorga.
         """
         from dataclasses import replace
 
         from app.core.errors import Report
+        from app.core.planner.repair import plan_score
 
         seconda = self._chiedi(planner, replace(
             richiesta, previous=risposta.plan, feedback=rimedio.to_text(),
             diagnostics=tuple(rimedio.to_dict())))
         candidato = GenerationResult(prompt=primo.prompt, plan_json=seconda.plan,
                                      planner=seconda.source or planner.name,
-                                     repaired=True, report=Report())
+                                     repaired=True, report=Report(),
+                                     options=opzioni)
         self._verifica(seconda.plan, candidato, opzioni)
-        if len(candidato.report.errors()) >= len(primo.report.errors()):
-            primo.report.note("REPAIR_NOT_BETTER",
-                              "la correzione non ha migliorato il piano",
-                              why="%d problemi prima, %d dopo"
-                                  % (len(primo.report.errors()),
-                                     len(candidato.report.errors())))
+
+        prima = plan_score(primo.report, primo.resolved)
+        dopo = plan_score(candidato.report, candidato.resolved)
+        if dopo >= prima:
+            primo.report.note(
+                "REPAIR_NOT_BETTER", "la correzione non ha migliorato il piano",
+                why="punteggio %s prima, %s dopo (piu' basso e' meglio)"
+                    % (prima.describe(), dopo.describe()))
             return primo
+        candidato.report.note(
+            "REPAIRED", "il piano e' stato corretto una volta",
+            why="punteggio %s prima, %s dopo" % (prima.describe(), dopo.describe()))
         return candidato
 
     def _verifica(self, piano: dict, risultato: GenerationResult,
@@ -369,19 +481,44 @@ class Session:
         risultato.plan = grafo
         if grafo is None:
             return None
-        if opzioni.detail_level:
-            grafo.detail_level = opzioni.detail_level
+        self._adatta(grafo, risultato, opzioni)
         risultato.resolved = resolve(grafo, self.catalog(), style=opzioni.style,
-                                     budget=opzioni.budget,
+                                     budget=self._budget(opzioni),
                                      report=risultato.report)
         return grafo
+
+    @staticmethod
+    def _budget(opzioni: Options):
+        """Il budget chiesto, o quello che questa macchina si puo' permettere.
+
+        Il profilo hardware non e' una preferenza: e' un tetto. Chi passa un
+        budget esplicito comanda; chi non ne passa nessuno prende quello del
+        profilo invece di quello di riferimento, che su una macchina modesta
+        vorrebbe dire costruire e poi accorgersene.
+        """
+        if opzioni.budget is not None:
+            return opzioni.budget
+        from app.core.hardware import current
+
+        return current().budget()
+
+    @staticmethod
+    def _adatta(grafo, risultato: GenerationResult, opzioni: Options) -> None:
+        """Il dettaglio e' una scelta: quello chiesto, o quello del piano.
+
+        Il profilo hardware **non** lo tocca. Sarebbe un secondo meccanismo che
+        fa il lavoro del budget, e con due tetti sulla stessa cosa non si sa
+        mai quale dei due ha tagliato. La macchina impone un budget di
+        triangoli; quante parti costruire lo dice il piano.
+        """
+        grafo.detail_level = opzioni.detail_level or grafo.detail_level
 
     def _costruisci(self, piano, risultato: GenerationResult,
                     opzioni: Options) -> None:
         """Effetti e geometria. Il piano puo' arrivare gia' risolto o no."""
-        from app.core.effect import apply_effects
         from app.build.assembler import build as assembla
         from app.build.validate import validate as controlla
+        from app.core.effect import apply_effects
         from app.core.errors import Report
         from app.core.graph import CompositionGraph
 
@@ -398,7 +535,8 @@ class Session:
 
         risultato.effects = apply_effects(risultato.resolved, self.catalog(),
                                           report=risultato.report)
-        risultato.build = assembla(risultato.effects, budget=opzioni.budget,
+        risultato.build = assembla(risultato.effects,
+                                   budget=self._budget(opzioni),
                                    report=risultato.report)
         if opzioni.check:
             controlla(risultato.build,
@@ -410,10 +548,9 @@ class Session:
                         opzioni: Options) -> None:
         from app.core.resolver import resolve
 
-        if opzioni.detail_level:
-            grafo.detail_level = opzioni.detail_level
+        self._adatta(grafo, risultato, opzioni)
         risultato.resolved = resolve(grafo, self.catalog(), style=opzioni.style,
-                                     budget=opzioni.budget,
+                                     budget=self._budget(opzioni),
                                      report=risultato.report)
 
     # ------------------------------------------------------------- stato #
@@ -424,13 +561,8 @@ class Session:
         return None
 
     @property
-    def current_plan(self) -> GenerationPlan | None:
-        """Il `GenerationPlan` della versione corrente, sulla strada storica.
-
-        Si chiamava `plan`, e ha lasciato il nome al metodo che fa un piano di
-        composizione a partire da una frase. Sono due cose diverse: questo e'
-        lo stato di una sessione, quello e' un passo della pipeline.
-        """
+    def current_plan(self):
+        """Il piano della versione corrente: un `CompositionGraph`."""
         v = self.current
         return v.plan if v else None
 
@@ -439,38 +571,16 @@ class Session:
         v = self.current
         return v.scene if v else None
 
+    @property
+    def result(self) -> GenerationResult | None:
+        v = self.current
+        return v.result if v else None
+
     def can_undo(self) -> bool:
         return self.cursor > 0
 
     def can_redo(self) -> bool:
         return self.cursor < len(self.history) - 1
-
-    def _push(self, version: Version) -> Version:
-        # una nuova azione dopo un undo taglia il ramo successivo
-        self.history = self.history[: self.cursor + 1]
-        self.history.append(version)
-        self.cursor = len(self.history) - 1
-        if self._autosave is not None:
-            # Nessun timer: il momento buono per salvare e' subito dopo che
-            # l'utente ha fatto qualcosa, ed e' l'unico momento in cui c'e'
-            # qualcosa di nuovo da salvare.
-            self._autosave.maybe_save()
-        return version
-
-    # ---------------------------------------------------------- recupero #
-    def start_autosave(self, interval: float | None = None):
-        """Accende la copia di sicurezza periodica."""
-        from app.core.recovery import INTERVAL, AutoSave
-
-        self._autosave = AutoSave(self, interval=interval or INTERVAL)
-        return self._autosave
-
-    def stop_autosave(self, clean: bool = True) -> None:
-        """Chiusura regolare: da qui in poi non c'e' niente da recuperare."""
-        if self._autosave is not None:
-            if clean:
-                self._autosave.close()
-            self._autosave = None
 
     def undo(self) -> Version | None:
         if self.can_undo():
@@ -487,103 +597,77 @@ class Session:
             self.cursor = index
         return self.current
 
-    # ------------------------------------------------- pipeline storica #
-    def generate_legacy(self, prompt: str, seed: int | None = None) -> Version:
-        """La generazione dei template e del campo implicito.
+    def _push(self, version: Version) -> Version:
+        # una nuova azione dopo un undo taglia il ramo successivo
+        self.history = self.history[: self.cursor + 1]
+        self.history.append(version)
+        self.cursor = len(self.history) - 1
+        if self._autosave is not None:
+            # Nessun timer: il momento buono per salvare e' subito dopo che
+            # l'utente ha fatto qualcosa, ed e' l'unico momento in cui c'e'
+            # qualcosa di nuovo da salvare.
+            self._autosave.maybe_save()
+        return version
 
-        Si chiama cosi' perche' deve vedersi. E' la strada da cui si viene:
-        `GenerationPlan`, template, strategie, `Scene` — ed e' ancora l'unica
-        che regge la libreria, i progetti, le varianti e l'animazione. La
-        strada nuova e' `generate`, e restituisce un `GenerationResult`.
+    def restore(self, payload: dict) -> Version:
+        """Rimette in cronologia una versione salvata, ricostruendola.
+
+        Ricostruire e non rileggere e' il punto del formato: un progetto
+        riaperto con un plugin aggiornato da' il modello **di adesso**, e se
+        qualcosa non si incastra piu' lo si vede subito.
         """
-        t0 = time.perf_counter()
-        plan, message = generate_plan(prompt, self.provider, seed)
-        scene = build_scene(plan)
-        dt = time.perf_counter() - t0
-        log.info("generazione completata in %.2fs | %s", dt, scene.summary())
-        return self._push(Version(label=prompt.strip()[:48] or plan.template,
-                                  plan=plan, scene=scene, message=message, seconds=dt))
+        opzioni = Options.from_dict(payload.get("options"))
+        risultato = self.build(payload.get("graph") or {}, opzioni)
+        versione = Version(
+            label=payload.get("label") or payload.get("prompt", "")[:48] or "modello",
+            plan=risultato.plan, scene=risultato.scene(self.catalog()),
+            message=payload.get("message", ""),
+            seconds=float(payload.get("seconds", 0.0) or 0.0),
+            prompt=payload.get("prompt", ""), options=opzioni.to_dict(),
+            result=risultato)
+        if risultato.plan is None:
+            raise ValueError("piano non ricostruibile: %s"
+                             % risultato.report.describe())
+        return self._push(versione)
 
-    def generate_from_image(self, image, prompt: str = "", seed: int | None = None,
-                            front=None) -> Version:
-        """Genera partendo da un'immagine di riferimento.
+    # ---------------------------------------------------------- recupero #
+    def start_autosave(self, interval: float | None = None):
+        """Accende la copia di sicurezza periodica."""
+        from app.core.recovery import INTERVAL, AutoSave
 
-        L'immagine non diventa mai geometria: fornisce una descrizione (se c'e'
-        un modello vision) e delle misure (sempre). Il resto della pipeline e'
-        identico, cosi' il risultato resta modificabile, variabile ed
-        esportabile come qualunque altro.
-        """
-        from app.ai import reference
+        self._autosave = AutoSave(self, interval=interval or INTERVAL)
+        return self._autosave
 
-        t0 = time.perf_counter()
-        text, hints = reference.prompt_from_image(image, prompt, self.provider,
-                                                  front=front)
-        plan, message = generate_plan(text, self.provider, seed)
-        plan.prompt = text
-        reference.apply_hints(plan, hints)
-        scene = build_scene(plan)
-        dt = time.perf_counter() - t0
-        log.info("generazione da immagine in %.2fs | %s", dt, scene.summary())
-        label = (prompt.strip() or text)[:48]
-        return self._push(Version(label=label, plan=plan, scene=scene,
-                                  message="%s | riferimento: %s"
-                                          % (message, hints.describe()),
-                                  seconds=dt))
-
-    def modify(self, prompt: str) -> Version:
-        if self.current_plan is None:
-            return self.generate_legacy(prompt)
-        t0 = time.perf_counter()
-        plan, message = edit_plan(prompt, self.current_plan, self.provider)
-        scene = build_scene(plan)
-        dt = time.perf_counter() - t0
-        log.info("modifica completata in %.2fs | %s", dt, scene.summary())
-        return self._push(Version(label=prompt.strip()[:48] or "modifica",
-                                  plan=plan, scene=scene, message=message, seconds=dt))
-
-    def revariate(self, seed: int | None = None) -> Version:
-        """Altra variante dello stesso oggetto: nessuna chiamata all'LLM."""
-        if self.current_plan is None:
-            raise ValueError("nessun modello da variare")
-        t0 = time.perf_counter()
-        plan, message = revariate(self.current_plan, seed)
-        scene = build_scene(plan)
-        dt = time.perf_counter() - t0
-        log.info("variante in %.2fs | %s", dt, scene.summary())
-        base = self.current.label if self.current else "variante"
-        base = base.split(" [var")[0]
-        return self._push(Version(label="%s [var %d]" % (base, plan.seed % 10000),
-                                  plan=plan, scene=scene, message=message, seconds=dt))
-
-    def rebuild(self) -> Version | None:
-        """Ricostruisce la scena dal piano corrente (dopo un cambio manuale)."""
-        v = self.current
-        if v is None:
-            return None
-        v.scene = build_scene(v.plan)
-        return v
+    def stop_autosave(self, clean: bool = True) -> None:
+        """Chiusura regolare: da qui in poi non c'e' niente da recuperare."""
+        if self._autosave is not None:
+            if clean:
+                self._autosave.close()
+            self._autosave = None
 
     # ---------------------------------------------------------- libreria #
     def save_to_library(self, name: str = "", tags=(), preview=None) -> AssetRecord:
         """Mette l'oggetto corrente nella libreria, piano compreso."""
-        scene = self.scene
-        if scene is None:
+        versione = self.current
+        if versione is None or versione.scene is None:
             raise ValueError("nessun modello da salvare")
-        return self.library.save(scene, name=name, tags=tags, preview=preview)
+        return self.library.save(versione.scene, name=name, tags=tags,
+                                 preview=preview, plan=versione.plan,
+                                 prompt=versione.prompt,
+                                 options=versione.options)
 
     def load_from_library(self, asset_id: str) -> Version:
         """Riporta un asset nella sessione come nuova versione, ancora modificabile."""
         record = self.library.get(asset_id)
         if record is None:
             raise KeyError("asset inesistente: %s" % asset_id)
-        t0 = time.perf_counter()
-        plan = self.library.load_plan(asset_id)
-        scene = build_scene(plan)
-        dt = time.perf_counter() - t0
-        log.info("asset caricato: %s | %s", asset_id, scene.summary())
-        return self._push(Version(label=record.name, plan=plan, scene=scene,
-                                  message="Caricato dalla libreria: %s" % record.name,
-                                  seconds=dt))
+        payload = self.library.load_plan(asset_id)
+        versione = self.restore({**payload, "label": record.name,
+                                 "message": "Caricato dalla libreria: %s"
+                                            % record.name})
+        log.info("asset caricato: %s | %s", asset_id,
+                 versione.scene.summary() if versione.scene else "senza scena")
+        return versione
 
     # ---------------------------------------------------------- progetto #
     def save_project(self, path, name: str = "", preview=None):
@@ -611,7 +695,7 @@ class Session:
         return export(s, path, textured=textured)
 
     def skeleton(self):
-        """Scheletro del modello corrente, vuoto se non viene da un assemblaggio."""
+        """Scheletro del modello corrente: i giunti sono gli innesti veri."""
         from app.anim.skeleton import from_scene
 
         s = self.scene
@@ -625,11 +709,7 @@ class Session:
         return [c.name for c in default_clips(skeleton)] if skeleton.joints else []
 
     def export_animated(self, path: str | Path, clips: list[str] | None = None) -> Path:
-        """Esporta un glTF con la gerarchia delle parti e le animazioni.
-
-        Solo per gli assemblaggi: un modello da template non ha un grafo di
-        parti, quindi non ha giunti da animare.
-        """
+        """Esporta un glTF con la gerarchia delle parti e le animazioni."""
         from app.anim.gltf import export_animated
 
         s = self.scene

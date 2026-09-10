@@ -63,7 +63,7 @@ BODY = Component(
                                 semantic_role="length",
                                 description="altezza totale della figura")},
     mounts=(mount("core_mount", socket_id="core"),),
-    role="body", material="skin", tags=frozenset({"umanoide", "figura"}))
+    role="body", material="skin", tags=frozenset({"umanoide", "humanoid", "figura", "figure", "persona", "person", "body"}))
 
 
 # --------------------------------------------------------------------------- #
@@ -157,7 +157,7 @@ TORSO = Component(
             mount("segment", socket_id="core_alto", tags=("alto",)),
             mount("gear_mount", socket_id="schiena")),
     role="torso", material="skin", requires=frozenset({"connected"}),
-    tags=frozenset({"umanoide", "torso", "body"}))
+    tags=frozenset({"umanoide", "humanoid", "torso", "body", "busto"}))
 
 
 # --------------------------------------------------------------------------- #
@@ -187,7 +187,7 @@ PELVIS = Component(
     description="il bacino: la parte bassa del busto",
     params=dict(_PARAMETRI_SEGMENTO),
     provides=(Capability("segment"),),
-    role="torso", material="skin", tags=frozenset({"umanoide", "torso", "body"}))
+    role="torso", material="skin", tags=frozenset({"umanoide", "humanoid", "torso", "body", "busto"}))
 
 
 def _petto(v, ctx) -> Piece:
@@ -206,7 +206,7 @@ CHEST = Component(
     description="la cassa toracica",
     params=dict(_PARAMETRI_SEGMENTO),
     provides=(Capability("segment"),),
-    role="torso", material="skin", tags=frozenset({"umanoide", "torso", "body"}))
+    role="torso", material="skin", tags=frozenset({"umanoide", "humanoid", "torso", "body", "busto"}))
 
 
 def _collo(v, ctx) -> Piece:
@@ -230,4 +230,4 @@ NECK = Component(
                                derived="root.height * 0.0398")},
     provides=(Capability("head_mount"),),
     mounts=(mount("head_mount", socket_id="tip"),),
-    role="neck", material="skin", tags=frozenset({"umanoide", "collo"}))
+    role="neck", material="skin", tags=frozenset({"umanoide", "humanoid", "collo", "neck"}))

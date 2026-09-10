@@ -55,4 +55,4 @@ PLANET = Component(
             mount("surface", socket_id="equatore", capacity=0)),
     role="corpo_celeste", material="rock",
     requires=frozenset({"watertight", "faceted"}),
-    tags=frozenset({"astronomia", "pianeta"}))
+    tags=frozenset({"astronomia", "astronomy", "pianeta", "planet", "sfera", "sphere"}))

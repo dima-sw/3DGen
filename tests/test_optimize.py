@@ -11,22 +11,59 @@ from app.build.optimize import (
     decimate_to, export_game_ready, make_lods, merge_by_material,
     prepare_for_game, regenerate_lod,
 )
+from app.core.planner.planner import MockPlanner
 from app.core.session import Session
 
 OFFLINE = OfflineProvider()
 
 
+from app.core.capability import Requirement
+from app.core.graph import CompositionGraph
+from app.core.session import Options
+
+
+def _figura(detail_level: int = 3) -> CompositionGraph:
+    """Una figura completa: molte parti, e la pelle ripetuta su quasi tutte.
+
+    Serve un modello **fatto di pezzi** per misurare decimazione, unione per
+    materiale e livelli di dettaglio. Il piano e' scritto qui e non chiesto al
+    planner: questi test misurano l'ottimizzazione, non la scelta dei pezzi.
+    """
+    def chiedi(c="", **k):
+        return Requirement(capability=c, **k)
+
+    g = CompositionGraph(detail_level=detail_level)
+    g.set_root("corpo", "humanoid:body", height=1.8)
+    g.add_child("torso", "humanoid:torso", "corpo", level=1,
+                requirement=chiedi("core_mount"))
+    g.add_child("collo", "humanoid:neck", "torso", level=1, insert=0.3,
+                requirement=chiedi("head_mount"))
+    g.add_child("testa", "humanoid:head", "collo", level=1, insert=0.25,
+                requirement=chiedi("head_mount"))
+    for nome, lato in (("braccio_l", "l"), ("braccio_r", "r")):
+        g.add_child(nome, "humanoid:arm", "torso", level=1, insert=1.15,
+                    requirement=chiedi("limb_mount", side=lato,
+                                       tags=frozenset({"alto"})))
+    for nome, lato in (("gamba_l", "l"), ("gamba_r", "r")):
+        g.add_child(nome, "humanoid:leg", "torso", level=1, insert=0.9,
+                    requirement=chiedi("limb_mount", side=lato,
+                                       tags=frozenset({"basso"})))
+    return g
+
+
 @pytest.fixture()
 def jeep() -> Session:
-    session = Session(provider=OFFLINE)
-    session.generate_legacy("una jeep militare verde")
+    """Un modello con molte parti e materiali ripetuti: e' cio' che si misura."""
+    session = Session(provider=OFFLINE, planner=MockPlanner())
+    risultato = session.build(_figura(3))
+    session._push(session._versione(risultato))
     return session
 
 
 @pytest.fixture()
 def pesce() -> Session:
-    session = Session(provider=OFFLINE)
-    session.generate_legacy("crea un pesce")
+    session = Session(provider=OFFLINE, planner=MockPlanner())
+    session.generate("una casa con un pianeta enorme sopra", Options(detail_level=3))
     return session
 
 
@@ -75,10 +112,14 @@ def test_lod_chain_decreases_monotonically(jeep):
 
 
 def test_lods_are_regenerated_when_possible(jeep):
-    """Il vantaggio del procedurale: mesh pulite, non residui di decimazione."""
-    rebuilt = regenerate_lod(jeep.current_plan, level=2)
+    """Il vantaggio del piano: mesh pulite, non residui di decimazione.
+
+    Un livello di dettaglio lontano non e' l'originale decimato: e' lo stesso
+    oggetto costruito con meno parti, con i giunti veri e i materiali interi.
+    """
+    rebuilt = regenerate_lod(jeep.current_plan, level=1, session=jeep)
     assert rebuilt is not None
-    assert rebuilt.triangle_count < jeep.scene.triangle_count
+    assert len(rebuilt.nodes) < len(jeep.scene.nodes)
     assert all(n.mesh.is_watertight for n in rebuilt.nodes if "fused" not in n.tags)
 
 
@@ -142,9 +183,9 @@ def test_every_preset_produces_a_usable_result(preset, jeep):
 def test_budget_is_enforced_on_the_first_level(pesce):
     from app.build.optimize import GamePreset
 
-    stretto = GamePreset("stretto", triangle_budget=3000, lod_levels=2)
+    stretto = GamePreset("stretto", triangle_budget=260, lod_levels=2)
     result = prepare_for_game(pesce.scene, stretto)
-    assert result.lods[0].triangles <= 3000 * 1.05
+    assert result.lods[0].triangles <= 260 * 1.05
     assert result.notes, "la riduzione forzata va dichiarata"
     assert result.within_budget
 

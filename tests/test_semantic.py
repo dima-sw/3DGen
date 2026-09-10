@@ -12,26 +12,30 @@ from app.assets.semantic import (
     INDEX_FILE, Embedder, RemoteEmbedder, SemanticIndex, TfidfEmbedder,
     expand, tokenize,
 )
+from app.core.planner.planner import MockPlanner
 from app.core.session import Session
 
 OFFLINE = OfflineProvider()
 
+# Il corpus usa cio' che i plugin installati sanno davvero costruire: una
+# libreria di prova piena di oggetti che il sistema non puo' generare misurava
+# il thesaurus, non la ricerca.
 CORPUS = [
-    ("una jeep militare verde con ruote grandi", "Fuoristrada militare"),
-    ("una casa a due piani con portico", "Villetta"),
-    ("un pino alto 9 metri", "Conifera"),
-    ("una spada medievale a due mani", "Lama antica"),
-    ("una sedia da ufficio", "Poltroncina"),
-    ("un tavolo rotondo di legno", "Tavolo tondo"),
+    ("una casa con un pianeta enorme sopra", "Villetta spaziale"),
+    ("un albero con un nido e un uccello", "Conifera"),
+    ("una spada", "Lama antica"),
+    ("un pesce con una coda lunga", "Pesce"),
+    ("una persona molto alta e magra", "Figura"),
+    ("un cristallo luminoso", "Gemma"),
 ]
 
 
 @pytest.fixture()
 def library(tmp_path):
     lib = AssetLibrary(tmp_path / "lib")
-    session = Session(provider=OFFLINE, library=lib)
+    session = Session(provider=OFFLINE, planner=MockPlanner(), library=lib)
     for prompt, name in CORPUS:
-        session.generate_legacy(prompt)
+        session.generate(prompt)
         session.save_to_library(name)
     return lib
 
@@ -82,17 +86,20 @@ def test_empty_corpus_does_not_crash():
 # Il criterio di accettazione
 # --------------------------------------------------------------------------- #
 def test_finds_by_meaning_not_by_words(library):
-    """Il criterio del TODO: 'un pneumatico da fuoristrada' trova la jeep."""
-    hits = library.semantic_search("un pneumatico da fuoristrada", limit=2)
-    assert hits and hits[0].name == "Fuoristrada militare"
+    """Il criterio: una parola che non compare da nessuna parte trova lo stesso.
+
+    «Dimora» non e' scritta ne' nel nome ne' nel prompt ne' nei tag: ci si
+    arriva solo passando per «casa», ed e' quello che il thesaurus fa.
+    """
+    hits = library.semantic_search("una dimora", limit=2)
+    assert hits and hits[0].name == "Villetta spaziale"
 
 
 @pytest.mark.parametrize("query,expected", [
-    ("una vettura", "Fuoristrada militare"),
     ("un arbusto sempreverde", "Conifera"),
     ("un'arma da taglio", "Lama antica"),
-    ("abitazione", "Villetta"),
-    ("una seduta", "Poltroncina"),
+    ("abitazione", "Villetta spaziale"),
+    ("un essere acquatico", "Pesce"),
 ])
 def test_paraphrases_reach_the_right_asset(library, query, expected):
     hits = library.semantic_search(query, limit=2)
@@ -121,8 +128,8 @@ def test_index_is_reused_when_nothing_changed(library):
 
 def test_index_rebuilds_when_an_asset_is_added(library):
     before = library.semantic_index().fingerprint
-    session = Session(provider=OFFLINE, library=library)
-    session.generate_legacy("un camion da cantiere")
+    session = Session(provider=OFFLINE, planner=MockPlanner(), library=library)
+    session.generate("un camion da cantiere")
     session.save_to_library("Camion")
     assert library.semantic_index().fingerprint != before
     assert any(h.name == "Camion" for h in library.semantic_search("autocarro", limit=3))
@@ -133,7 +140,7 @@ def test_saved_index_can_answer_without_refitting(library):
     library.semantic_index()
     reloaded = SemanticIndex.load(library.root / INDEX_FILE)
     assert reloaded is not None
-    hits = reloaded.search("un pneumatico da fuoristrada", limit=1)
+    hits = reloaded.search("una dimora", limit=1)
     assert hits and hits[0][1] > 0.05
 
 
@@ -141,7 +148,7 @@ def test_corrupted_index_is_rebuilt(library):
     library.semantic_index()
     (library.root / INDEX_FILE).write_text("{ rotto", encoding="utf-8")
     assert SemanticIndex.load(library.root / INDEX_FILE) is None
-    hits = library.semantic_search("un pneumatico da fuoristrada")
+    hits = library.semantic_search("una dimora")
     assert hits, "la ricerca deve funzionare lo stesso"
 
 
@@ -207,5 +214,5 @@ def test_search_falls_back_to_text_when_the_index_fails(library, monkeypatch):
         raise RuntimeError("indice non disponibile")
 
     monkeypatch.setattr(AssetLibrary, "semantic_index", boom)
-    hits = library.semantic_search("jeep", limit=3)
-    assert hits and any("Fuoristrada" in h.name for h in hits)
+    hits = library.semantic_search("casa", limit=3)
+    assert hits and any("Villetta" in h.name for h in hits)

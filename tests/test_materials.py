@@ -6,6 +6,7 @@ import pytest
 import trimesh
 
 from app.ai.provider import OfflineProvider
+from app.core.planner.planner import MockPlanner
 from app.core.session import Session
 from app.geometry.uv import box_uv, uv_bounds_are_reasonable
 from app.materials import texture as tx
@@ -111,9 +112,9 @@ def test_uv_guard_catches_absurd_scales():
 
 
 def test_box_uv_on_a_composed_creature():
-    session = Session(provider=OFFLINE)
-    session.generate_legacy("crea un pesce")
-    body = session.scene.by_id("corpo")
+    session = Session(provider=OFFLINE, planner=MockPlanner())
+    session.generate("un albero con un nido e un uccello")
+    body = session.scene.nodes[0]
     work, uv = box_uv(body.mesh, texel=0.3)
     assert len(uv) == len(work.vertices)
     assert uv_bounds_are_reasonable(uv)
@@ -157,13 +158,13 @@ def test_maps_have_all_three_channels():
 # Export
 # --------------------------------------------------------------------------- #
 def test_textured_export_carries_pbr_maps(tmp_path):
-    session = Session(provider=OFFLINE)
-    session.generate_legacy("una jeep militare verde")
-    out = tmp_path / "jeep.glb"
+    session = Session(provider=OFFLINE, planner=MockPlanner())
+    session.generate("un albero con un nido e un uccello")
+    out = tmp_path / "modello.glb"
     session.scene.to_trimesh_scene(textured=True, texture_size=64).export(out)
 
     loaded = trimesh.load(out)
-    body = loaded.geometry["body"]
+    body = loaded.geometry[session.scene.nodes[0].id]
     material = body.visual.material
     assert material.baseColorTexture is not None
     assert material.metallicRoughnessTexture is not None
@@ -172,8 +173,8 @@ def test_textured_export_carries_pbr_maps(tmp_path):
 
 
 def test_flat_export_still_works(tmp_path):
-    session = Session(provider=OFFLINE)
-    session.generate_legacy("una sedia")
+    session = Session(provider=OFFLINE, planner=MockPlanner())
+    session.generate("una sedia")
     out = tmp_path / "sedia.glb"
     session.scene.to_trimesh_scene(textured=False).export(out)
     loaded = trimesh.load(out)
@@ -183,8 +184,8 @@ def test_flat_export_still_works(tmp_path):
 
 
 def test_flat_export_is_much_smaller(tmp_path):
-    session = Session(provider=OFFLINE)
-    session.generate_legacy("una sedia")
+    session = Session(provider=OFFLINE, planner=MockPlanner())
+    session.generate("una sedia")
     piatto = tmp_path / "piatto.glb"
     con_texture = tmp_path / "texture.glb"
     session.scene.to_trimesh_scene(textured=False).export(piatto)
@@ -200,8 +201,8 @@ def test_texture_failure_does_not_break_the_export(tmp_path, monkeypatch):
         raise RuntimeError("guasto simulato")
 
     monkeypatch.setattr(library, "maps_for", boom)
-    session = Session(provider=OFFLINE)
-    session.generate_legacy("una sedia")
+    session = Session(provider=OFFLINE, planner=MockPlanner())
+    session.generate("una sedia")
     out = tmp_path / "sedia.glb"
     session.scene.to_trimesh_scene(textured=True).export(out)
     assert out.exists() and out.stat().st_size > 500
@@ -237,8 +238,8 @@ def test_preview_texture_is_absent_for_flat_materials():
 
 
 def test_export_options_reach_the_exporter(tmp_path):
-    session = Session(provider=OFFLINE)
-    session.generate_legacy("un tavolo di legno")
+    session = Session(provider=OFFLINE, planner=MockPlanner())
+    session.generate("un tavolo di legno")
     con = session.export(tmp_path / "tex.glb", textured=True)
     senza = session.export(tmp_path / "piatto.glb", textured=False)
     # le mappe pesano molto piu' della geometria di un tavolo
@@ -247,16 +248,16 @@ def test_export_options_reach_the_exporter(tmp_path):
 
 def test_stl_never_carries_textures(tmp_path):
     """STL non trasporta materiali: generarle sarebbe solo tempo perso."""
-    session = Session(provider=OFFLINE)
-    session.generate_legacy("una sedia")
+    session = Session(provider=OFFLINE, planner=MockPlanner())
+    session.generate("una sedia")
     out = session.export(tmp_path / "sedia.stl", textured=True)
     assert out.exists()
 
 
 def test_export_writes_a_non_empty_file(tmp_path):
     """Regressione: trimesh restituiva i byte ma lasciava il file vuoto."""
-    session = Session(provider=OFFLINE)
-    session.generate_legacy("un tavolo di legno")
+    session = Session(provider=OFFLINE, planner=MockPlanner())
+    session.generate("un tavolo di legno")
     for suffix in ("glb", "obj", "stl", "ply"):
         out = session.export(tmp_path / ("t." + suffix), textured=True)
         assert out.stat().st_size > 100, "%s vuoto" % suffix

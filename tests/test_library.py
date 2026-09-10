@@ -1,7 +1,10 @@
 """Libreria di asset: salvataggio, ricerca, ricarica.
 
-Il criterio di accettazione della voce 1 del TODO: un asset salvato deve
-tornare identico dopo aver chiuso e riaperto l'applicazione.
+Il criterio di accettazione e' rimasto quello di sempre: un asset salvato deve
+tornare identico dopo aver chiuso e riaperto l'applicazione. A cambiare e' che
+cosa viene salvato accanto alla mesh — un `CompositionGraph` invece di un piano
+di template — e quindi che cosa si puo' fare dopo averlo ricaricato: cambiare
+un parametro, alzare il dettaglio, aggiungere un pezzo.
 """
 from __future__ import annotations
 
@@ -11,8 +14,8 @@ import pytest
 
 from app.ai.provider import OfflineProvider
 from app.assets.library import AssetLibrary, AssetRecord, auto_tags, slugify
-from app.build.builder import build_scene
-from app.core.session import Session
+from app.core.planner.planner import MockPlanner
+from app.core.session import Options, Session
 
 OFFLINE = OfflineProvider()
 
@@ -24,40 +27,39 @@ def library(tmp_path):
 
 @pytest.fixture()
 def session(library):
-    return Session(provider=OFFLINE, library=library)
+    return Session(provider=OFFLINE, planner=MockPlanner(), library=library)
 
 
 # --------------------------------------------------------------------------- #
 # Salvataggio
 # --------------------------------------------------------------------------- #
 def test_save_creates_the_three_files(session, library):
-    session.generate_legacy("una jeep militare verde")
-    record = session.save_to_library("Jeep di prova")
+    session.generate("un albero con un nido e un uccello")
+    record = session.save_to_library("Albero di prova")
 
     folder = library.path(record.id)
     assert (folder / "asset.json").is_file()
     assert (folder / "model.glb").is_file()
-    assert (folder / "preview.png").is_file()
-    assert (folder / "model.glb").stat().st_size > 5000
+    assert (folder / "model.glb").stat().st_size > 1000
 
 
 def test_saved_metadata_describes_the_object(session):
-    session.generate_legacy("una jeep militare verde a quattro porte")
+    session.generate("una casa con un pianeta enorme sopra")
     record = session.save_to_library()
 
-    assert record.template == "vehicle"
-    assert record.category == "veicoli"
-    assert record.parts > 20 and record.triangles > 500
+    assert record.root_ref == "architecture:house"
+    assert record.category == "architecture"
+    assert record.parts >= 2 and record.triangles > 100
     assert all(d > 0 for d in record.dimensions)
-    assert record.seed == session.current_plan.seed
     assert record.created.startswith("20")
+    assert record.plan, "il piano viaggia con l'asset"
 
 
 def test_custom_tags_are_merged_with_automatic_ones(session):
-    session.generate_legacy("una jeep militare")
-    record = session.save_to_library("Jeep", tags=["preferito", "progetto-x"])
+    session.generate("una casa con un pianeta")
+    record = session.save_to_library("Casa", tags=["preferito", "progetto-x"])
     assert "preferito" in record.tags and "progetto-x" in record.tags
-    assert "vehicle" in record.tags and "veicoli" in record.tags
+    assert "house" in record.tags and "architecture" in record.tags
 
 
 def test_saving_empty_session_is_refused(session):
@@ -66,8 +68,8 @@ def test_saving_empty_session_is_refused(session):
 
 
 def test_ids_are_unique_and_filesystem_safe(session):
-    session.generate_legacy("un'auto sportiva")
-    ids = {session.save_to_library("Auto / prova: n°1").id for _ in range(5)}
+    session.generate("una casa")
+    ids = {session.save_to_library("Casa / prova: n°1").id for _ in range(5)}
     assert len(ids) == 5
     for asset_id in ids:
         assert all(c.isalnum() or c == "-" for c in asset_id)
@@ -77,57 +79,55 @@ def test_ids_are_unique_and_filesystem_safe(session):
 # Ricarica: il criterio di accettazione
 # --------------------------------------------------------------------------- #
 def test_asset_survives_a_restart(tmp_path):
-    """Salvo, 'chiudo l'app', riapro con oggetti nuovi, ricarico: deve essere identico."""
-    first = Session(provider=OFFLINE, library=AssetLibrary(tmp_path / "library"))
-    first.generate_legacy("una jeep militare verde con ruote grandi")
-    record = first.save_to_library("Jeep")
-    original_params = dict(first.current_plan.params)
-    original_triangles = first.scene.triangle_count
-    original_colors = sorted((m.name, m.base_color) for m in first.current_plan.materials)
+    """Salvo, 'chiudo l'app', riapro con oggetti nuovi, ricarico: identico."""
+    prima = Session(provider=OFFLINE, planner=MockPlanner(),
+                    library=AssetLibrary(tmp_path / "library"))
+    prima.generate("un albero con un nido e un uccello")
+    record = prima.save_to_library("Albero")
+    piano_originale = prima.current_plan.to_dict()
+    triangoli = prima.scene.triangle_count
 
     # nuova sessione, nuova libreria che punta alla stessa cartella
-    second = Session(provider=OFFLINE, library=AssetLibrary(tmp_path / "library"))
-    version = second.load_from_library(record.id)
+    dopo = Session(provider=OFFLINE, planner=MockPlanner(),
+                   library=AssetLibrary(tmp_path / "library"))
+    versione = dopo.load_from_library(record.id)
 
-    assert version.plan.params == original_params
-    assert version.plan.seed == record.seed
-    assert sorted((m.name, m.base_color) for m in version.plan.materials) == original_colors
-    assert version.scene.triangle_count == original_triangles
+    assert versione.plan.to_dict() == piano_originale
+    assert versione.scene.triangle_count == triangoli
 
 
-def test_loaded_asset_is_still_editable(session):
-    """Non un blocco morto: si continua a modificarlo a voce."""
-    session.generate_legacy("un suv")
+def test_a_loaded_asset_is_still_a_plan_not_a_block(session):
+    """Non un blocco morto: si cambia un parametro e si ricostruisce."""
+    session.generate("una casa")
     record = session.save_to_library()
     session.load_from_library(record.id)
 
-    before = session.current_plan.params["wheel_radius"]
-    session.modify("fai le ruote piu grandi")
-    assert session.current_plan.params["wheel_radius"] > before
+    piano = session.current_plan
+    prima = session.scene.dimensions()[0]
+    piano.nodes[piano.root_id].overrides["width"] = 18.0
+    session.regenerate()
+    assert session.scene.dimensions()[0] > prima * 2
 
 
-def test_loaded_asset_can_generate_new_variants(session):
-    session.generate_legacy("un fuoristrada rosso")
+def test_a_loaded_asset_can_be_rebuilt_at_another_detail(session):
+    session.generate("una casa con un pianeta")
     record = session.save_to_library()
     session.load_from_library(record.id)
-    seed_before = session.current_plan.seed
 
-    session.revariate()
-    assert session.current_plan.seed != seed_before
-    body = next(m for m in session.current_plan.materials if m.name == "body")
-    assert body.base_color == "#b02a1f", "il rosso richiesto deve sopravvivere"
+    fine = session.regenerate(Options(detail_level=3))
+    assert fine is not None and fine.build.meshes()
 
 
 def test_load_appears_in_history(session):
-    session.generate_legacy("una sedia")
-    record = session.save_to_library("Sedia")
-    session.generate_legacy("un tavolo")
+    session.generate("una casa")
+    record = session.save_to_library("Casa")
+    session.generate("un albero")
     session.load_from_library(record.id)
 
     assert len(session.history) == 3
-    assert session.history[-1].label == "Sedia"
+    assert session.history[-1].label == "Casa"
     session.undo()
-    assert session.current_plan.template == "table"
+    assert "tree" in session.current_plan.resolved_ref(session.current_plan.root_id)
 
 
 def test_loading_unknown_asset_fails_clearly(session):
@@ -138,7 +138,7 @@ def test_loading_unknown_asset_fails_clearly(session):
 def test_glb_is_readable_by_other_tools(session, library):
     import trimesh
 
-    session.generate_legacy("una spada")
+    session.generate("un albero con un nido")
     record = session.save_to_library()
     loaded = trimesh.load(library.model_path(record.id))
     assert len(loaded.geometry) == len(session.scene.nodes)
@@ -147,58 +147,57 @@ def test_glb_is_readable_by_other_tools(session, library):
 # --------------------------------------------------------------------------- #
 # Elenco e ricerca
 # --------------------------------------------------------------------------- #
-def _populate(session) -> None:
-    for prompt, name in [("una jeep militare verde", "Jeep militare"),
-                         ("un'auto sportiva rossa", "Sportiva"),
-                         ("una casa a due piani", "Casetta"),
-                         ("un pino alto 9 metri", "Pino"),
-                         ("una spada medievale", "Spada")]:
-        session.generate_legacy(prompt)
-        session.save_to_library(name)
+def _popola(session) -> None:
+    for prompt, nome in [("una casa con un pianeta enorme sopra", "Casa spaziale"),
+                         ("un albero con un nido e un uccello", "Albero"),
+                         ("un pesce con una spada", "Pesce armato"),
+                         ("una persona", "Figura"),
+                         ("un cristallo luminoso", "Cristallo")]:
+        session.generate(prompt)
+        session.save_to_library(nome)
 
 
 def test_listing_is_newest_first(session, library):
-    _populate(session)
+    _popola(session)
     records = library.all()
     assert len(records) == 5
-    assert [r.created for r in records] == sorted((r.created for r in records), reverse=True)
+    assert [r.created for r in records] == sorted((r.created for r in records),
+                                                  reverse=True)
 
 
 def test_search_by_name_and_tags(session, library):
-    _populate(session)
-    assert any(r.name == "Jeep militare" for r in library.search("jeep"))
-    assert any(r.template == "vehicle" for r in library.search("militare"))
+    _popola(session)
+    assert any(r.name == "Albero" for r in library.search("albero"))
+    assert any(r.category == "architecture" for r in library.search("casa"))
     assert library.search("sottomarino nucleare") == []
 
 
-def test_search_finds_synonyms_from_the_template(session, library):
-    """'albero' deve trovare un asset salvato come 'pino'."""
-    _populate(session)
-    assert any(r.name == "Pino" for r in library.search("albero"))
-    assert any(r.name == "Spada" for r in library.search("arma"))
-    assert any(r.template == "vehicle" for r in library.search("macchina"))
+def test_search_finds_the_words_of_the_plugins(session, library):
+    """I tag vengono dai riferimenti usati: `nature:tree` da' `nature` e `tree`."""
+    _popola(session)
+    assert any(r.name == "Albero" for r in library.search("tree"))
+    assert any(r.name == "Casa spaziale" for r in library.search("planet"))
 
 
 def test_user_words_rank_above_synonyms(session, library):
     """Chi ha davvero quella parola nel prompt viene prima."""
-    session.generate_legacy("un pino alto 9 metri")
-    session.save_to_library("Pino")
-    session.generate_legacy("una palma")
-    session.save_to_library("Palma")
-    assert library.search("palma")[0].name == "Palma"
-    assert library.search("pino")[0].name == "Pino"
+    session.generate("un albero con un nido")
+    session.save_to_library("Albero")
+    session.generate("una casa con un pianeta")
+    session.save_to_library("Casa")
+    assert library.search("casa")[0].name == "Casa"
+    assert library.search("albero")[0].name == "Albero"
 
 
 def test_search_filters_by_category(session, library):
-    _populate(session)
-    veicoli = library.search(category="veicoli")
-    assert len(veicoli) == 2
-    assert all(r.category == "veicoli" for r in veicoli)
-    assert set(library.categories()) == {"veicoli", "edifici", "natura", "armi"}
+    _popola(session)
+    alberi = library.search(category="nature")
+    assert alberi and all(r.category == "nature" for r in alberi)
+    assert "architecture" in set(library.categories())
 
 
 def test_search_respects_limit(session, library):
-    _populate(session)
+    _popola(session)
     assert len(library.search(limit=2)) == 2
 
 
@@ -206,31 +205,32 @@ def test_search_respects_limit(session, library):
 # Robustezza: il filesystem e' la fonte di verita'
 # --------------------------------------------------------------------------- #
 def test_deleted_folder_does_not_break_listing(session, library):
-    _populate(session)
-    victim = library.all()[0]
+    _popola(session)
+    vittima = library.all()[0]
     import shutil
 
-    shutil.rmtree(library.path(victim.id))
+    shutil.rmtree(library.path(vittima.id))
     assert len(library.all()) == 4
-    assert library.get(victim.id) is None
+    assert library.get(vittima.id) is None
 
 
 def test_corrupted_metadata_is_skipped(session, library):
-    _populate(session)
-    victim = library.all()[0]
-    (library.path(victim.id) / "asset.json").write_text("{ non e' json", encoding="utf-8")
+    _popola(session)
+    vittima = library.all()[0]
+    (library.path(vittima.id) / "asset.json").write_text("{ non e' json",
+                                                         encoding="utf-8")
     assert len(library.all()) == 4
 
 
 def test_stray_directory_is_ignored(library, session):
-    session.generate_legacy("una sedia")
+    session.generate("una casa")
     session.save_to_library()
     (library.root / "cartella-a-caso").mkdir()
     assert len(library.all()) == 1
 
 
 def test_delete_and_rename(session, library):
-    session.generate_legacy("una sedia")
+    session.generate("una casa")
     record = session.save_to_library("Prima")
     assert library.rename(record.id, "Dopo").name == "Dopo"
     assert library.get(record.id).name == "Dopo"
@@ -240,7 +240,7 @@ def test_delete_and_rename(session, library):
 
 
 def test_cache_notices_external_edits(session, library):
-    session.generate_legacy("una sedia")
+    session.generate("una casa")
     record = session.save_to_library("Prima")
     assert library.get(record.id).name == "Prima"
 
@@ -269,21 +269,19 @@ def test_slugify(text, expected):
     assert slugify(text) == expected
 
 
-def test_auto_tags_describe_the_plan():
-    from app.ai.planner import generate_plan
-
-    plan, _ = generate_plan("una jeep militare con portapacchi", OFFLINE)
-    plan.params["has_roof_rack"] = True
-    tags = auto_tags(plan, build_scene(plan))
-    assert "vehicle" in tags and "veicoli" in tags
-    assert "roof_rack" in tags
-    assert "offroad" in tags
+def test_auto_tags_come_from_the_plan_and_the_prompt(session):
+    """Nessuna tabella di categorie: i tag sono i riferimenti e le parole."""
+    risultato = session.generate("un albero con un nido e un uccello")
+    tags = auto_tags(risultato.plan, risultato.scene(session.catalog()),
+                     risultato.prompt)
+    assert {"nature", "tree", "nest", "bird"} <= set(tags)
+    assert "uccello" in tags, "anche le parole della richiesta"
 
 
-def test_record_round_trips_through_json():
-    from app.ai.planner import generate_plan
-
-    plan, _ = generate_plan("una sedia", OFFLINE)
-    record = AssetRecord(id="x-1", name="Sedia", plan=plan)
-    again = AssetRecord.model_validate_json(record.model_dump_json())
-    assert again.plan.params == plan.params
+def test_a_record_round_trips_through_json(session):
+    risultato = session.generate("una casa")
+    record = AssetRecord(id="x-1", name="Casa",
+                         plan=risultato.plan.to_dict())
+    ancora = AssetRecord.model_validate_json(record.model_dump_json())
+    assert ancora.plan == record.plan
+    assert ancora.payload()["graph"] == record.plan

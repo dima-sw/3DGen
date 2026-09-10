@@ -1,18 +1,18 @@
 """Interfaccia a riga di comando: stessa pipeline della UI, senza finestre.
 
-    python cli.py "una jeep militare verde"
-    python cli.py "un pino alto 8 metri" --out pino.glb --png
-    python cli.py "una sedia" --then "aggiungi i braccioli" --then "falla nera"
-    python cli.py "una sedia" --save "Sedia buona"  salva nella libreria
+    python cli.py "una persona con la testa di rana"
+    python cli.py "un albero con un nido" --out albero.glb --png
+    python cli.py "una casa" --detail 3            piu' parti, non piu' triangoli
+    python cli.py "una sedia" --save "Sedia buona" salva nella libreria
     python cli.py --library                        elenca la libreria
-    python cli.py --find "un pneumatico da fuoristrada"   cerca per significato
+    python cli.py --find "qualcosa con le ali"     cerca per significato
     python cli.py --load <id> --out out.glb        ricarica un asset salvato
-    python cli.py "una sedia" --project lavoro.my3d       salva la cronologia
+    python cli.py "una casa" --project lavoro.my3d salva la cronologia
     python cli.py --open lavoro.my3d --out finale.glb    riprende un progetto
-    python cli.py "una jeep" --game-ready unity          LOD e collisione
-    python cli.py --image auto.jpg                       parte da una foto
+    python cli.py "un robot" --game-ready unity          LOD e collisione
     python cli.py "un drago" --animate --out drago.glb   glTF animato
-    python cli.py --image lato.jpg --front fronte.jpg "un'auto"   due viste
+    python cli.py "una casa" --plan                il piano JSON che l'LLM ha scritto
+    python cli.py "una casa" --explain             perche' e' stato scelto cio' che c'e'
     python cli.py --hardware                             profilo di qualita'
     python cli.py --recover                              riprende dopo un crash
     python cli.py --providers
@@ -84,17 +84,20 @@ def show_library(query: str = "") -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Generatore 3D controllato dall'AI")
     ap.add_argument("prompt", nargs="?", help="descrizione dell'oggetto")
-    ap.add_argument("--then", action="append", default=[],
-                    help="modifica successiva (ripetibile)")
     ap.add_argument("--out", default="", help="file di output (.glb .obj .stl .ply)")
     ap.add_argument("--png", action="store_true", help="salva anche un'anteprima PNG")
     ap.add_argument("--textures", action="store_true",
                     help="aggiunge le texture procedurali. Il cartoon low poly "
                          "vive di tinte piatte: normalmente non servono")
     ap.add_argument("--provider", default="", help="forza un provider (o 'offline')")
-    ap.add_argument("--density", type=float, default=0.0, metavar="N",
-                    help="quanto fitta la superficie, 0.3-2.4 (1.0 = normale). "
-                         "Non cambia lo stile, che e' sempre cartoon low poly")
+    ap.add_argument("--detail", type=int, default=0, metavar="N", choices=(0, 1, 2, 3),
+                    help="livello di dettaglio: 1 le parti principali, 3 i "
+                         "dettagli del volto. Non cambia lo stile, cambia "
+                         "quante parti vengono costruite")
+    ap.add_argument("--style", default="", metavar="STILE",
+                    help="stile visivo registrato (predefinito: low_poly)")
+    ap.add_argument("--explain", action="store_true",
+                    help="spiega perche' sono stati scelti quei componenti")
     ap.add_argument("--seed", type=int, default=None,
                     help="riproduce esattamente una variante gia vista")
     ap.add_argument("--variants", type=int, default=1,
@@ -115,10 +118,6 @@ def main() -> int:
                     help="riprende un progetto salvato invece di generare")
     ap.add_argument("--game-ready", default="", metavar="MOTORE",
                     help="LOD e collisione per unity | unreal | godot | generic")
-    ap.add_argument("--image", default="", metavar="FILE",
-                    help="immagine di riferimento (vista laterale)")
-    ap.add_argument("--front", default="", metavar="FILE",
-                    help="seconda vista, frontale: aggiunge la larghezza")
     ap.add_argument("--quality", default="", metavar="PROFILO",
                     help="auto | basso | medio | alto")
     ap.add_argument("--hardware", action="store_true",
@@ -141,13 +140,16 @@ def main() -> int:
         return show_providers()
     if args.library or args.find:
         return show_library(args.find)
-    if not args.prompt and not args.load and not args.open and not args.image:
+    if not args.prompt and not args.load and not args.open:
         ap.print_help()
         return 2
 
     from app.ai.provider import make_provider
+    from app.core.session import Options
 
     session = Session(provider=make_provider(args.provider or None))
+    opzioni = Options(style=args.style, detail_level=args.detail,
+                      seed=args.seed or 0)
     if args.recover:
         from app.core import recovery
 
@@ -161,32 +163,26 @@ def main() -> int:
     elif args.open:
         version = session.open_project(args.open)
         print("\n>> progetto aperto: %d versioni" % len(session.history))
-        if args.prompt:
-            version = session.modify(args.prompt)
-            print(">> %s -> %s" % (args.prompt, version.message))
     elif args.load:
         version = session.load_from_library(args.load)
-    elif args.image:
-        version = session.generate_from_image(args.image, args.prompt or "",
-                                              seed=args.seed,
-                                              front=args.front or None)
     else:
-        version = session.generate(args.prompt, seed=args.seed)
-    print("\n>>", version.message)
-
-    # Varianti aggiuntive: non costano una nuova chiamata all'LLM, cambia solo il seed.
-    for i in range(max(0, args.variants - 1)):
-        session.revariate()
-        print(">> variante %d: seed %d" % (i + 2, session.plan.seed))
-
-    for instruction in args.then:
-        version = session.modify(instruction)
-        print(">> %s -> %s" % (instruction, version.message))
-
-    if args.density:
-        version.plan.density = args.density
-        session.rebuild()
+        risultato = session.generate(args.prompt, opzioni)
         version = session.current
+        print("\n>> planner: %s%s | %d triangoli"
+              % (risultato.planner, " (corretto)" if risultato.repaired else "",
+                 risultato.triangles))
+        for diagnosi in risultato.diagnostics:
+            if diagnosi.fatal:
+                print("   !", diagnosi.describe())
+
+    # Varianti: lo stesso prompt con un altro seme. Il piano cambia, e con lui
+    # il modello; non e' una perturbazione della mesh, e' un'altra scelta.
+    from dataclasses import replace
+
+    for i in range(max(0, args.variants - 1)):
+        seme = (args.seed or 0) + i + 1
+        session.generate(args.prompt, replace(opzioni, seed=seme))
+        print(">> variante %d: seme %d" % (i + 2, seme))
 
     scene = session.scene
     print("\n%s" % scene.summary())
@@ -194,7 +190,17 @@ def main() -> int:
         print("  %s %-26s %s" % (check.icon(), check.label, check.detail))
 
     if args.plan:
-        print("\n" + json.dumps(version.plan.model_dump(), indent=2, ensure_ascii=False))
+        print("\n" + json.dumps(version.plan.to_dict(), indent=2, ensure_ascii=False))
+
+    if args.explain and version.result is not None:
+        print()
+        for riga in version.result.explain():
+            print("  " + riga)
+        cambiati = version.result.changes()
+        if cambiati:
+            print("\n  cambiati:")
+            for riga in cambiati[:12]:
+                print("    " + riga)
 
     if args.save is not None:
         tags = [t.strip() for t in args.tags.split(",") if t.strip()]
@@ -232,8 +238,8 @@ def main() -> int:
         disponibili = session.animations()
         if not disponibili:
             print()
-            print("questo modello non ha uno scheletro: solo gli assemblaggi "
-                  "(creature, oggetti composti) hanno giunti da animare")
+            print("questo modello non ha giunti da animare: serve un modello "
+                  "fatto di piu' parti attaccate fra loro")
             return 1
         # Nome distinto: con lo stesso nome dell'export normale, il file statico
         # scritto poco piu' sotto sovrascriveva proprio l'animato.
@@ -254,7 +260,7 @@ def main() -> int:
         for i, v in enumerate(session.history):
             target = name.with_name("%s_%d%s" % (name.stem, i + 1, name.suffix))
             path = export_scene(v.scene, target)
-            print("variante %d -> %s  (seed %d)" % (i + 1, path, v.plan.seed))
+            print("variante %d -> %s  (seme %d)" % (i + 1, path, v.plan.seed))
             if args.png:
                 from app.ui.offscreen import render
                 render(v.scene, Path(path).with_suffix(".png"))

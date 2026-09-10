@@ -99,7 +99,7 @@ FROG_HEAD = Component(
             mount("face_mount", socket_id="occhio_r", side="r", tags=("occhio",)),
             mount("hair_mount", socket_id="cima")),
     role="head", material="skin", requires=frozenset({"connected"}),
-    tags=frozenset({"anfibio", "testa", "creatura"}))
+    tags=frozenset({"anfibio", "amphibian", "rana", "frog", "testa", "head", "creatura", "creature"}))
 
 
 def _occhio_sporgente(v, ctx) -> Piece:
@@ -117,7 +117,7 @@ BULGING_EYE = Component(
     params={"size": ParamSpec(0.045, DISTANCE, min=0.002, max=0.5,
                               semantic_role="girth")},
     provides=(Capability("face_mount"),),
-    role="", material="eye", tags=frozenset({"anfibio", "occhio"}))
+    role="", material="eye", tags=frozenset({"anfibio", "amphibian", "occhio", "eye"}))
 
 
 def _testa_di_drago(v, ctx) -> Piece:
@@ -169,4 +169,4 @@ DRAGON_HEAD = Component(
             mount("face_mount", socket_id="viso"),
             mount("hair_mount", socket_id="cima")),
     role="head", material="scale",
-    tags=frozenset({"rettile", "testa", "fantasia", "creatura"}))
+    tags=frozenset({"rettile", "reptile", "drago", "dragon", "testa", "head", "fantasia", "fantasy", "creatura", "creature"}))

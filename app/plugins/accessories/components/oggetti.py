@@ -37,7 +37,7 @@ PIERCING = Component(
             "thickness": ParamSpec(0.003, DISTANCE, min=0.0005, max=0.05,
                                    semantic_role="girth")},
     provides=(Capability("anchor"),),
-    role="gioiello", material="metal", tags=frozenset({"gioiello", "accessorio"}))
+    role="gioiello", material="metal", tags=frozenset({"gioiello", "jewel", "accessorio", "accessory", "piercing"}))
 
 
 def _mascherina(v, ctx) -> Piece:
@@ -66,7 +66,7 @@ MASK = Component(
     provides=(Capability("face_mount"), Capability("anchor")),
     mounts=(mount("gear_mount", socket_id="fronte"),),
     role="maschera", material="metal",
-    tags=frozenset({"accessorio", "maschera", "metallo"}))
+    tags=frozenset({"accessorio", "accessory", "maschera", "mask", "metallo", "metal"}))
 
 
 def _casco(v, ctx) -> Piece:
@@ -118,7 +118,7 @@ HELMET = Component(
     mounts=(mount("gear_mount", socket_id="cima"),
             mount("visor_mount", socket_id="fessura")),
     role="copricapo", material="metal",
-    tags=frozenset({"accessorio", "casco", "metallo"}))
+    tags=frozenset({"accessorio", "accessory", "casco", "helmet", "metallo", "metal"}))
 
 
 def _visiera(v, ctx) -> Piece:
@@ -139,4 +139,4 @@ VISOR = Component(
                                 semantic_role="length")},
     provides=(Capability("visor_mount"), Capability("face_mount")),
     role="visiera", material="glass",
-    tags=frozenset({"accessorio", "visiera"}))
+    tags=frozenset({"accessorio", "accessory", "visiera", "visor"}))
