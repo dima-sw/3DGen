@@ -27,8 +27,8 @@ from __future__ import annotations
 import ast
 import math
 import operator
-from dataclasses import dataclass, field
-from typing import Any, Iterable
+from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 

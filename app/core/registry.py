@@ -41,7 +41,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
-from app.core.capability import Capability, Mount
+from app.core.capability import Capability
 from app.core.component import Component
 from app.core.errors import Report
 from app.core.material import MaterialSpec

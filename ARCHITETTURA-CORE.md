@@ -643,7 +643,11 @@ Ai 762 attuali si aggiungono, per gruppi:
 | 9 | `Session` sul nuovo percorso, vecchio ancora disponibile | la UI non deve accorgersene | **fatto** |
 | 10 | planner LLM che costruisce il prompt dal registry | l'LLM vede solo il vocabolario | **fatto** (45 test) |
 | 11 | scenari end-to-end, dal prompt alla mesh | è l'unica prova che conti | **fatto** (31 test) |
-| 12 | migrazione dei banchi 1-5, uno per commit | con rimozione del vecchio nello stesso passo | in corso |
+| 12 | rimozione della pipeline storica | un solo percorso, non due | **fatto** (-7.965 righe) |
+| 13 | progetti e libreria sul `CompositionGraph` | un progetto deve potersi rigenerare | **fatto** |
+| 14 | fornitore LLM astratto e schema del piano | il core non nomina nessuna API | **fatto** (31 test) |
+| 15 | casi d'oro permanenti e linea di partenza | l'unico criterio che conta | **fatto** (51 test) |
+| 16 | API congelate | un plugin di terze parti ci si appoggia | **fatto** (44 test) |
 
 Il vertical slice è **7 e 8**. Se quei due casi girano sullo stesso core senza
 che il core sappia cosa sia una rana o un pianeta, l'architettura è universale;
@@ -701,34 +705,145 @@ giunti, compenetrazione — e sono sempre gli stessi.
 
 ---
 
-## 12. Le due strade, e quando la vecchia esce
+## 12. La strada vecchia e' stata tolta
 
-Oggi convivono, con nomi diversi apposta:
+Non disattivata: tolta. 21 moduli, 7.965 righe.
 
-| | strada nuova | strada storica |
+```
+build/builder  build/strategy  build/validation
+geometry/{composition,recipe,sdf,surface,lowpoly,primitives,templates}
+ai/{planner,creature,offline,prompts,variation,reference,shape_match,mesh_provider}
+core/spec  core/style
+```
+
+Prima di togliere, e' stato migrato quello che serviva ancora:
+
+| cosa serviva | dove sta adesso |
+|---|---|
+| `Scene` per export, LOD, libreria, animazione, UI | `build/scene.py` la costruisce da un `BuildResult` |
+| `MaterialSpec` | `core/material.py`, e i materiali sono **registrabili** dai plugin |
+| salvataggio di un progetto | `core/project.py` v2: salva `CompositionGraph`, plugin e versioni |
+| libreria di asset | `assets/library.py` salva il piano di composizione |
+| livelli di dettaglio | si **rigenerano** costruendo meno parti, invece di decimare |
+| profili hardware | danno un budget di triangoli tarato sulla composizione |
+| scheletro per l'animazione | legge i socket veri e il lato **dichiarato** dagli innesti |
+
+Un test (`test_the_old_road_is_gone`) verifica che quei file non tornino e che
+nessuno li importi.
+
+**Che cosa e' sparito come funzione, e non e' stato sostituito:**
+
+- `Session.modify(prompt)` — l'editing a voce di un modello. Si modifica il
+  piano e si chiama `regenerate()`; l'editing a voce tornera' quando il planner
+  sapra' riscrivere un piano esistente, che e' un problema diverso da scriverne
+  uno nuovo.
+- `generate_from_image` — la lettura di un'immagine di riferimento produceva un
+  `GenerationPlan`. Il pulsante nella UI e' nascosto finche' non produrra' un
+  piano di composizione.
+- i validatori **semantici** (un pesce deve avere una coda, la coda deve stare
+  dietro). Sapevano che cosa fosse un pesce, ed e' cio' che il core non deve
+  sapere. Al loro posto c'e' `build/validate.py`, che misura solo quello che un
+  componente **dichiara**.
+
+---
+
+## 13. Il fornitore LLM
+
+```python
+class LLMProvider(ABC):
+    def available(self) -> bool: ...
+    def complete_json(self, system, user, temperature=0.2, schema=None) -> dict
+    @property
+    def structured(self) -> bool          # sa vincolare la risposta a uno schema?
+```
+
+Una domanda, una risposta, nessuno stato. Il core non nomina nessuna API:
+cambiare fornitore e' una riga in `core/config.py`, aggiungerne uno non tocca
+ne' il planner ne' la sessione.
+
+`schema` cambia solo **quanto ci si puo' fidare** della risposta. Tre gradini,
+dal piu' forte al piu' debole: uno schema vincolante, «rispondi in JSON»,
+niente. Si scende solo di quanto serve, e cio' che arriva viene validato in
+tutti e tre i casi.
+
+Se il fornitore non risponde si scende al planner locale e **lo si scrive**:
+`planner = "mock_fallback"`, piu' una diagnosi. Un ripiego silenzioso e' peggio
+di un errore.
+
+---
+
+## 14. Lo schema del piano
+
+`core/planner/schema.py`, versionato (`1.0`) e **indipendente dai plugin**: non
+contiene un solo id di componente, effetto o stile. Se ne contenesse uno,
+installare un plugin obbligherebbe a rigenerare lo schema — e uno schema che si
+rigenera non e' un contratto, e' una fotografia.
+
+    schema      un piano ha una radice, i figli sono un elenco, `amount` e' un numero
+    plans.py    `humanoid:body` esiste, `width` e' un suo parametro, `lanky` e' installato
+
+La validazione vera resta in `plans.py`, perche' un piano storto non deve dare
+«non conforme allo schema» ma «'creature:dragon_head' non si attacca a
+'architecture:window': al suo posto puoi usare humanoid:head».
+
+---
+
+## 15. La correzione, e come si decide se e' servita
+
+Una generazione, al massimo una correzione. Il confronto fra il primo piano e
+quello corretto e' un **punteggio deterministico** (`PlanScore`), non il numero
+di righe di errore:
+
+| difetto | peso | perche' |
 |---|---|---|
-| ingresso | `Session.generate(prompt) -> GenerationResult` | `Session.generate_legacy(prompt) -> Version` |
-| piano | `CompositionGraph` (JSON) | `GenerationPlan` (template + parametri) |
-| geometria | registry → resolver → effetti → `assembler` | template/SDF → `strategy` → `builder` |
-| uscita | `BuildResult` | `Scene` |
+| nessun piano | 10.000 | un piano che non produce niente e' il peggio possibile |
+| nodo non risolto | 1.000 | un pezzo che non entra nel modello |
+| diagnosi fatale | 500 | qualcosa si e' fermato |
+| innesto senza risposta | 250 | un buco visibile |
+| parametro inesistente | 40 | una richiesta che non e' arrivata |
+| budget superato | 20 | si e' costruito meno del previsto |
 
-La strada storica regge ancora libreria, progetti, varianti, animazione e
-interfaccia. **I ponti fra le due sono due, e sono fissati da un test**:
-`app/core/session.py` e `app/core/project.py` importano `app.build.builder`, e
-nessun terzo modulo può aggiungersi.
+Il primo peso e' nato da un difetto vero: un piano rifiutato in blocco aveva
+**meno** diagnosi di uno risolto a meta', e la correzione sembrava un
+miglioramento mentre cancellava il modello.
 
-Cosa manca per togliere la strada vecchia, in ordine:
+Nessun modello linguistico entra in questo confronto, e un test verifica che il
+modulo non nomini nemmeno un fornitore.
 
-1. `AssetLibrary` e `project` devono sapere salvare e rileggere un
-   `CompositionGraph` (oggi salvano un `GenerationPlan`);
-2. `app/anim/skeleton.py` deve ricavare i giunti da un `BuildResult` (oggi legge
-   `Scene.placements`);
-3. la UI deve chiamare `generate` invece di `generate_legacy`;
-4. allora `app/build/builder.py`, `strategy.py`, `geometry/composition.py`,
-   `geometry/templates/`, `ai/planner.py`, `ai/creature.py` e `core/spec.py`
-   escono insieme, e `assembler.py` prende il nome `builder.py`.
+---
 
-Già rimossi in questa fase: `app/plugins/humanoid.py`, `app/plugins/base.py`,
-`app/plugins/build.py` — il primo sistema a plugin, 1078 righe, duplicazione
-vera del vocabolario `humanoid/` nuovo. I 26 test che ci giravano sopra sono
-stati riscritti sul sistema nuovo, uno per uno, e sono diventati 32.
+## 16. Prestazioni, misurate
+
+`python tools/benchmark.py`. Su una macchina normale, senza rete:
+
+```
+caricamento plugin   16 ms      planner locale      1 ms
+vocabolario           3 ms      resolver          0,2 ms
+                                effetti           0,1 ms
+                                builder          3-10 ms
+                                qualita'          1-3 ms
+                                TOTALE           6-13 ms
+```
+
+Non sono un obiettivo: sono una linea di partenza. `tests/test_performance.py`
+tiene dei tetti dieci volte piu' larghi — servono ad accorgersi di un
+peggioramento di un ordine di grandezza, non a difendere un numero. La prova di
+scala arriva a **1000 componenti** installati e verifica che una ricerca per id
+non scandisca il catalogo.
+
+---
+
+## 17. API congelate
+
+Da questa fase, `tests/test_api_freeze.py` fissa campi e metodi pubblici di:
+
+```
+Capability  Mount  Requirement  Attachment  Component  Piece  Socket
+ParamSpec  Constraint  EffectSpec  StyleProfile  MaterialSpec
+PluginInfo  Registry  CompositionGraph  Resolver  Builder
+Session  GenerationResult  Options  Planner
+```
+
+Non impedisce di cambiarle: impedisce di cambiarle **per sbaglio**. Chi
+aggiunge un campo aggiorna anche quell'elenco, e quella riga di diff e' la
+decisione presa.

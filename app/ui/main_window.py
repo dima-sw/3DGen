@@ -58,7 +58,6 @@ EXAMPLES = [
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        load_all()
         self.session = Session(autosave=True)
         self.busy = False
         self.last_mode = "generate"

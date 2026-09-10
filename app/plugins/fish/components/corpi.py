@@ -11,7 +11,7 @@ corpo di pesce resta in piedi invece di sdraiarsi.
 from app.core.authoring import base_socket
 from app.core.capability import Capability, Requirement, mount
 from app.core.component import Attachment, Component, Piece
-from app.core.params import DISTANCE, RATIO, ParamSpec
+from app.core.params import DISTANCE, ParamSpec
 from app.core.socket import socket
 from app.geometry.kernel import grow
 

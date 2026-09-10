@@ -18,7 +18,6 @@ libreria cambia: e' una cache, non una fonte di verita'.
 from __future__ import annotations
 
 import json
-import math
 import re
 import unicodedata
 from abc import ABC, abstractmethod

@@ -43,7 +43,7 @@ due sistemi, e mescolarli vorrebbe dire non sapere piu' chi ha deciso cosa.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Any
 
 from app.core.errors import Report
 from app.core.graph import FROM_DERIVED, FROM_EFFECT, EffectRequest

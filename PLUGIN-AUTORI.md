@@ -334,6 +334,42 @@ una spiegazione, non una generazione fallita.
 
 ---
 
+## 6-bis. I materiali
+
+Un componente scrive `material="skin"`, non `#c98a5a`: il nome e' un
+riferimento condiviso — come una capability — e la tinta e' una decisione dello
+stile visivo. Se il tuo plugin porta un materiale che non esiste ancora, lo
+dichiara insieme alle forme:
+
+```json
+"materials": ["materials/tinte.py"]
+```
+
+```python
+from app.core.material import MaterialSpec
+
+MATERIALI = [
+    MaterialSpec(name="crystal", base_color="#7ac7db", roughness=0.08,
+                 metallic=0.1, opacity=0.75,
+                 description="cristallo: lucido, freddo, un po' trasparente"),
+]
+```
+
+I nomi **non** sono qualificati: `skin` e' `skin` per tutti, perche' e' un nome
+che piu' plugin usano volendo la stessa cosa. Chi lo dichiara per primo lo
+definisce; chi lo ridichiara diverso viene riferito e non sovrascrive — un
+colore che cambia a seconda dell'ordine di caricamento e' il genere di difetto
+che si scopre guardando il modello.
+
+Un nome che nessuno ha dichiarato non e' un errore: diventa un grigio, e il
+modello si costruisce lo stesso.
+
+Le tinte di base — `skin`, `metal`, `wood`, `glass`, `eye`, `rock`… — le porta
+il plugin `primitives`. Guardale prima di inventarne una: se il tuo pezzo e' di
+metallo, e' `metal`.
+
+---
+
 ## 7. Uno stile
 
 ```python
