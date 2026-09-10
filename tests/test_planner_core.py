@@ -239,7 +239,7 @@ def test_with_a_provider_the_real_planner_is_used():
         def available(self):
             return True
 
-        def complete_json(self, system, user, temperature=0.2):
+        def complete_json(self, system, user, temperature=0.2, schema=None):
             return {"root": {"id": "r", "ref": "primitives:block"}}
 
     assert isinstance(make_planner(Finto()), LLMPlanner)
@@ -253,8 +253,9 @@ def test_the_real_planner_sends_the_vocabulary_and_no_code(vocabolario):
         def available(self):
             return True
 
-        def complete_json(self, system, user, temperature=0.2):
+        def complete_json(self, system, user, temperature=0.2, schema=None):
             visto["system"], visto["user"] = system, user
+            visto["schema"] = schema
             return {"root": {"id": "r", "ref": "primitives:block"}}
 
     planner = LLMPlanner(Finto())

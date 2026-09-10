@@ -145,7 +145,7 @@ class _Broken(LLMProvider):
     def available(self) -> bool:
         return True
 
-    def complete_json(self, system, user, temperature=0.2):
+    def complete_json(self, system, user, temperature=0.2, schema=None):
         raise LLMError("simulazione di guasto")
 
 
@@ -155,7 +155,7 @@ class _Working(LLMProvider):
     def available(self) -> bool:
         return True
 
-    def complete_json(self, system, user, temperature=0.2):
+    def complete_json(self, system, user, temperature=0.2, schema=None):
         return {"root": {"id": "r", "ref": "primitives:block"}}
 
 

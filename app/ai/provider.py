@@ -26,6 +26,20 @@ class LLMError(RuntimeError):
 
 
 class LLMProvider(ABC):
+    """Un fornitore di risposte JSON. Una domanda, una risposta, nessuno stato.
+
+    Il resto dell'applicazione non sa quale sia: chiede un oggetto JSON e lo
+    riceve. Nessun modulo del core nomina un'API specifica — cambiare
+    fornitore e' una riga in configurazione, e aggiungerne uno nuovo non tocca
+    ne' il planner ne' la sessione.
+
+    `schema` e' facoltativo e cambia solo **quanto ci si puo' fidare** della
+    risposta: chi lo sa vincolare restituisce un oggetto gia' della forma
+    giusta, chi non lo sa lo ignora e la risposta viene letta come prima. In
+    nessuno dei due casi ci si fida senza validare: lo schema riduce i giri di
+    correzione, non li sostituisce.
+    """
+
     name: str = "abstract"
     key: str = "abstract"
 
@@ -34,7 +48,13 @@ class LLMProvider(ABC):
 
     @abstractmethod
     def complete_json(self, system: str, user: str,
-                      temperature: float = 0.2) -> dict[str, Any]: ...
+                      temperature: float = 0.2,
+                      schema: dict[str, Any] | None = None) -> dict[str, Any]: ...
+
+    @property
+    def structured(self) -> bool:
+        """Sa vincolare la risposta a uno schema? Per predefinito, no."""
+        return False
 
     @staticmethod
     def _extract_json(text: str) -> dict[str, Any]:
@@ -78,8 +98,13 @@ class ChatProvider(LLMProvider):
             h["X-Title"] = "3DGen"
         return h
 
+    @property
+    def structured(self) -> bool:
+        return bool(getattr(self.spec, "json_schema", False))
+
     def complete_json(self, system: str, user: str,
-                      temperature: float = 0.2) -> dict[str, Any]:
+                      temperature: float = 0.2,
+                      schema: dict[str, Any] | None = None) -> dict[str, Any]:
         if not self.available():
             raise LLMError("provider %s non configurato" % self.name)
 
@@ -88,9 +113,18 @@ class ChatProvider(LLMProvider):
             "messages": [{"role": "system", "content": system},
                          {"role": "user", "content": user}],
             "temperature": float(temperature),
-            "max_tokens": 1600,
+            "max_tokens": 2400,
         }
-        if self.spec.json_mode:
+        # Tre gradini, dal piu' forte al piu' debole: uno schema vincolante,
+        # "rispondi in JSON", niente. Si scende solo di quanto serve, e cio'
+        # che arriva viene comunque validato.
+        if schema is not None and self.structured:
+            payload["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {"name": "piano", "strict": False,
+                                "schema": schema},
+            }
+        elif self.spec.json_mode:
             payload["response_format"] = {"type": "json_object"}
 
         timeout = SETTINGS.request_timeout * (4 if self.key == "ollama" else 1)
@@ -128,7 +162,8 @@ class OfflineProvider(LLMProvider):
         return True
 
     def complete_json(self, system: str, user: str,
-                      temperature: float = 0.2) -> dict[str, Any]:
+                      temperature: float = 0.2,
+                      schema: dict[str, Any] | None = None) -> dict[str, Any]:
         raise LLMError("provider offline: si usa il planner a regole")
 
 
@@ -150,15 +185,21 @@ class FailoverProvider(LLMProvider):
     def available(self) -> bool:
         return any(p.available() for p in self.providers)
 
+    @property
+    def structured(self) -> bool:
+        return any(p.structured for p in self.providers)
+
     def complete_json(self, system: str, user: str,
-                      temperature: float = 0.2) -> dict[str, Any]:
+                      temperature: float = 0.2,
+                      schema: dict[str, Any] | None = None) -> dict[str, Any]:
         self.attempts = []
         errors: list[str] = []
         for p in self.providers:
             if not p.available():
                 continue
             try:
-                result = p.complete_json(system, user, temperature)
+                result = p.complete_json(system, user, temperature,
+                                         schema=schema)
                 self.last_used = p.name
                 self.attempts.append("%s: ok" % p.name)
                 return result

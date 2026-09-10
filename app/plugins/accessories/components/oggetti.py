@@ -127,7 +127,15 @@ def _visiera(v, ctx) -> Piece:
     mesh = grow([(0.0, largo * 0.9), (0.5, largo * 1.0), (1.0, largo * 0.75)],
                 sides=5, length=alto, axis=1, flat=0.22)
     return Piece(mesh=mesh, material="glass", tags=("visor", "accessorio"),
-                 sockets={"base": base_socket(largo * 0.9, axis="+Y")})
+                 sockets={
+                     "base": base_socket(largo * 0.9, axis="+Y"),
+                     # dove si mette una luce, una telecamera, un cristallo:
+                     # un accessorio ha diritto ai propri accessori, ed e' la
+                     # ragione per cui l'annidamento non ha un fondo
+                     "fronte": socket("fronte", (0.0, alto * 0.55, largo * 0.55),
+                                      (0.0, 0.2, 1.0), up=(0.0, 1.0, 0.0),
+                                      radius=largo * 0.18, provides="anchor"),
+                 })
 
 
 VISOR = Component(
@@ -138,5 +146,6 @@ VISOR = Component(
             "height": ParamSpec(0.042, DISTANCE, min=0.003, max=1.0,
                                 semantic_role="length")},
     provides=(Capability("visor_mount"), Capability("face_mount")),
+    mounts=(mount("anchor", socket_id="fronte"),),
     role="visiera", material="glass",
     tags=frozenset({"accessorio", "accessory", "visiera", "visor"}))

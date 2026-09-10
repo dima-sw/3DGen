@@ -452,8 +452,8 @@ class Session:
                                      options=opzioni)
         self._verifica(seconda.plan, candidato, opzioni)
 
-        prima = plan_score(primo.report, primo.resolved)
-        dopo = plan_score(candidato.report, candidato.resolved)
+        prima = plan_score(primo.report, primo.resolved, primo.plan)
+        dopo = plan_score(candidato.report, candidato.resolved, candidato.plan)
         if dopo >= prima:
             primo.report.note(
                 "REPAIR_NOT_BETTER", "la correzione non ha migliorato il piano",

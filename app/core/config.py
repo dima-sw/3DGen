@@ -77,6 +77,10 @@ class ProviderSpec:
     model_env: str
     default_model: str
     json_mode: bool = True
+    # Sa vincolare la risposta a uno **schema** JSON, non solo a "un JSON".
+    # E' una dichiarazione, non una prova: chi la mette e non lo sa fare
+    # riceve un errore dal proprio endpoint, che e' meglio di un piano storto.
+    json_schema: bool = False
     free_tier: bool = False
     needs_key: bool = True
     note: str = ""
@@ -89,7 +93,7 @@ PROVIDERS: dict[str, ProviderSpec] = {
         endpoint="https://api.groq.com/openai/v1/chat/completions",
         key_env=("GROQ_API_KEY", "NEXT_PUBLIC_GROQ_API_KEY"),
         model_env="GROQ_MODEL", default_model="openai/gpt-oss-120b",
-        json_mode=True, free_tier=True,
+        json_mode=True, json_schema=True, free_tier=True,
         note="gratis e molto veloce, ottimo per il planning JSON",
     ),
     "gemini": ProviderSpec(
@@ -97,7 +101,7 @@ PROVIDERS: dict[str, ProviderSpec] = {
         endpoint="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         key_env=("GEMINI_API_KEY", "NEXT_PUBLIC_GEMINI_API_KEY"),
         model_env="GEMINI_MODEL", default_model="gemini-flash-latest",
-        json_mode=True, free_tier=True,
+        json_mode=True, json_schema=True, free_tier=True,
         note="free tier ampio, endpoint compatibile OpenAI",
     ),
     "mistral": ProviderSpec(

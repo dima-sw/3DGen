@@ -149,6 +149,12 @@ def _riferimento(diagnosi) -> str:
 # non si attacca, ed e' giusto cosi' — il primo lo aggiusta il componente, il
 # secondo lascia un buco nel modello.
 PESI = {
+    # Nessun piano affatto: non si e' potuto costruire niente. E' la categoria
+    # decisiva, e sta sopra tutte le altre perche' un piano che almeno in parte
+    # regge e' sempre meglio di uno che non produce un modello. Senza questo
+    # peso, un piano rifiutato in blocco totalizzava **meno** difetti di uno
+    # risolto a meta' — e la correzione sembrava un miglioramento.
+    "no_plan": 10_000,
     "unresolved": 1000,        # un nodo che non e' entrato nel modello
     "fatal": 500,              # una diagnosi che ferma qualcosa
     "attachment": 250,         # un innesto rimasto senza risposta
@@ -177,6 +183,7 @@ class PlanScore:
     confronto piu' fine, sara' comunque fatto di conteggi.
     """
 
+    no_plan: int = 0
     unresolved: int = 0
     fatal: int = 0
     attachment: int = 0
@@ -200,15 +207,17 @@ class PlanScore:
         return self.total >= altro.total
 
 
-def plan_score(report, resolved=None) -> PlanScore:
+def plan_score(report, resolved=None, plan=None) -> PlanScore:
     """Il punteggio di un piano: quanti difetti, e di che genere.
 
-    Si guardano due cose. Il **referto**, che dice cosa non ha funzionato; e il
-    **risolto**, che dice quanti pezzi sono rimasti fuori — un piano che
-    risolve dieci nodi su dodici non e' come uno che ne risolve due su dodici,
-    e il referto da solo non lo direbbe.
+    Si guardano tre cose. Se un **piano** c'e' affatto; il **referto**, che dice
+    cosa non ha funzionato; e il **risolto**, che dice quanti pezzi sono rimasti
+    fuori — un piano che risolve dieci nodi su dodici non e' come uno che ne
+    risolve due su dodici, e il referto da solo non lo direbbe.
     """
     conta = {nome: 0 for nome in PESI}
+    if plan is None or getattr(resolved, "root", "") == "":
+        conta["no_plan"] = 1
     for diagnosi in getattr(report, "entries", ()) or ():
         codice = diagnosi.code
         if codice in _ATTACCO and diagnosi.fatal:
