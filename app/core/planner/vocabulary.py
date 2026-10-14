@@ -105,6 +105,11 @@ class ParamEntry:
     role: str = ""
     derived: bool = False
     description: str = ""
+    # [V5] L'id dell'effetto installato che questo parametro pilota, e niente
+    # altro. Nemmeno lo stadio, nemmeno i parametri dell'effetto: il modello
+    # deve capire che muovendo questo numero la forma cambia, non come la
+    # deformazione e' implementata.
+    effect: str = ""
 
     def to_dict(self) -> dict:
         fuori: dict[str, Any] = {"name": self.name, "type": self.type}
@@ -117,7 +122,8 @@ class ParamEntry:
         if self.choices:
             fuori["choices"] = list(self.choices)
         for chiave, valore in (("unit", self.unit), ("role", self.role),
-                               ("description", self.description)):
+                               ("description", self.description),
+                               ("effect", self.effect)):
             if valore:
                 fuori[chiave] = valore
         if self.derived:
@@ -132,6 +138,13 @@ class ParamEntry:
         else:
             intervallo = self.type
         coda = " derivato" if self.derived else ""
+        # Il ruolo semantico va nel **testo** e non solo nel JSON: e' la parola
+        # con cui un trait e un effetto nominano questo numero, e V3.5 ha
+        # misurato che cio' che non e' nel testo reso non esiste per il modello.
+        if self.role:
+            coda += " ruolo %s" % self.role
+        if self.effect:
+            coda += " -> %s" % self.effect
         return "%s: %s %s%s" % (self.name, self.type, intervallo, coda)
 
 
@@ -683,9 +696,9 @@ class Vocabulary:
 # --------------------------------------------------------------------------- #
 # Costruzione dal registry
 # --------------------------------------------------------------------------- #
-def _param(nome: str, spec) -> ParamEntry:
+def _param(nome: str, spec, effect: str = "") -> ParamEntry:
     return ParamEntry(
-        name=nome, type=getattr(spec, "type", "float"),
+        name=nome, type=getattr(spec, "type", "float"), effect=effect,
         min=getattr(spec, "min", None), max=getattr(spec, "max", None),
         default=spec.default if isinstance(spec.default, (int, float, str)) else None,
         choices=tuple(getattr(spec, "choices", ()) or ()),
@@ -693,6 +706,17 @@ def _param(nome: str, spec) -> ParamEntry:
         role=sanitize(getattr(spec, "semantic_role", ""), 24),
         derived=bool(getattr(spec, "derived", "")),
         description=sanitize(getattr(spec, "description", ""), 80))
+
+
+def _pilotati(componente) -> dict:
+    """Quali parametri pilotano un effetto: nome -> id dell'effetto.
+
+    Si legge dalla dichiarazione del componente e si mostra come una freccia,
+    perche' un knob che deforma e un knob che ricostruisce si usano allo stesso
+    modo ma non significano la stessa cosa.
+    """
+    return {b.param: b.type
+            for b in (getattr(componente, "param_effects", ()) or ())}
 
 
 def _componente(componente) -> ComponentEntry:
@@ -703,7 +727,8 @@ def _componente(componente) -> ComponentEntry:
         mounts=tuple(MountEntry(capability=m.capability, side=m.side,
                                 tags=tuple(sorted(m.tags)), capacity=m.capacity)
                      for m in componente.mounts),
-        params=tuple(_param(n, s) for n, s in sorted(componente.params.items())),
+        params=tuple(_param(n, s, _pilotati(componente).get(n, ""))
+                     for n, s in sorted(componente.params.items())),
         tags=tuple(sorted(componente.tags)),
         role=sanitize(componente.role, 32),
         styles=tuple(sorted(componente.styles)),

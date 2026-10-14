@@ -96,6 +96,11 @@ def main() -> int:
                          "quante parti vengono costruite")
     ap.add_argument("--style", default="", metavar="STILE",
                     help="stile visivo registrato (predefinito: low_poly)")
+    ap.add_argument("--frame-policy", default="diagnose",
+                    choices=("diagnose", "strict"), metavar="POLITICA",
+                    help="che fare quando due componenti dichiarano convenzioni "
+                         "d'asse diverse: 'diagnose' avvisa e costruisce, "
+                         "'strict' non fa passare il piano")
     ap.add_argument("--explain", action="store_true",
                     help="spiega perche' sono stati scelti quei componenti")
     ap.add_argument("--seed", type=int, default=None,
@@ -149,7 +154,7 @@ def main() -> int:
 
     session = Session(provider=make_provider(args.provider or None))
     opzioni = Options(style=args.style, detail_level=args.detail,
-                      seed=args.seed or 0)
+                      seed=args.seed or 0, frame_policy=args.frame_policy)
     if args.recover:
         from app.core import recovery
 

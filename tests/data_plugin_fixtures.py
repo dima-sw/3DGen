@@ -140,3 +140,75 @@ def write_vehicle_plugin(root: Path) -> Path:
         "mounts": mounts, "sockets": sockets, "children": children,
         "layout_regions": regions,
     }], meshes={"body.glb": box_mesh((1.3, 0.65, 2.3))})
+
+
+def box_along_x(size=(1.0, 0.3, 0.3)) -> trimesh.Trimesh:
+    """A closed twelve-triangle mesh growing from the origin along +X."""
+    mesh = trimesh.creation.box(extents=size)
+    mesh.apply_translation((size[0] / 2.0, 0.0, 0.0))
+    return mesh
+
+
+def write_variable_plugin(root: Path, *, plugin_id="mesh_variable") -> Path:
+    """[V5] Mesh-backed components whose parameters carry semantic meaning.
+
+    Two kinds of declared parameter, which are the two strategies the loader
+    accepts:
+
+    * ``head`` declares transform scales that also declare a ``semantic_role``,
+      so an installed semantic trait reaches an imported mesh through the
+      ordinary rule machinery;
+    * ``tail`` declares ``curvature``, which drives the installed ``fx:bend``
+      through the ordinary effect pipeline instead of scaling anything.
+    """
+    base_y = socket_data("base", (0, 0, 0), (0, -1, 0))
+    base_x = socket_data("base", (0, 0, 0), (-1, 0, 0), up=(0, 1, 0))
+    components = [
+        {"id": "%s:head" % plugin_id, "name": "Variable head",
+         "description": "An imported head whose width, height and scale are declared",
+         "mesh": "../meshes/head.glb", "role": "head",
+         "tags": ["head", "humanoid"], "provides": ["head_mount"],
+         "sockets": [base_y,
+                     socket_data("tip", (0, 0.4, 0), capabilities=("crest_mount",))],
+         "params": {
+             "width": {"default": 1.0, "min": 0.2, "max": 3.0,
+                       "transform": "scale_x", "semantic_role": "width"},
+             "height": {"default": 1.0, "min": 0.2, "max": 3.0,
+                        "transform": "scale_y", "semantic_role": "height"},
+             "size": {"default": 1.0, "min": 0.2, "max": 3.0,
+                      "transform": "uniform_scale", "semantic_role": "scale"}},
+         "frame": {"growth_axis": "+Y", "front": "+Z", "up": "+Y"}},
+        {"id": "%s:tail" % plugin_id, "name": "Variable tail",
+         "description": "An imported tail whose curvature drives an installed effect",
+         "mesh": "../meshes/tail.glb", "role": "tail", "tags": ["tail"],
+         "provides": ["tail_mount", "crest_mount"],
+         "sockets": [base_x,
+                     socket_data("tip", (1.0, 0, 0), (1, 0, 0), up=(0, 1, 0),
+                                 capabilities=("anchor",)),
+                     # esattamente su un vertice del blocco: serve a misurare
+                     # che vertici e innesti si muovono con la stessa mappa
+                     socket_data("corner", (1.0, 0.15, 0.15), (1, 0, 0),
+                                 up=(0, 1, 0), capabilities=("probe",))],
+         "params": {
+             "length": {"default": 1.0, "min": 0.2, "max": 3.0,
+                        "transform": "scale_x", "semantic_role": "length"},
+             "curvature": {"default": 0.0, "min": -1.0, "max": 1.0,
+                           "semantic_role": "curvature",
+                           "effect": {"type": "fx:bend", "parameter": "amount",
+                                      "scope": "part", "neutral": 0.0}}},
+         "frame": {"growth_axis": "+X", "front": "+Z", "up": "+Y"}},
+        {"id": "%s:host" % plugin_id, "description": "A body that accepts both",
+         "mesh": "../meshes/body.glb", "role": "body", "tags": ["body"],
+         "provides": ["core_mount"],
+         "mounts": [{"capability": "head_mount", "socket_id": "head"},
+                    {"capability": "tail_mount", "socket_id": "tail"}],
+         "sockets": [base_y,
+                     socket_data("head", (0, 1, 0), capabilities=("head_mount",)),
+                     socket_data("tail", (0, 0, -0.2), (0, 0, -1), up=(0, 1, 0),
+                                 capabilities=("tail_mount",))],
+         "frame": {"growth_axis": "+Y", "front": "+Z", "up": "+Y"}},
+    ]
+    return write_plugin(root, plugin_id=plugin_id, components=components,
+                        meshes={"head.glb": box_mesh((0.3, 0.4, 0.25)),
+                                "tail.glb": box_along_x(),
+                                "body.glb": box_mesh()})

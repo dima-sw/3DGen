@@ -1,0 +1,134 @@
+{
+  "id": "variability_extension",
+  "version": "1.0.0",
+  "name": "Semantic Variability Trait Extension",
+  "description": "Relative-proportion semantic traits: scale a part, widen it, lengthen it, and the three part-selective shortcuts a cartoon request needs. Targets are declared roles, tags and parameter semantic roles, never node paths.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "trait",
+    "extension",
+    "semantic",
+    "proportion",
+    "variability"
+  ],
+  "components": [],
+  "effects": [],
+  "styles": [],
+  "materials": [],
+  "traits": [
+    "traits/variability.py"
+  ],
+  "dependencies": [],
+  "synonyms": {
+    "testa": [
+      "head",
+      "capo"
+    ],
+    "teste": [
+      "testa",
+      "head"
+    ],
+    "mano": [
+      "hand"
+    ],
+    "mani": [
+      "mano",
+      "hand"
+    ],
+    "gamba": [
+      "leg"
+    ],
+    "gambe": [
+      "gamba",
+      "leg"
+    ],
+    "larga": [
+      "largo",
+      "width",
+      "wide"
+    ],
+    "largo": [
+      "width",
+      "wide",
+      "larga"
+    ],
+    "lunga": [
+      "lungo",
+      "length",
+      "long"
+    ],
+    "lungo": [
+      "length",
+      "long",
+      "lunga"
+    ],
+    "enorme": [
+      "grande",
+      "huge",
+      "gigante"
+    ],
+    "corte": [
+      "corto",
+      "short"
+    ],
+    "corto": [
+      "short",
+      "corte"
+    ],
+    "hands": [
+      "hand",
+      "mano"
+    ],
+    "heads": [
+      "head",
+      "testa"
+    ],
+    "legs": [
+      "leg",
+      "gamba"
+    ],
+    "arms": [
+      "arm",
+      "braccio"
+    ],
+    "tails": [
+      "tail",
+      "coda"
+    ],
+    "bigger": [
+      "big",
+      "grande",
+      "huge"
+    ],
+    "huge": [
+      "big",
+      "grande",
+      "enorme"
+    ],
+    "wider": [
+      "wide",
+      "width",
+      "largo"
+    ],
+    "longer": [
+      "long",
+      "length",
+      "lungo"
+    ],
+    "shorter": [
+      "short",
+      "corto"
+    ],
+    "short": [
+      "corto",
+      "corte"
+    ],
+    "slender": [
+      "thin",
+      "slim",
+      "snello",
+      "sottile"
+    ]
+  }
+}

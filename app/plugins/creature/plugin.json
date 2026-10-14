@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "name": "Creature",
   "description": "Teste e parti di creature: rana, drago. Sostituiscono una testa umana perche' dichiarano la stessa capability, non perche' qualcuno lo ha previsto.",
+  "frame": { "up": "+Y", "front": "+Z" },
   "author": "3DGen",
   "license": "MIT",
   "tags": [

@@ -35,6 +35,7 @@ from app.core.capability import (CAPABILITY, CAPABILITY_AND_SIDE,
                                  INCOMPATIBLE, Requirement)
 from app.core.component import Component
 from app.core.errors import Report
+from app.core.frame import FRAME_UNDECLARED, POLICY_DIAGNOSE
 from app.core.graph import (FROM_DEFAULT, FROM_DERIVED, FROM_EFFECT,
                             FROM_OVERRIDE, FROM_TRAIT, CompositionGraph,
                             EffectRequest)
@@ -99,6 +100,11 @@ class ResolvedLink:
     insert: float = 0.35
     roll: float = 0.0
     layout_scale: float = 1.0
+    # L'esito del confronto fra le convenzioni d'asse dei due componenti
+    # (`app/core/frame.py`): `compatible`, `convertible`, `ambiguous` oppure
+    # `undeclared`. E' un referto, non una trasformazione: il collegamento resta
+    # quello che i socket dicono.
+    frame: str = FRAME_UNDECLARED
 
     @property
     def how(self) -> str:
@@ -172,6 +178,7 @@ class ResolvedComposition:
     detail_level: int = 2
     seed: int = 0
     budget: Any = None
+    frame_policy: str = POLICY_DIAGNOSE
     root: str = ""
     nodes: dict[str, ResolvedNode] = field(default_factory=dict)
     order: list[str] = field(default_factory=list)     # visita deterministica

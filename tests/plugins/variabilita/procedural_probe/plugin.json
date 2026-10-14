@@ -1,0 +1,19 @@
+{
+  "id": "procedural_probe",
+  "version": "1.0.0",
+  "name": "Procedural variability probe",
+  "description": "A procedural component that declares the V5 parameter semantic roles and one effect-backed knob, so the same semantic trait can be measured on procedural and mesh-backed geometry.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["test", "variability"],
+
+  "components": ["components/probe.py"],
+  "effects": [],
+  "styles": [],
+
+  "capabilities": [
+    { "name": "probe_head_mount", "description": "where a probe head goes" }
+  ],
+  "dependencies": [],
+  "metadata": { "origine": "fixture di test" }
+}

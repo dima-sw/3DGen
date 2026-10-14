@@ -307,8 +307,22 @@ class Builder:
         # le deformazioni locali vengono **prima** della posa dei figli: un
         # figlio va messo dove il socket sta davvero, non dove stava prima che
         # la parte venisse piegata
+        #
+        # **[V5]** I limiti passati sono quelli del **pezzo**, e non `None`.
+        # Senza, una deformazione che normalizza la posizione lungo un asse
+        # (`fx:bend`, `fx:taper`, `fx:twist`) calcolava l'intervallo una volta
+        # sui 24 vertici e una volta sui 3 socket, cioe' applicava **due mappe
+        # diverse** a geometria e innesti: su questo pezzo i socket stanno
+        # tutti a x = 0, l'intervallo lungo X era nullo, e una piega muoveva i
+        # vertici lasciando gli innesti dov'erano. Era il difetto che il
+        # contratto `deform` doveva rendere impossibile — e lo rende, purche'
+        # le due chiamate abbiano lo stesso riferimento. La geometria non
+        # cambia: per i vertici questi sono gli stessi numeri che
+        # `_estremi` ricavava da loro.
+        limiti = pezzo.mesh.bounds if (pezzo.mesh is not None
+                                       and len(pezzo.mesh.vertices)) else None
         for effetto in effetti:
-            self._deforma(costruito, effetto, out, locale=True)
+            self._deforma(costruito, effetto, out, locale=True, bounds=limiti)
 
         posa = self._posa(nodo, costruito, out)
         if posa is None:

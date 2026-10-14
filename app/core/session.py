@@ -43,6 +43,7 @@ from typing import Any
 from app.ai.provider import LLMError, LLMProvider, make_provider
 from app.assets.library import AssetLibrary, AssetRecord
 from app.build.exporter import Check, export, validate
+from app.core.frame import POLICIES, POLICY_DIAGNOSE
 from app.core.logging_setup import get
 from app.core.planner.planner import MockPlanner
 from app.core.scene import Scene
@@ -71,6 +72,11 @@ class Options:
     budget: Any = None
     repair: bool = True             # la correzione unica, se il piano non regge
     check: bool = True              # il controllo di qualita' sulla geometria
+    # Che fare quando due componenti dichiarano convenzioni d'asse diverse:
+    # `diagnose` avvisa e costruisce, `strict` non fa passare il piano. Non e'
+    # una decisione del piano perche' non riguarda un modello: riguarda quanto
+    # severo vuole essere **questo progetto** con gli asset che installa.
+    frame_policy: str = POLICY_DIAGNOSE
 
     def to_dict(self) -> dict:
         """Le opzioni che vale la pena salvare in un progetto.
@@ -84,6 +90,8 @@ class Options:
             valore = getattr(self, nome)
             if valore:
                 fuori[nome] = valore
+        if self.frame_policy and self.frame_policy != POLICY_DIAGNOSE:
+            fuori["frame_policy"] = self.frame_policy
         if self.budget is not None:
             from app.core.budget import LIMITS
 
@@ -96,9 +104,11 @@ class Options:
     @classmethod
     def from_dict(cls, dati: dict | None) -> "Options":
         dati = dati or {}
+        politica = str(dati.get("frame_policy") or POLICY_DIAGNOSE)
         return cls(style=str(dati.get("style") or ""),
                    detail_level=int(dati.get("detail_level") or 0),
                    seed=int(dati.get("seed") or 0),
+                   frame_policy=politica if politica in POLICIES else POLICY_DIAGNOSE,
                    budget=_budget(dati.get("budget")))
 
 
@@ -740,6 +750,7 @@ class Session:
             return grafo
         risultato.resolved = resolve(grafo, self.catalog(), style=opzioni.style,
                                      budget=self._budget(opzioni),
+                                     frame_policy=opzioni.frame_policy,
                                      report=risultato.report)
         risultato.traits = resolve_traits(risultato.resolved, self.catalog(),
                                           report=risultato.report)
@@ -825,6 +836,7 @@ class Session:
             return
         risultato.resolved = resolve(grafo, self.catalog(), style=opzioni.style,
                                      budget=self._budget(opzioni),
+                                     frame_policy=opzioni.frame_policy,
                                      report=risultato.report)
         risultato.traits = resolve_traits(risultato.resolved, self.catalog(),
                                           report=risultato.report)

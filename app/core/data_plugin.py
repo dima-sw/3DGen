@@ -20,13 +20,15 @@ from urllib.parse import unquote, urlsplit
 import numpy as np
 import trimesh
 
-from app.core.authoring import ASSI, verify_frame
+from app.core.authoring import verify_frame
 from app.core.capability import SIDES, Capability, Mount, Requirement
 from app.core.component import Attachment, BuildContext, Component, Piece
+from app.core.frame import FrameError, frame_from_dict
 from app.core.layout import LayoutRegion
 from app.core.material import MaterialSpec, default_material
 from app.core.params import ParamSpec
 from app.core.socket import SCALE_MODES, Socket
+from app.core.vocabulary import SCOPE_PART, SCOPES, ParamEffect
 
 
 class DataPluginError(ValueError):
@@ -203,24 +205,81 @@ def _socket(value):
                   side=side, tags=_strings(data.get("tags", []), name + ".tags"))
 
 
+TRANSFORMS = ("scale_x", "scale_y", "scale_z", "uniform_scale")
+
+
+def _binding(name, value):
+    """Un parametro che pilota un effetto installato: solo nomi e numeri.
+
+    Nessun callable, nessuna espressione, nessun modulo, nessuna matrice: le
+    quattro chiavi ammesse sono stringhe e un numero, e l'unica cosa che questa
+    dichiarazione puo' fare e' diventare un `ParamEffect`. Che l'effetto esista
+    davvero, che dichiari quel knob e che accetti quell'ambito lo verifica il
+    `Registry` a caricamento finito (`_verify_param_effects`), perche' il
+    plugin dell'effetto puo' arrivare dopo in ordine alfabetico.
+    """
+    data = _object(value, ("type", "parameter", "scope", "neutral"),
+                   "params." + name + ".effect")
+    effect = _string(data.get("type"), name + ".effect.type", nonempty=True)
+    parameter = _string(data.get("parameter", "amount"), name + ".effect.parameter",
+                        nonempty=True)
+    scope = _string(data.get("scope", SCOPE_PART), name + ".effect.scope",
+                    nonempty=True)
+    if scope.partition(":")[0] not in SCOPES:
+        _error("Parametro %s: ambito sconosciuto %r (attesi %s)"
+               % (name, scope, ", ".join(SCOPES)), "DATA_PARAM_UNSUPPORTED")
+    neutral = None
+    if "neutral" in data and data["neutral"] is not None:
+        neutral = _number(data["neutral"], name + ".effect.neutral")
+    return ParamEffect(param=name, type=effect, parameter=parameter, scope=scope,
+                       neutral=neutral)
+
+
 def _params(value):
+    """I parametri di un componente dati, con la loro strategia dichiarata.
+
+    Due strategie, e un parametro deve dichiarare **esattamente una**:
+
+        transform   una scala positiva per asse: la mesh si moltiplica, i
+                    socket con lei. E' tutto quello che V4 ammetteva.
+        effect      il valore pilota un effetto installato, cioe' passa dalla
+                    `EffectPipeline` come qualunque altro effetto chiesto.
+
+    Dichiararne zero resta rifiutato come in V4 — fingere che un `ParamSpec`
+    qualunque funzioni su una mesh importata e' il difetto da non introdurre —
+    e dichiararle entrambe anche, perche' non c'e' un ordine fra le due che non
+    sia arbitrario.
+
+    La differenza che conta fra le due: una scala e' sempre positiva, perche'
+    un fattore negativo specchierebbe la mesh; il valore che pilota un effetto
+    **puo'** essere negativo, perche' il verso di una piega e' un segno. Il
+    contratto del valore e' quello dell'effetto, non quello di una scala.
+    """
     if not isinstance(value, dict):
         _error("params deve essere un oggetto")
-    specs, transforms = {}, {}
+    specs, transforms, bindings = {}, {}, []
     for name, item in value.items():
         data = _object(item, ("default", "type", "min", "max", "unit", "description",
-                              "semantic_role", "required", "transform"), "params." + name)
+                              "semantic_role", "required", "transform", "effect"),
+                       "params." + name)
         transform = data.pop("transform", None)
-        if transform not in ("scale_x", "scale_y", "scale_z", "uniform_scale"):
-            _error("Parametro %s: dichiarare transform scale_x/scale_y/scale_z/uniform_scale" % name,
-                   "DATA_PARAM_UNSUPPORTED")
+        effect = data.pop("effect", None)
+        if (transform is None) == (effect is None):
+            _error("Parametro %s: dichiarare transform (%s) **oppure** effect, "
+                   "non nessuno dei due e non entrambi"
+                   % (name, "/".join(TRANSFORMS)), "DATA_PARAM_UNSUPPORTED")
+        if transform is not None and transform not in TRANSFORMS:
+            _error("Parametro %s: dichiarare transform %s"
+                   % (name, "/".join(TRANSFORMS)), "DATA_PARAM_UNSUPPORTED")
         if data.get("type", "float") not in ("float", "ratio", "int"):
-            _error("Parametro %s: una scala richiede float, ratio o int" % name,
+            _error("Parametro %s: serve float, ratio o int" % name,
                    "DATA_PARAM_UNSUPPORTED")
-        data["default"] = _number(data.get("default", 1), name + ".default", positive=True)
+        positive = transform is not None
+        data["default"] = _number(data.get("default", 1 if positive else 0),
+                                  name + ".default", positive=positive)
         for key in ("min", "max"):
             if key in data and data[key] is not None:
-                _number(data[key], name + "." + key, positive=True)
+                _number(data[key], name + "." + key, positive=positive)
         if data.get("min") is not None and data.get("max") is not None and data["min"] > data["max"]:
             _error("Parametro %s: min supera max" % name)
         if ((data.get("min") is not None and data["default"] < data["min"]) or
@@ -231,8 +290,12 @@ def _params(value):
                 _string(data[key], name + "." + key)
         if "required" in data:
             _boolean(data["required"], name + ".required")
-        specs[name], transforms[name] = ParamSpec(**data), transform
-    return specs, transforms
+        specs[name] = ParamSpec(**data)
+        if transform is not None:
+            transforms[name] = transform
+        else:
+            bindings.append(_binding(name, effect))
+    return specs, transforms, tuple(bindings)
 
 
 def _attachment(value):
@@ -315,14 +378,17 @@ def _region(value):
 
 
 def _frame(value):
+    """La terna dichiarata, letta dal contratto comune di `app/core/frame.py`.
+
+    V4 la validava qui dentro; V5 la fa validare a `FrameSpec`, perche' da ora
+    la stessa terna serve a un confronto fra componenti e non solo a una
+    diagnostica su un pezzo. Un solo posto che sa cosa sia un asse valido.
+    """
     data = _object(value, ("growth_axis", "front", "up"), "frame")
-    for name, axis in data.items():
-        if axis not in ASSI:
-            _error("frame.%s: asse atteso fra %s" % (name, ", ".join(ASSI)),
-                   "DATA_FRAME_INVALID")
-    if "front" in data and "up" in data and abs(ASSI[data["front"]] @ ASSI[data["up"]]) > 0:
-        _error("frame.front e frame.up devono essere ortogonali", "DATA_FRAME_INVALID")
-    return data
+    try:
+        return frame_from_dict(data)
+    except FrameError as exc:
+        _error(str(exc), "DATA_FRAME_INVALID")
 
 
 def _gltf_document(raw: bytes, suffix: str, where: str):
@@ -469,7 +535,7 @@ def load_component(path: Path, plugin_root: Path) -> Component:
     sockets = [_socket(item) for item in _list(data.get("sockets", []), "sockets")]
     if len({s.name for s in sockets}) != len(sockets):
         _error("Nomi socket duplicati")
-    specs, transforms = _params(data.get("params", {}))
+    specs, transforms, bindings = _params(data.get("params", {}))
     children = [_attachment(item) for item in _list(data.get("children", []), "children")]
     if len({c.id for c in children}) != len(children):
         _error("Id child duplicati")
@@ -506,9 +572,9 @@ def load_component(path: Path, plugin_root: Path) -> Component:
                 radius=source.radius * math.sqrt(area_scale),
                 capabilities=source.capabilities, side=source.side, tags=source.tags)
         piece = Piece(mesh=result_mesh, sockets=result_sockets, material=material, tags=tags,
-                      metadata={"frame": dict(frame)} if frame else {})
-        if "growth_axis" in frame:
-            report = verify_frame(piece, frame["growth_axis"], name=component_id)
+                      metadata={"frame": frame.to_dict()} if not frame.empty else {})
+        if frame.growth_axis:
+            report = verify_frame(piece, frame.growth_axis, name=component_id)
             if ctx.report is not None:
                 ctx.report.extend(report)
             if report:
@@ -528,7 +594,8 @@ def load_component(path: Path, plugin_root: Path) -> Component:
         tags=tags, role=_string(data.get("role", ""), "role"),
         requires=_strings(data.get("requires", []), "requires"), material=material,
         description=description, styles=_strings(data.get("styles", []), "styles"),
-        layout_regions=regions)
+        layout_regions=regions, frame=frame if not frame.empty else None,
+        param_effects=bindings)
     # Registry uses these safe inputs for identity/fingerprint invalidation.
     # This is loader provenance, not a geometry backend flag.
     component._data_files = tuple(dict.fromkeys([path, *files]))

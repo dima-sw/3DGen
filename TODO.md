@@ -2,10 +2,11 @@
 
 Aggiornato il 14 ottobre 2026, dopo le milestone V1 (indice semantico unico),
 V2 (degradazione semantica spiegabile), V3 (selettori strutturali e identita'
-stabile dei nodi), V3.5 (robustezza del contratto del planner) e V4 (componenti
-mesh-backed dichiarati in dati).
+stabile dei nodi), V3.5 (robustezza del contratto del planner), V4 (componenti
+mesh-backed dichiarati in dati) e V5 (variabilita' semantica e convenzione
+d'asse come contratto).
 
-Lo stato: **1506 test verdi**, un solo percorso dal prompt al modello, 22
+Lo stato: **1598 test verdi**, un solo percorso dal prompt al modello, 23
 plugin di codice piu' i plugin dati che chiunque installi, 97 componenti, API
 congelate. Davanti al planner c'e' uno stadio di
 retrieval — il carico mandato al modello dipende dalla rosa di componenti
@@ -25,7 +26,14 @@ modello scrive `vehicle:wheel_count`, e lo fa su tre giri indipendenti. Vedi
 `V1-RESULTS.md`, `V2-RESULTS.md`, `V3-RESULTS.md` e `V3.5-RESULTS.md`. Con V4 un GLB diventa un
 componente usabile **senza una riga di Python**: `paladin` degrada su un
 cavaliere importato senza nessun binding scritto a mano, e `wheel_count` clona
-ruote procedurali su una scocca mesh-backed. Vedi `V4-RESULTS.md`.
+ruote procedurali su una scocca mesh-backed. Vedi `V4-RESULTS.md`. Con V5 un
+componente e' una **famiglia di forme**: sei trait di proporzione relativa
+colpiscono un parametro procedurale e un parametro di un GLB attraverso lo
+stesso `semantic_role`, un parametro dati puo' pilotare un effetto installato
+(`curvature` → `fx:bend`), squash/elongate/taper/twist esistono come effetti
+normali, e la convenzione d'asse e' diventata una dichiarazione che il resolver
+confronta: la chimera pesce + drago + ali non passa piu' in silenzio. Vedi
+`V5-RESULTS.md`.
 
 Quello che segue e' cio' che non c'e' — scritto per essere onesto, non per
 essere lungo.
@@ -113,13 +121,10 @@ scena ottiene il modello dove i componenti l'hanno messo.
 incrociate risultano sovrapposte senza toccarsi. Le soglie sono larghe apposta,
 ma resta un compromesso.
 
-**7. `app/build/` non e' sotto controllo di versione.** `.gitignore:11` contiene
-`build/`, che combacia anche con `app/build/`: `assembler.py`, `validate.py`,
-`scene.py`, `exporter.py`, `optimize.py`, `visual.py` non stanno in nessun
-commit (`git check-ignore -v app/build/scene.py`). Finche' il pattern non e'
-ancorato (`/build/`), l'elenco dei file modificati di **ogni** milestone e'
-incompleto per costruzione — V4 ne ha cambiati tre. Correggerlo aggiunge sei
-file al repository: e' una decisione, non una pulizia.
+**7. ~~`app/build/` non e' sotto controllo di versione.~~ Fatto prima di V5.**
+Il pattern e' ancorato (`/build/`) e i sei moduli sono tracciati dal commit
+`f5f0d8b`, che e' anche il checkpoint V4. Per cinque milestone l'elenco dei file
+modificati era incompleto per costruzione; da V5 non lo e' piu'.
 
 **8. Un figlio dichiarato nel piano scompare in silenzio a `detail_level 1`.**
 `validate_plan` gli assegna `level 2` per default e `wanted_at(1)` e' falso:
@@ -210,18 +215,44 @@ benchmark di V4, non corretto.
   dichiarato; dopo, servira' un contatore persistito, cioe' un cambio deliberato
   del formato del piano.
 
-- **[V4] Il vocabolario dei parametri di un componente dati e' una scala e
-  nient'altro.** `scale_x`, `scale_y`, `scale_z`, `uniform_scale`: coprono «piu'
-  grande» e «piu' largo», non «piu' curvo». La strada dichiarata e' mappare un
-  parametro su un **effetto installato** — lo stesso meccanismo che `TraitRule`
-  usa per i parametri pubblici — non inventare una seconda deformazione nel
-  loader. Un `transform` sconosciuto e un parametro senza `transform` sono
-  rifiutati apposta: fingere che qualunque `ParamSpec` funzioni su una mesh
-  importata era il difetto da non introdurre.
-- **[V4] `frame` diagnostica, non converte.** Una mesh che contraddice il
-  proprio `growth_axis` prende `GROWTH_AXIS_MISMATCH` e resta com'e'. Il drago
-  in piedi sulla coda di `VISION-GAP.md` e' ancora in piedi sulla coda, e
-  promuovere la convenzione a contratto verificato dal resolver resta V5.
+- ~~**[V4] Il vocabolario dei parametri di un componente dati e' una scala e
+  nient'altro.**~~ **Fatto in V5.** Un parametro dichiara `transform` **oppure**
+  `effect`, mai entrambi e mai nessuno dei due. Un `effect` nomina un
+  `EffectSpec` installato e uno dei suoi knob dichiarati, e tutta
+  l'implementazione e' `EffectPipeline._from_params`: da li' in poi una piega
+  chiesta da `curvature = 0.9` e una piega scritta nel piano sono la stessa
+  cosa, con la stessa validazione. Un valore che pilota un effetto puo' essere
+  negativo (il verso di una piega e' un segno), una scala no. Un plugin dati non
+  puo' nemmeno **nominare** un callable, un modulo, un'espressione o una
+  matrice: dieci casi parametrizzati lo verificano.
+- **[V5] Un parametro dati pilota solo knob numerici.** L'`axis` di `fx:bend`
+  resta quello che l'effetto dichiara come predefinito, quindi una coda che
+  cresce lungo +Z non puo' dire, dai dati, che la sua piega va calcolata lungo
+  Z. Serve ammettere un valore **costante** per gli altri knob del legame, e va
+  deciso se sia una terza strategia o un campo in piu' su quella esistente.
+- ~~**[V4] `frame` diagnostica, non converte.**~~ **Promosso a contratto in
+  V5.** Un plugin (o un singolo componente) dichiara `up`, `front` e
+  `growth_axis`, e il resolver confronta le dichiarazioni di padre e figlio a
+  ogni collegamento. Quattro esiti: `compatible`, `convertible` (entrambe le
+  terne complete, quindi la rotazione e' una sola e la diagnostica la nomina
+  insieme all'`fx:rotate` che la applicherebbe), `ambiguous` (una terna
+  incompleta: la rotazione non e' determinata), `undeclared`. La chimera pesce +
+  testa di drago + due ali produce **tre avvisi espliciti** dove prima non
+  produceva niente, fatali con `frame_policy: strict`.
+
+  **Continua a non convertire, per scelta.** Ruotare un figlio contro il socket
+  che il padre ha dichiarato sarebbe un secondo placement system: la rotazione
+  si calcola e si nomina, e chi legge decide. Dei due esiti che la milestone
+  ammetteva per il drago, V5 ha scelto il secondo.
+- **[V5] 18 plugin su 23 non dichiarano un frame**, quindi per loro il contratto
+  non dice niente, ed e' il suo limite dichiarato. Dichiararli e' lavoro di
+  libreria, e per alcuni (`space:planet`, `primitives:block`) la domanda «dov'e'
+  il davanti di una sfera» non ha una risposta: un frame falso sarebbe peggio di
+  nessun frame.
+- **[V5] `growth_axis` non entra nel confronto**, ed e' giusto — un arto che
+  cresce +X su un torso che cresce +Y e' la convenzione, non un difetto — ma
+  vuol dire che un asset il cui asse di crescita contraddice il proprio socket
+  `base` resta un problema solo di `verify_frame`, cioe' di authoring.
 - **[V4] I materiali del glTF arrivano come colore, non come materiale.** Un
   `baseColorFactor`, i colori per vertice o una texture diventano la tinta di un
   `MaterialSpec` «imported» piu' i colori conservati sulla mesh. Niente UV,
@@ -251,6 +282,31 @@ benchmark di V4, non corretto.
   affatto — e nel giro finale il prompt 3 e' tornato verde con `repaired=True`.
   Resta un caso solo: non e' ancora una dimostrazione.
 
+- **[V5] Un trait generico con `scope: subtree` e un trait selettivo per ruolo
+  si pestano i piedi.** Scrivono lo stesso canale `(nodo, parametro)` sulla
+  parte selezionata, quindi `TRAIT_RULE_CONFLICT` li scarta entrambi — e' la
+  politica che c'era, che rifiuta di scegliere al posto dell'autore. La forma
+  che funziona per «creatura piu' grande con la testa enorme» e' `part_scale`
+  con `scope: local` sulla radice piu' `head_scale`. La via d'uscita e' un
+  selettore **nella richiesta** (`{"trait": "part_scale", "role": "head"}`),
+  che e' un cambio dello schema del piano e della sua versione.
+- **[V5] I ruoli semantici della libreria installata non sono stati
+  riassegnati.** `humanoid:mouth.width` dichiara `semantic_role="girth"`, e
+  `std:width` lo raggiunge per quella via invece che per la sua. Una revisione
+  dei 259 ruoli dichiarati (134 `girth`, 113 `length`, 12 `ratio`) cambierebbe
+  anche `std:body_mass`, quindi e' una milestone di contenuto con la sua misura.
+- **[V5] `repair_brief` mescola le `alternatives` fra voci dello stesso
+  codice.** Con tre `FRAME_CONVERTIBLE` su tre nodi le voci sono tre, con il
+  `where` giusto, ma il testo reso puo' mostrare la mossa di un nodo accanto al
+  messaggio di un altro. Riguarda tutti i codici allo stesso modo ed e' presente
+  da V3.5.
+- **[V5] Il banco dei sei prompt non e' stato fatto con un modello di
+  frontiera.** Quello che e' misurato e' che il trait giusto sia nel **testo
+  reso** del vocabolario per ciascuno dei sei prompt e che la richiesta sia
+  cablata fino alla geometria (testa ×1.74, gambe ×0.56, mani ×2.20, larghezza
+  ×2.05, coda ×1.60, casa ×1.23). Che un modello vero scelga quel trait resta
+  da misurare, ed e' lo stesso debito del punto successivo.
+
 - **Il filtro di rilevanza dei trait strutturali fa la domanda sbagliata.**
   `_rilevante_structural` mostra un trait se un pezzo **della rosa** soddisfa il
   bersaglio della sua regola; ma un trait strutturale lavora sui figli
@@ -260,6 +316,13 @@ benchmark di V4, non corretto.
   c'era nessun braccio. I ponti dichiarati in V3.5 lo aggirano per i tre trait
   installati; la correzione vera e' seguire gli `Attachment` dichiarati in modo
   transitivo, ed e' codice nuovo.
+
+  **[V5] Vale identico per i trait semantici**, e la causa si e' vista di nuovo:
+  per «humanoid with huge hands» la rosa non conteneva nessuna mano — il plurale
+  inglese non deriva al singolare — quindi `std:hand_scale` era nascosto e il
+  modello non poteva sceglierlo. Risolto come in V3.5, con 25 ponti fra le parole
+  nel manifest di `variability_extension` (la libreria passa da 16 a 39
+  sinonimi): dati, non codice. La domanda sbagliata resta la stessa.
 
 - **Il retrieval mette le parti davanti agli interi.** «un robot con quattro
   braccia» da' una rosa di pezzi di braccio e nessun corpo, ed e' il motivo per
@@ -299,8 +362,13 @@ Nemmeno l'authoring visuale: UI di importazione, selezione di facce o parti,
 creazione visuale dei socket, auto-segmentation, riconoscimento delle parti con
 un modello, rig automatico, proceduralizzazione di una mesh, FBX/USD/Blend.
 V4 ha portato il **contratto** di un componente mesh-backed, non gli strumenti
-per autorarlo: oggi un artista scrive il JSON a mano, e va bene cosi' finche'
-non si sa quale parte del JSON e' davvero fastidiosa.
+per autorarlo; V5 ha portato quello della sua **variabilita'**. Oggi un artista
+scrive il JSON a mano, e va bene cosi' finche' non si sa quale parte del JSON e'
+davvero fastidiosa.
+
+E nemmeno `Session.modify`, Teach 3DGen, la generazione di codice o di gerarchie
+con un modello, le shape key, la generazione neurale di mesh: V5 si e' fermata
+dove doveva.
 
 Ognuna di queste, oggi, aggiungerebbe infrastruttura per un problema che non
 abbiamo.

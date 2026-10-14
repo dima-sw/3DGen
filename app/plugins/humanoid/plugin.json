@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "name": "Umanoide",
   "description": "Vocabolario umanoide low poly: busto, testa, arti, e cio' di cui sono fatti. Ogni parte e' sostituibile con una di un altro plugin che fornisca la stessa capability.",
+  "frame": { "up": "+Y", "front": "+Z" },
   "author": "3DGen",
   "license": "MIT",
   "tags": ["personaggio", "umanoide", "low_poly"],

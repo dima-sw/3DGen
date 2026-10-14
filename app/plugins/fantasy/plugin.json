@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "name": "Fantasia",
   "description": "Ali e cristalli: due pezzi che non appartengono a nessun animale in particolare.",
+  "frame": { "up": "+Y", "front": "+Z" },
   "author": "3DGen",
   "license": "MIT",
   "tags": [

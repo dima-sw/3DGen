@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "name": "Pesci",
   "description": "Corpi acquatici: un tronco con pinne e coda, che puo' prendere il posto di un busto.",
+  "frame": { "up": "+Y", "front": "-Z" },
   "author": "3DGen",
   "license": "MIT",
   "tags": [

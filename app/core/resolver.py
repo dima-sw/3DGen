@@ -47,6 +47,8 @@ from app.core.capability import (CAPABILITY, FALLBACK, INCOMPATIBLE,
 from app.core.component import Attachment, BuildContext, Component
 from app.core.constraints import check as check_constraints
 from app.core.errors import Report
+from app.core.frame import (FRAME_CONVERTIBLE, POLICIES, POLICY_DIAGNOSE,
+                            POLICY_STRICT, FrameComparison, compare)
 from app.core.graph import (FROM_DEFAULT, FROM_DERIVED, FROM_OVERRIDE,
                             CompositionGraph, CompositionNode)
 from app.core.params import numeric
@@ -98,9 +100,11 @@ def _lunghezza(componente, valori: dict) -> float:
 
 def resolve(graph: CompositionGraph, registry: Registry, *,
             style: str = "", budget: Budget | None = None,
+            frame_policy: str = POLICY_DIAGNOSE,
             report: Report | None = None) -> ResolvedComposition:
     """Da un piano e un vocabolario, il piano risolto."""
-    return Resolver(registry, style=style, budget=budget).run(graph, report=report)
+    return Resolver(registry, style=style, budget=budget,
+                    frame_policy=frame_policy).run(graph, report=report)
 
 
 class Resolver:
@@ -108,9 +112,16 @@ class Resolver:
     contesto, nodi gia' risolti. Uno per generazione."""
 
     def __init__(self, registry: Registry, *, style: str = "",
-                 budget: Budget | None = None) -> None:
+                 budget: Budget | None = None,
+                 frame_policy: str = POLICY_DIAGNOSE) -> None:
         self.registry = registry
         self.style = style
+        # La politica del progetto sulle convenzioni d'asse. `diagnose` dice che
+        # due asset non concordano e costruisce comunque; `strict` non fa
+        # passare una chimera disorientata. Non esiste una politica che
+        # converta: ruotare un figlio contro il socket che il padre ha
+        # dichiarato sarebbe un secondo placement system.
+        self.frame_policy = frame_policy if frame_policy in POLICIES else POLICY_DIAGNOSE
         # Senza un budget si usa quello **standard**, mai `unlimited()`. Una
         # ricorsione valida non e' una ricorsione che finisce: un componente
         # che si annida riducendo un parametro resta legittimo a ogni passo e
@@ -131,7 +142,8 @@ class Resolver:
         stile = self.style or graph.style
         out = ResolvedComposition(graph=graph, registry=self.registry, style=stile,
                                   detail_level=graph.detail_level, seed=graph.seed,
-                                  budget=self.budget, report=report)
+                                  budget=self.budget, report=report,
+                                  frame_policy=self.frame_policy)
 
         # 1. il grafo deve stare in piedi come grafo, prima di guardare i pezzi
         strutturale = graph.validate()
@@ -686,12 +698,57 @@ class Resolver:
                 where=figlio.path,
                 why="nessun innesto soddisfa %s" % requisito.describe())
 
+        confronto = self._frame(padre, figlio, out)
+
         return ResolvedLink(
             parent=padre.id, parent_socket=scelto.socket_id,
             capability=scelto.capability, side=scelto.side or requisito.side,
             own_socket=attacco.own_socket, score=punteggio, requirement=requisito,
             scale_mode=attacco.scale_mode, insert=attacco.insert, roll=attacco.roll,
+            frame=confronto.result,
             target_size=self._taglia_sostituita(figlio, padre, attacco, out))
+
+    def _frame(self, padre: ResolvedNode, figlio: ResolvedNode,
+               out: ResolvedComposition) -> FrameComparison:
+        """I due asset concordano su dove sia il sopra e dove il davanti?
+
+        E' il controllo che V4 non faceva: `frame` era una diagnostica di
+        authoring su un pezzo solo, e due plugin con convenzioni diverse si
+        montavano in silenzio. Qui si confrontano **solo** le dichiarazioni, e
+        non si corregge niente: `app/core/frame.py` spiega perche'.
+
+        Un frame non dichiarato non produce nessuna diagnostica. Non e' una
+        svista: l'unica alternativa sarebbe pretendere la terna da tutti i
+        componenti installati, cioe' rendere obbligatoria una dichiarazione che
+        22 plugin non hanno, e il contratto dice quello che i dati permettono
+        di dire.
+        """
+        confronto = compare(padre.component, figlio.component)
+        if not confronto.detectable:
+            return confronto
+        mossa = confronto.move(scope="subtree:%s" % figlio.id)
+        dettaglio = ("convenzioni dichiarate: '%s' %s, '%s' %s"
+                     % (padre.ref, confronto.parent.describe(),
+                        figlio.ref, confronto.child.describe()))
+        if confronto.result == FRAME_CONVERTIBLE:
+            codice, perche = "FRAME_CONVERTIBLE", "%s; %s" % (dettaglio,
+                                                              confronto.describe())
+            alternative = ["fx:rotate axis=%s angle=%s su %s"
+                           % (mossa["params"]["axis"], mossa["params"]["angle"],
+                              mossa["scope"])]
+        else:
+            codice, perche = "FRAME_AMBIGUOUS", "%s; %s" % (dettaglio,
+                                                            confronto.describe())
+            alternative = ["dichiarare up e front su entrambi i componenti"]
+        if self.frame_policy == POLICY_STRICT:
+            out.report.add(codice, "'%s' e '%s' non concordano sull'orientamento"
+                           % (padre.ref, figlio.ref), where=figlio.path,
+                           why=perche, alternatives=alternative)
+        else:
+            out.report.warn(codice, "'%s' e '%s' non concordano sull'orientamento"
+                            % (padre.ref, figlio.ref), where=figlio.path,
+                            why=perche, alternatives=alternative)
+        return confronto
 
     def _taglia_sostituita(self, figlio: ResolvedNode, padre: ResolvedNode,
                            attacco: Attachment, out: ResolvedComposition) -> float:

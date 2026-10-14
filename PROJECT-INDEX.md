@@ -4,8 +4,9 @@ Machine-oriented index of the repository. Written to let another AI understand
 the architecture, locate code, and make changes without re-exploring the tree.
 Generated 2026-10-14 from the working tree; updated after milestones V1
 (semantic retrieval), V2 (explainable semantic degradation), V3 (structural
-selectors + stable node identity), V3.5 (planner contract robustness) and V4
-(mesh-backed components declared in data). See "Repository state" at the end.
+selectors + stable node identity), V3.5 (planner contract robustness), V4
+(mesh-backed components declared in data) and V5 (semantic variability + the
+geometric frame contract). See "Repository state" at the end.
 
 Language note: code identifiers, docstrings and comments are mostly **Italian**
 (`grafo` = graph, `nodo` = node, `piano` = plan, `pezzo` = piece, `innesto` =
@@ -44,6 +45,7 @@ prompt
  → validate_plan → CompositionGraph        app/core/planner/plans.py, app/core/graph.py
  → StructuralTraitResolver (graph rewrite)  app/core/structural.py
  → Resolver → ResolvedComposition          app/core/resolver.py, app/core/resolved.py
+     (+ frame compatibility check [V5])    app/core/frame.py
  → TraitResolver (semantic params)         app/core/traits.py
  → LayoutEngine (socket synthesis)         app/core/layout.py
  → EffectPipeline → EffectedComposition    app/core/effect.py
@@ -60,6 +62,15 @@ all three are in `app/core/registry.py` (542, 680, 716) where manifests are
 read. `grep -rn "mesh_backed\|kind == \"data\"" app/build/ app/core/` outside
 the loader and the registry returns nothing, and that is the measurement, not
 the intention.
+
+**[V5] The pipeline above is unchanged by semantic variability.** A parameter
+that drives an installed effect becomes an ordinary `EffectRequest` inside the
+existing `EffectPipeline` (`app/core/effect.py:_from_params`, the only new
+code), and a semantic trait reaches an imported mesh through the `semantic_role`
+machinery that V1 already had. The frame check is a **comparison of two declared
+strings** added where the resolver already links a child to a parent; it never
+rotates anything, and `grep -rn "mesh_backed" app/build/ app/core/` outside the
+loader and the registry still returns nothing.
 
 Effect stages, in fixed order (`app/core/vocabulary.py:56-62`):
 `structural` → `proportion` → `local` → `global` → `style` → `final`.
@@ -112,8 +123,11 @@ rebuilt `result.diagnostics` as `PLUGIN_VERSION_CHANGED` /
 generation.
 
 `Options` is deliberately tiny: `style`, `detail_level`, `seed`, `budget`,
-`repair`, `check`. Everything else belongs in the plan, because the plan is the
-only place a decision stays readable.
+`repair`, `check`, **[V5]** `frame_policy`. Everything else belongs in the plan,
+because the plan is the only place a decision stays readable. `frame_policy`
+(`diagnose` / `strict`) is the one exception on purpose: it is not a property of
+a model but of how severe *this project* wants to be with the assets it
+installs, and `app/core/frame.py` explains why no third value converts.
 
 `GenerationResult` carries `ok`, `diagnostics`, `triangles`, `scene()`,
 `mesh()`, `explain()`, `changes()`, `skipped()`, `structural_changes()`
@@ -132,21 +146,22 @@ what was asked for — empty when it is), and provider provenance (`requested_pr
 | --- | --- | --- |
 | `session.py` | 1116 | `Session`, `Options`, `GenerationResult`, `Version` history; **[V3.5]** `structural_changes()`, and `skipped()` also reports skipped structural requests and unsupported concept adaptations |
 | `registry.py` | 1354 | `Registry`, `PluginInfo`, `CapabilityInfo`, plugin discovery/manifest reading, `freeze()`, `verify()` |
-| `resolver.py` | 873 | `Resolver` — candidate scoring and socket matching (weights: capability 16, side 8, style 4, tag 1) |
+| `resolver.py` | 873 | `Resolver` — candidate scoring and socket matching (weights: capability 16, side 8, style 4, tag 1); **[V5]** `_frame`, the frame comparison on every link, and `frame_policy` |
 | `archetypes.py` | 1188 | `ArchetypeSpec`, `ProfileSpec`, `ImplementationBinding`, `ConceptResolver`, `ConceptResolutionPlan`, coverage/diagnostics; **[V2]** `subject_capabilities`, `normalize_reference`, `MATCH_*`, the degradation ladder |
 | `graph.py` | 842 | `CompositionGraph`, `CompositionNode`, `EffectRequest`, `Operation`; param provenance (`FROM_DEFAULT/DERIVED/OVERRIDE/EFFECT/TRAIT`); `to_dict`/`from_dict`; **[V3]** derived stable node identity (`identity`/`identities`/`by_identity`, `_signature`, `_digest`) and `structural_provenance` |
-| `effect.py` | 568 | `Scope`, `PlannedEffect`, `EffectContext`, `EffectPipeline`, `apply_effects` |
+| `effect.py` | 568 | `Scope`, `PlannedEffect`, `EffectContext`, `EffectPipeline`, `apply_effects`; **[V5]** `_from_params` translates a component's `ParamEffect` declarations into ordinary `EffectRequest`s (it never writes `composition.effects`, so a second run does not double them) |
 | `structural.py` | 810 | structural traits: `StructuralTarget`, `EnsureCountOperation`, `GraphRewritePlan`, `StructuralTraitResolver` (cap `MAX_STRUCTURAL_COUNT = 64`); **[V3]** selector-based prototype choice (`_locate`/`_discover`/`_rank`), `on` as a search scope, clone provenance, `UNKNOWN_TRAIT_SKIPPED`; **[V3.5]** `_prototipo_mancante` — `mode` decides the severity of a missing prototype (`exact` fatal, `best_effort` warning + skipped) and the `why` names the three moves that fix it |
 | `layout.py` | 427 | `LayoutRegion`, `LayoutFrame`, `LayoutPlacement`, `LayoutPlan`, `LayoutEngine`, `fan_policy`, `linear_policy` |
-| `traits.py` | 426 | semantic traits: `TraitSpec`, `TraitRule`, `TraitMatch`, `ParamPatch`, `TraitResolver`, `resolve_traits` |
+| `traits.py` | 426 | semantic traits: `TraitSpec`, `TraitRule`, `TraitMatch`, `ParamPatch`, `TraitResolver`, `resolve_traits`. **Unchanged by V5** — a test greps it for `mesh`/`glb`/`mesh_backed` and finds nothing |
+| `frame.py` | 310 | **[V5]** the axis convention as a contract: `FrameSpec` (`growth_axis`/`front`/`up`), `compare()` → `compatible` / `convertible` / `ambiguous` / `undeclared`, `rotation_to()`, `move()` (the `fx:rotate` request that would reconcile two frames), policies `diagnose`/`strict`. Compares **only** `up` and `front`, never `growth_axis`, and never converts |
 | `params.py` | 273 | `ParamSpec`, sandboxed expression `evaluate()` (AST whitelist), scopes `self`/`parent`/`root`, types FLOAT/INT/BOOL/ENUM/STRING/VECTOR2/VECTOR3/COLOR |
 | `resolved.py` | 263 | `ResolvedNode`, `ResolvedLink`, `ResolvedValue`, `ResolvedComposition` |
-| `component.py` | 240 | `Component`, `Attachment`, `Piece`, `BuildContext` |
+| `component.py` | 240 | `Component`, `Attachment`, `Piece`, `BuildContext`; **[V5]** `Component.frame` and `Component.param_effects` |
 | `capability.py` | 242 | `Capability`, `Requirement`, `Mount`, `best_match`, match tiers (`EXACT_ID 5` … `INCOMPATIBLE -1`), sides `l/r/center/top/bottom/front/back` |
 | `socket.py` | 238 | `Socket`, `Placement`, `attach()`, scale modes `none`/`socket`/`fit_replaced` |
-| `vocabulary.py` | — | `EffectSpec`, `StyleProfile`, scopes, **stage constants** |
+| `vocabulary.py` | — | `EffectSpec`, `ParamRule`, `StyleProfile`, scopes, **stage constants**; **[V5]** `ParamEffect` — the mirror of `ParamRule`: how a *parameter* asks for an effect |
 | `project.py` | 315 | `.my3d` format v2 — stores plans + plugin identities/versions, not meshes; **[V4]** `ProjectInfo.fingerprints` + `changed_plugins()`, which turn `PLUGIN_VERSION_CHANGED` / `PLUGIN_CONTENT_CHANGED` into diagnostics on the *rebuilt* result |
-| `data_plugin.py` | 535 | **[V4]** the data-only loader: JSON + GLB/glTF → the existing `Component`/`Piece`/`Socket`/`ParamSpec`/`Attachment`/`LayoutRegion`/`MaterialSpec`. `safe_path()` confines every resource to the plugin directory, `load_component()`, `load_material()`, `DataPluginError` with stable codes (`DATA_PATH_UNSAFE`, `DATA_MESH_*`, `DATA_PARAM_UNSUPPORTED`, `DATA_FRAME_INVALID`, `DATA_JSON_INVALID`, `DATA_SCHEMA_INVALID`, `DATA_FILE_MISSING`). No Python from the plugin is ever imported |
+| `data_plugin.py` | 613 | **[V4]** the data-only loader: JSON + GLB/glTF → the existing `Component`/`Piece`/`Socket`/`ParamSpec`/`Attachment`/`LayoutRegion`/`MaterialSpec`. `safe_path()` confines every resource to the plugin directory, `load_component()`, `load_material()`, `DataPluginError` with stable codes (`DATA_PATH_UNSAFE`, `DATA_MESH_*`, `DATA_PARAM_UNSUPPORTED`, `DATA_FRAME_INVALID`, `DATA_JSON_INVALID`, `DATA_SCHEMA_INVALID`, `DATA_FILE_MISSING`). No Python from the plugin is ever imported. **[V5]** a parameter declares `transform` **or** `effect` (a `ParamEffect` naming an installed effect), never both and never neither |
 | others | — | `budget.py` (triangle budgets), `constraints.py`, `material.py`, `scene.py`, `authoring.py` (socket helpers, frame verification), `recovery.py`, `hardware.py`, `errors.py`, `logging_setup.py`, `config.py` (`Settings`, `ProviderSpec`, `DEFAULT_CHAIN`) |
 
 ### Planner (`app/core/planner/`)
@@ -248,15 +263,44 @@ modes, see `V3.5-RESULTS.md` §6.2).
 
 ---
 
-## 5. Three extension layers above plain components
+## 5. Five extension layers above plain components
 
-These are the newest and least documented parts of the system.
+These are the newest and least documented parts of the system. Three of them
+change *what exists* and *how much*; the last two, added in V5, change *how the
+things that exist are shaped* and *whether two of them agree on which way is
+up*.
 
 1. **Semantic traits** (`app/core/traits.py`) — a named semantic knob
    (`body_mass`, `leafiness`) that a plugin maps onto public component
    parameters or effects via `TraitRule`/`ParamPatch`. Scope `local` or
    `subtree`; op `set` or `add`. Applied *after* resolution, *before* effects.
-   Reference plugins: `body_mass_extension`, `tree_leafiness_extension`.
+   Reference plugins: `body_mass_extension`, `tree_leafiness_extension`,
+   **[V5]** `variability_extension`.
+
+   **[V5] The relative-proportion vocabulary, and why three of the six select
+   by role.** `variability_extension` installs six traits and 19 rules: three
+   generic (`std:part_scale`, `std:width`, `std:length`, addressed with `on` +
+   `scope`) and three role-selective (`std:head_scale`, `std:hand_scale`,
+   `std:limb_length`, whose rules filter on the component's declared `role`).
+   The three selective ones exist because `on` **addresses a node** and a
+   humanoid's head is not a node of the plan: it is a child the component
+   declares itself, so its id is the path `subject/torso/neck/head`, which the
+   planner never wrote. `on: "head"` gives `TRAIT_TARGET_NOT_FOUND`; a
+   role-selective trait has no such question, and a test proves the result is
+   identical under four different root ids. It is V3's lesson — select, never
+   address — applied to the semantic layer.
+
+   Every patch declares `semantic_role`, never `param`: that is what makes the
+   same trait reach a procedural component and a GLB when both declare the same
+   role. The role vocabulary (`length`, `girth`, `width`, `height`, `scale`,
+   `curvature`) lives in the components and in the plugin, never in the core;
+   `grep` for any of the trait names in `app/core/` returns nothing.
+
+   Declared boundary: a generic trait with `scope: subtree` plus a selective
+   one write the same `(node, param)` channel on the selected part, so both are
+   dropped with `TRAIT_RULE_CONFLICT`. The form that works for "bigger creature
+   with a huge head" is `part_scale` with `scope: local` on the root plus
+   `head_scale`. See `V5-RESULTS.md` §5.
 
 2. **Structural traits** (`app/core/structural.py`) — change the *graph*, not
    parameters: "four arms", "six wheels", "three tails". Produces
@@ -310,6 +354,38 @@ These are the newest and least documented parts of the system.
    provided by someone and accepted by nobody — so a new plugin participates
    with no binding written by hand. `normalize_reference()` repairs invented id
    prefixes only when the remainder is unambiguous, and reports every repair.
+
+4. **[V5] Parameter-driven effects** (`app/core/vocabulary.py:ParamEffect`) —
+   a component parameter that **asks for an installed effect** instead of
+   rebuilding geometry. It is the mirror of `ParamRule` (which says how an
+   effect changes a parameter) and it exists for components whose geometry
+   cannot be regenerated: an imported mesh has one state, so "more curved" can
+   only be a deformation. Five data fields (`param`, `type`, `parameter`,
+   `scope`, `neutral`) and no code; the whole implementation is
+   `EffectPipeline._from_params`, which turns the declaration into an ordinary
+   `EffectRequest` and lets the existing validation judge it. The plan wins over
+   the declaration (`PARAM_EFFECT_SUPERSEDED`), the request is readable
+   (`PARAM_EFFECT_REQUESTED`), and `Registry.verify()` refuses a binding whose
+   effect, knob or scope does not exist (`COMPONENT_EFFECT_NOT_FOUND`,
+   `COMPONENT_EFFECT_KNOB_UNKNOWN`, `COMPONENT_EFFECT_SCOPE_UNSUPPORTED`,
+   `COMPONENT_EFFECT_PARAM_UNKNOWN`) — at verify time and not at load time, for
+   the same reason dependencies are checked there.
+
+5. **[V5] The frame contract** (`app/core/frame.py`) — a component (or, in one
+   line, a whole plugin) declares `growth_axis`, `front` and `up`, and the
+   resolver compares the declarations of parent and child on every link. What
+   it compares is the point: **only `up` and `front`**, because those are the
+   two the socket frame does *not* reconcile; `growth_axis` is local and a limb
+   growing `+X` off a `+Y` torso is the convention, not a defect. Four
+   outcomes: `compatible`, `convertible` (both frames complete → the rotation
+   is unique, so the diagnostic names it *and* the `fx:rotate` request that
+   would apply it), `ambiguous` (one frame incomplete → the rotation is
+   undetermined, so guessing it would be inventing), `undeclared` (nothing to
+   compare — the declared limit of the contract). It **never converts**:
+   rotating a child against the socket the parent declared would be a second
+   placement system. `Options.frame_policy` is `diagnose` (warning) or `strict`
+   (fatal, and `FRAME_CONVERTIBLE` is in `repair.CORREGGIBILI`, so the single
+   repair round-trip gets the move).
 
 `LayoutEngine` (`app/core/layout.py`) sits alongside: when many siblings must
 share a parent surface, declared `LayoutRegion`s plus a `LayoutPolicy`
@@ -385,7 +461,17 @@ Discovery is by directory + `plugin.json` manifest. Manifest keys: `id`,
 `version`, `name`, `description`, `author`, `license`, `tags`, `components[]`,
 `effects[]`, `styles[]`, `materials[]`, `traits[]`, `archetypes[]`,
 `profiles[]`, `bindings[]`, `capabilities[]` (name + description + tags),
-`dependencies[]`, `metadata{}`, `synonyms{}`. Component ids are `plugin:name`.
+`dependencies[]`, `metadata{}`, `synonyms{}`, **[V5]** `frame{}`. Component ids
+are `plugin:name`.
+
+**[V5] `frame` in the manifest is the axis convention of the plugin**, and it
+applies to every component of that plugin that does not declare its own
+(`Registry.register_component`). It is the promotion `VISION-GAP` §8 asked for:
+`humanoid_anatomical` wrote the same thing in `metadata` as Italian prose —
+true, and comparable by nobody. One line per plugin instead of one per piece,
+because a convention belongs to the plugin's author. Five plugins declare one,
+which gives **53 of the 97 components** a comparable frame; a malformed axis
+refuses the plugin with `INVALID_MANIFEST` instead of being ignored.
 
 **[V4] Two kinds of plugin, one discovery.** `type` is `"code"` (the default,
 every installed plugin today) or `"data"`. A code plugin declares Python files
@@ -407,11 +493,32 @@ editing a GLB does. That fingerprint feeds retrieval invalidation
 The data component format is the existing models in JSON — `id`, `name`,
 `description`, `role`, `tags`, `styles`, `requires`, `material`, `provides`,
 `mounts`, `sockets`, `params`, `children`, `layout_regions` — plus exactly two
-additions: `mesh` (the GLB path, relative to the component file) and
-`params[*].transform`, which must be one of `scale_x` / `scale_y` / `scale_z`
-/ `uniform_scale`. A parameter without a declared transform is refused rather
-than assumed: see `V4-RESULTS.md` §6. `frame` (`growth_axis`/`front`/`up`) is
-verified with `app/core/authoring.py:verify_frame` and **diagnosed, never
+additions: `mesh` (the GLB path, relative to the component file) and a declared
+parameter **strategy**. A parameter without one is refused rather than assumed:
+see `V4-RESULTS.md` §6.
+
+**[V5] A parameter declares `transform` *or* `effect`, never both and never
+neither** (`DATA_PARAM_UNSUPPORTED` either way, because there is no non-arbitrary
+order between a scale and a deformation):
+
+```json
+"width":     {"default": 1.0, "min": 0.2, "max": 3.0,
+              "transform": "scale_x", "semantic_role": "width"},
+"curvature": {"default": 0.0, "min": -1.0, "max": 1.0,
+              "semantic_role": "curvature",
+              "effect": {"type": "fx:bend", "parameter": "amount",
+                         "scope": "part", "neutral": 0.0}}
+```
+
+A `transform` is one of `scale_x` / `scale_y` / `scale_z` / `uniform_scale` and
+must stay positive (a negative factor would mirror the mesh); an
+`effect`-backed value **may** be negative, because the direction of a bend is a
+sign. The `effect` object accepts exactly four keys — three strings and a
+number — so a data plugin cannot even *name* a callable, a module, an
+expression or a matrix: ten hostile cases are parameterized. `neutral` is the
+value that asks for nothing. `frame` (`growth_axis`/`front`/`up`) now goes
+through `app/core/frame.py` like every other frame, and its `growth_axis` is
+still verified with `app/core/authoring.py:verify_frame` and **diagnosed, never
 corrected**. Unknown keys are refused, not ignored.
 
 `synonyms` (**[V1]**, data only, no code) maps a word to equivalent words and
@@ -427,13 +534,15 @@ the planner could not have chosen it — measured in `V3.5-RESULTS.md` §1.5.
 component, so this needed no code.
 
 Current registry contents (measured, not from docs):
-**22 plugins, 97 components, 30 materials, 8 effects, 27 capabilities,
-9 archetypes, 1 profile, 3 bindings, 2 semantic traits, 4 structural traits,
-16 declared synonyms.** All 22 are code plugins: **[V4]** deliberately
+**23 plugins, 97 components, 30 materials, 12 effects, 27 capabilities,
+9 archetypes, 1 profile, 3 bindings, 8 semantic traits, 4 structural traits,
+39 declared synonyms.** All 23 are code plugins: **[V4]** deliberately
 converted none of them. The data-only plugins live in
 `tests/data_plugin_fixtures.py`, which writes real directories of JSON + GLB to
 disk (`mesh_fixture`: a knight, a body, a head and a crest; `mesh_vehicle`: a
-mesh body with procedural wheels and declared layout regions).
+mesh body with procedural wheels and declared layout regions; **[V5]**
+`mesh_variable`: a head whose scales carry `semantic_role`s, a tail whose
+`curvature` drives `fx:bend`, and a host that accepts both).
 
 | Plugin | Provides |
 | --- | --- |
@@ -449,12 +558,13 @@ mesh body with procedural wheels and declared layout regions).
 | `weapon` | sword, guard, grip (declares `limb_mount`, so it can replace a leg) |
 | `accessories` | face mask, helmet, visor, piercing |
 | `robot` | head — realistic style only, exists to prove style rejection |
-| `fx` (dir `effects/`) | lanky, chunky, bend, perspective_exaggeration, rotate, align, offset, mirror |
+| `fx` (dir `effects/`) | lanky, chunky, bend, perspective_exaggeration, rotate, align, offset, mirror; **[V5]** squash, elongate, taper, twist (`effects/forma.py`) |
 | `fox_stylized` | authored angular low-poly fox benchmark + palette |
 | `tree_stylized` | authored chunky asymmetric tree benchmark + palette |
 | `vehicle_stylized` | authored low-poly compact car benchmark + palette |
 | `body_mass_extension` | semantic trait `body_mass` |
 | `tree_leafiness_extension` | semantic trait `leafiness` |
+| `variability_extension` | **[V5]** six relative-proportion traits (`part_scale`, `width`, `length`, `head_scale`, `hand_scale`, `limb_length`), 19 rules, 25 word bridges |
 | `multi_arm_extension` / `multi_wheel_extension` / `multi_tail_extension` | structural traits (counts) |
 | `archetype_metadata` | archetype catalog, generic profiles, bindings for installed roots |
 
@@ -470,7 +580,7 @@ planner sees, automatically.
 
 ## 9. Tests, tools, benchmarks
 
-`1506 tests` (`python -m pytest -q`; `pytest.ini` + `conftest.py` at root).
+`1598 tests` (`python -m pytest -q`; `pytest.ini` + `conftest.py` at root).
 Tests target the **contracts between** modules, not just units:
 `test_core_contracts.py`, `test_core_registry.py`, `test_core_resolver.py`,
 `test_core_graph.py`, `test_core_effects.py`, `test_planner_core.py`,
@@ -522,8 +632,33 @@ deterministic transform params, index invalidation on install and on removal,
 and 6 on a mesh body with procedural wheels, `fx:bend` moving vertices and
 sockets by the same map, export to glb/obj/stl/ply, `.my3d` round-trip with no
 mesh in the archive, and version/content change diagnostics).
+`tests/test_semantic_variability.py` (**[V5]**, 65 tests: the two parameter
+strategies and the ten hostile `effect` declarations a data plugin cannot even
+name, the four `Registry.verify()` refusals, an effect-backed parameter moving
+mesh **and** sockets by the same map with the source GLB untouched and the
+result deterministic, the plan winning over the declaration, a *procedural*
+component driving an effect too, the same trait reaching a procedural and a
+mesh-backed part through the same `semantic_role` in four combinations and in
+one mixed plan, the six new traits measured on the installed procedural library,
+the cartoon benchmark in one plan, role-selective traits invariant to the root
+id, `detail_level` staying separate from variability at three levels, the four
+new effects (declared scopes and ranges, the squash/elongate conflict, the axis
+each one names, sockets on vertices, geometric validity, absence from the core),
+and what the planner is shown in the **rendered text**),
+`tests/test_frame_contract.py` (**[V5]**, 27 tests: the contract alone — named
+axes, refused frames, a right-handed orthonormal basis only for a complete
+frame, the four outcomes in seven cases, the rotation that really maps one frame
+onto the other, and `growth_axis` never counting as a disagreement — then the
+declaration (manifest, component overriding it, malformed manifest, data
+component), the comparison during resolution (a coherent composition says
+nothing, an undeclared frame says nothing, the outcome recorded on every edge),
+the dragon chimera, the two policies and their project round-trip, and
+`ambiguous` kept distinct from `convertible`).
 Fixture plugins live in `tests/plugins/` (including intentionally malformed
-ones); the data-only fixtures are written to a tmp dir by
+ones, and **[V5]** `variabilita/procedural_probe`, a code plugin that declares
+the V5 parameter roles plus one `ParamEffect`, so the semantic layer can be
+measured on procedural and mesh-backed geometry with the same assert); the
+data-only fixtures are written to a tmp dir by
 `tests/data_plugin_fixtures.py`.
 
 `tools/`: `benchmark.py`, `render_benchmark.py`, `render_scenari.py`,
@@ -532,11 +667,27 @@ ones); the data-only fixtures are written to a tmp dir by
 `tree_stylized_benchmark.py`, `ai_provider_smoke.py`,
 `data_plugin_benchmark.py` (**[V4]**: plugin discovery, GLB load, build,
 semantic index and total local generation, for a procedural, a mesh-backed and
-a mixed composition).
+a mixed composition), `variability_benchmark.py` (**[V5]**: the cost of a
+transform parameter, an effect-backed parameter, a semantic trait on mesh /
+procedural / mixed trees and frame validation, plus the six milestone prompts
+split into *intent recognized* / *trait applied* / *geometry changed* / *visual
+result*, the last one measured with the existing `app/build/visual.py:analyse`).
 
 Local pipeline performance (no network): total 6–13 ms median — plugin load
 16 ms, vocabulary 3 ms, local planner 1 ms, resolver 0.2 ms, effects 0.1 ms,
 builder 3–10 ms, quality 1–3 ms.
+
+**[V5]** Variability cost, same machine, median of 7
+(`python tools/variability_benchmark.py 7`): a transform parameter is free
+(1.04 ms against a 1.20 ms baseline build), an effect-backed parameter costs
+**+0.5 ms** (1.54 ms — one validated `EffectRequest` plus a point map), a
+semantic trait costs **less on an imported mesh than on a procedural component**
+(1.13 ms vs 2.31 ms, because the mesh is not rebuilt), 3.74 ms on a mixed tree,
+and the whole trait layer costs **~5 ms on 97** for 113 channels applied over
+the 37 nodes of `humanoid_anatomical:body` (102.4 ms against 97.3 ms without).
+**Frame validation does not register**: `compare()` is 0.0034 ms, and the
+chimera's two policies (20.9 ms `diagnose`, 20.5 ms `strict`) differ by less
+than the noise.
 
 **[V4]** Mesh-backed cost, same machine, median of 7
 (`python tools/data_plugin_benchmark.py 7`): building a GLB-backed piece is
@@ -563,7 +714,7 @@ because documents are built from declared metadata, not from geometry.
 | `ARCHETYPES-AND-PROFILES.md` (56 KB) | concept resolution layer |
 | `LOW-POLY-DESIGN.md` (49 KB) | the visual language |
 | `TODO.md` | honest list of what is missing |
-| `V1-RESULTS.md` / `V2-RESULTS.md` / `V3-RESULTS.md` / `V3.5-RESULTS.md` / `V4-RESULTS.md` | what each milestone changed, measured |
+| `V1-RESULTS.md` … `V5-RESULTS.md` | what each milestone changed, measured |
 | `V3-PLAN.md` | the V3 design note, written before the code |
 
 README links `PLUGIN-AUTHORS.md`, `ARCHITECTURE-CORE.md`,
@@ -635,15 +786,25 @@ links are currently broken.
     degrades onto a mesh-backed knight with no binding written by hand, and
     `wheel_count` clones procedural wheels onto a mesh body. See
     `V4-RESULTS.md`.
-16. **[V4] A data component's only parameter vocabulary is positive scaling**
-    (`scale_x/y/z`, `uniform_scale`). Mapping a parameter onto an installed
-    *effect* — the same move `TraitRule` already makes for public parameters —
-    is the declared next step; until then an imported mesh has no semantic knob
-    of its own, and a semantic trait reaches it only through `role`, `tags` and
-    `param_roles`.
-17. **[V4] `frame` diagnoses, it does not convert.** A mesh that contradicts its
-    declared `growth_axis` gets `GROWTH_AXIS_MISMATCH` and is left alone. The
-    dragon standing on its tail is still standing on its tail.
+16. ~~**[V4] A data component's only parameter vocabulary is positive
+    scaling**~~ — **fixed in V5.** A parameter declares `transform` **or**
+    `effect`, and an `effect` binding names an installed `EffectSpec` plus one of
+    its declared knobs. `curvature` on an imported tail drives `fx:bend` through
+    the existing pipeline, moving vertices and sockets by the same map; the whole
+    implementation is `EffectPipeline._from_params`. A data plugin still cannot
+    name a callable, a module, an expression or a matrix. See `V5-RESULTS.md` §3.
+17. **[V5] `frame` is a verified contract, and it still does not convert.** A
+    mesh that contradicts its declared `growth_axis` gets
+    `GROWTH_AXIS_MISMATCH` and is left alone, as in V4; what is new is that two
+    *components* are compared on `up` and `front` at every link, so the
+    fish-body/dragon-head/wings chimera now produces three explicit
+    `FRAME_CONVERTIBLE` warnings naming the 180° rotation around Y and the
+    `fx:rotate` request that applies it, fatal under `frame_policy: strict`.
+    V5 deliberately chose the second of the two outcomes the milestone allowed:
+    the composition is **not** silently accepted any more, and it is not
+    auto-rotated either, because that would be a second placement system. 18 of
+    the 23 plugins declare no frame, so for them the contract says nothing — that
+    is its declared limit. See `V5-RESULTS.md` §7–§8.
 18. **[V4] glTF materials arrive as colour, not as material.** A
     `baseColorFactor`, vertex colours or a texture become an "imported"
     `MaterialSpec` tint plus the colours kept on the mesh. No UVs, no PBR.
@@ -657,13 +818,30 @@ links are currently broken.
     `validate_plan` gives it `level 2` by default and `wanted_at(1)` is false:
     no node, no diagnostic, `ok=True`. Same family as the lost requests V3.5
     closed for traits. Found while writing the V4 benchmark; not fixed.
-22. **`app/build/` is not under version control.** `.gitignore:11` is `build/`,
-    which also matches `app/build/`, so `assembler.py`, `validate.py`,
-    `scene.py`, `exporter.py`, `optimize.py` and `visual.py` are in no commit
-    (`git check-ignore -v app/build/scene.py`). Until the pattern is anchored
-    (`/build/`), the "files changed" list of **every** milestone is incomplete
-    by construction, and three of those files were changed by V4.
-23. **`MATERIAL_REDECLARED` noise**: `tree_stylized` redeclares `wood` with a
+22. ~~**`app/build/` is not under version control.**~~ — **fixed before V5.**
+    `.gitignore` is `/build/` (anchored) and the six modules are tracked from
+    commit `f5f0d8b`. For five milestones the "files changed" list was
+    incomplete by construction; from V5 on it is not.
+23. **[V5] A generic trait with `scope: subtree` and a role-selective trait
+    collide.** Both write the same `(node, param)` channel on the selected part,
+    so `TRAIT_RULE_CONFLICT` drops both — the existing policy, which refuses to
+    choose for the author. Diagnosed, not fixed; the way out is a selector *in
+    the request* (`{"trait": "part_scale", "role": "head"}`), which is a plan
+    schema change. `V5-RESULTS.md` §5.
+24. **[V5] A data parameter drives only numeric knobs.** `fx:bend`'s `axis`
+    stays whatever the effect declares as its default, so a tail growing along
+    +Z cannot say, from data, that its bend is computed along Z. Admitting a
+    **constant** for the binding's other knobs is the declared next step.
+25. **[V5] The installed library's semantic roles were not reassigned.**
+    `humanoid:mouth.width` declares `girth`, and `std:width` reaches it that way
+    rather than by its own name. Revising the 259 declared roles (134 `girth`,
+    113 `length`, 12 `ratio`) would also change `std:body_mass`, so it is a
+    content milestone with its own measurement.
+26. **[V5] `repair_brief` mixes `alternatives` between entries sharing a code.**
+    Three `FRAME_CONVERTIBLE` on three nodes give three entries with the right
+    `where`, but the rendered text can show one node's suggested move next to
+    another's message. It affects every code equally and predates V5.
+27. **`MATERIAL_REDECLARED` noise**: `tree_stylized` redeclares `wood` with a
     second colour; the first declaration wins. It is a warning, so
     `report.ok` stays true, but it is in every registry report.
 
@@ -674,20 +852,21 @@ database.
 
 ---
 
-## 12. Repository state (2026-10-14, after V4)
+## 12. Repository state (2026-10-14, after V5)
 
 ```text
-main                 3141e04  checkpoint pre-V1 (the whole extension layer committed)
-v1-semantic-index    a05c0d4  V1: semantic retrieval before the planner
-                     193734b  V2: explainable semantic degradation
-                     (working) V3: structural selectors + stable node identity
-                     (working) V3.5: planner contract robustness
-                     (working) V4: mesh-backed components declared in data
+main                      3141e04  checkpoint pre-V1 (the whole extension layer)
+v1-semantic-index         a05c0d4  V1: semantic retrieval before the planner
+                          193734b  V2: explainable semantic degradation
+                          f5f0d8b  checkpoint V4: V3 + V3.5 + V4, plus app/build/
+v5-semantic-variability  (working) V5: semantic variability + frame contract
 ```
 
-Everything from V3 onwards is **uncommitted working tree**, and `app/build/` is
-git-ignored on top of that (§11.22), so `git status` is not a complete picture
-of what changed.
+**`f5f0d8b` is the V4 checkpoint, and it is the first commit whose file list is
+complete.** It captured the whole working tree from V3 through V4 — which had
+been uncommitted for three milestones — plus the six modules of `app/build/`
+that the unanchored `build/` pattern had kept out of every previous commit
+(§11.22, now closed). The suite was measured at 1506 green before it.
 
 `3141e04` on `main` is the restore point: it captured everything that had been
 sitting uncommitted (traits / structural / layout / archetype layer, the
@@ -728,8 +907,28 @@ its registry), `app/core/{resolved,resolver,scene}.py`,
 `app/core/planner/retrieval.py`, `app/build/{assembler,scene}.py` (ignored by
 git) and `tests/test_api_freeze.py` (additive). Three declared contract
 changes, all additive, in `V4-RESULTS.md` §23.
+V5 added `app/core/frame.py` (310 lines),
+`app/plugins/effects/effects/forma.py` (squash / elongate / taper / twist),
+`app/plugins/variability_extension/` (six traits, 19 rules, 25 word bridges),
+`tests/plugins/variabilita/procedural_probe/` (the procedural counterpart used
+to prove backend independence), `tests/test_semantic_variability.py` (65 tests),
+`tests/test_frame_contract.py` (27 tests), `tools/variability_benchmark.py` and
+`V5-RESULTS.md`, and modified `app/core/vocabulary.py` (`ParamEffect`),
+`app/core/component.py` (`frame`, `param_effects`), `app/core/effect.py`
+(`_from_params`), `app/core/{resolver,resolved}.py` (the frame comparison on
+every link), `app/core/registry.py` (`PluginInfo.frame`, the plugin frame as the
+default, `_verify_param_effects`), `app/core/data_plugin.py` (the `effect`
+strategy), `app/core/session.py` (`Options.frame_policy`),
+`app/core/planner/vocabulary.py` (semantic roles and effect-backed knobs in the
+rendered text), `app/core/planner/repair.py` (`FRAME_CONVERTIBLE` among the
+repairable codes), `app/build/assembler.py` (piece bounds for local
+deformations — a **pre-existing** socket desynchronization the milestone's own
+probe exposed, `V5-RESULTS.md` §12), `cli.py` (`--frame-policy`), five plugin
+manifests (one `frame` line each), `tests/data_plugin_fixtures.py` and
+`tests/test_api_freeze.py` (additive). Four declared contract changes, all
+additive, in `V5-RESULTS.md` §16.
 Results in `V1-RESULTS.md`, `V2-RESULTS.md`, `V3-RESULTS.md`,
-`V3.5-RESULTS.md` and `V4-RESULTS.md`.
+`V3.5-RESULTS.md`, `V4-RESULTS.md` and `V5-RESULTS.md`.
 
 Scratch/output dirs to ignore (all git-ignored): `.tmp-tests/`,
 `audit-images/`, `output/`, `build/`, `dist/`, `library/`, `__pycache__/`,
@@ -817,3 +1016,28 @@ Scratch/output dirs to ignore (all git-ignored): `.tmp-tests/`,
 23. A request that was lost must be readable. `skipped()` for what did not
     happen, `structural_changes()` for what did; `ok=True` means geometry came
     out, never that the request was satisfied.
+24. **A semantic trait targets a declared role, tag or parameter role — never a
+    node path.** Rule 14 held for structural traits since V3; V5 found the same
+    fragility in the semantic layer, because `on` addresses a node and the parts
+    a request names (a head, a hand, a leg) are children the *component*
+    declares, whose ids are paths the planner never wrote. That is why
+    `std:head_scale` exists next to `std:part_scale`, and why
+    `tests/test_semantic_variability.py::test_a_role_selective_trait_is_invariant_to_the_root_node_id`
+    exists to make that regression fail.
+25. **A parameter may ask for an effect; it may not be one.** `ParamEffect`
+    names an installed `EffectSpec` and one of its declared knobs, and the
+    translation into an `EffectRequest` lives in the `EffectPipeline`. A second
+    deformation engine anywhere — in the data loader, in the trait resolver, in
+    the builder — is the regression. The geometry still passes through the
+    effect system, always.
+26. **The frame contract compares `up` and `front`, and nothing else.**
+    `growth_axis` is local and the socket frame already decides a child's
+    rotation; comparing it would put a warning on every limb of every humanoid.
+    And the contract **never converts**: it computes the rotation, names it, and
+    names the installed `fx:rotate` that would apply it. Rotating a child
+    against the socket its parent declared is a second placement system.
+27. **An undeclared frame is silence, not a default.** A component that declares
+    no convention is compared with nobody and produces no diagnostic. Inventing
+    a convention for it would turn 18 plugins into noise, and a false frame is
+    worse than no frame — for a planet or a cube, "where is the front" has no
+    answer.

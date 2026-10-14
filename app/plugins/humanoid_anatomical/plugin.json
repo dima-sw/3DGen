@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "name": "Humanoid Anatomical",
   "description": "Umanoide procedurale piu' anatomico: proporzioni umane, torso stratificato, arti in catena e volto dettagliato.",
+  "frame": { "up": "+Y", "front": "+Z" },
   "author": "3DGen",
   "license": "MIT",
   "tags": [

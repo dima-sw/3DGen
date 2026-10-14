@@ -135,6 +135,58 @@ def _frozen(values: Iterable[str] | None) -> frozenset[str]:
     return frozenset(values or ())
 
 
+@dataclass(frozen=True)
+class ParamEffect:
+    """Un parametro di un componente che **pilota** un effetto installato.
+
+    E' il verso opposto di `ParamRule`, e le due insieme chiudono il cerchio:
+    `ParamRule` dice come un effetto cambia un parametro, `ParamEffect` dice
+    come un parametro chiede un effetto. Serve ai componenti la cui geometria
+    non si puo' rigenerare — una mesh importata ha un solo stato — e che quindi
+    non possono esprimere "piu' curvo" come un numero da ricostruire: lo
+    esprimono come una deformazione, cioe' come la cosa che il sistema degli
+    effetti sa gia' fare.
+
+        {"curve": {"default": 0.0, "min": -1.0, "max": 1.0,
+                   "effect": {"type": "fx:bend", "parameter": "amount"}}}
+
+    Quello che questa dichiarazione **non** e': non e' un secondo motore di
+    deformazione. Non porta codice, non porta un'espressione, non porta una
+    matrice. Dice solo «il valore di questo parametro e' l'intensita' (o un
+    parametro) di quell'effetto», e la traduzione in `EffectRequest` avviene
+    nella `EffectPipeline` esistente, che poi lo valida come qualunque altro
+    effetto chiesto dal piano: effetto inesistente, ambito non supportato,
+    valore fuori intervallo sono le diagnostiche di prima.
+
+    `neutral` e' il valore per cui **non** si chiede niente: senza, una testa
+    con `curve` a zero porterebbe in giro una piega da zero gradi, e ogni
+    modello avrebbe un effetto in programma che non fa nulla. Vuoto significa
+    "chiedi sempre".
+    """
+
+    param: str                           # il parametro del componente
+    type: str                            # l'id di un EffectSpec installato
+    parameter: str = "amount"            # quale knob dell'effetto riceve il valore
+    scope: str = SCOPE_PART              # dove si applica, con la sintassi degli ambiti
+    neutral: float | None = None         # il valore per cui non si chiede nulla
+
+    @property
+    def drives_amount(self) -> bool:
+        return self.parameter == "amount"
+
+    def wanted(self, value: Any) -> bool:
+        """Questo valore chiede davvero l'effetto?"""
+        if self.neutral is None:
+            return True
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            return True
+        return abs(float(value) - float(self.neutral)) > 1e-9
+
+    def describe(self) -> str:
+        return "%s -> %s.%s [%s]" % (self.param, self.type, self.parameter,
+                                     self.scope)
+
+
 @dataclass
 class EffectSpec:
     """La dichiarazione di un effetto. Non la sua applicazione.

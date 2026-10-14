@@ -349,10 +349,65 @@ class EffectPipeline:
     def _validate(self, composition: ResolvedComposition,
                   report: Report) -> list[PlannedEffect]:
         fuori: list[PlannedEffect] = []
-        for host, richiesta in composition.effects:
+        richieste = list(composition.effects) + self._from_params(composition, report)
+        for host, richiesta in richieste:
             effetto = self._one(host, richiesta, composition, report)
             if effetto is not None:
                 fuori.append(effetto)
+        return fuori
+
+    @staticmethod
+    def _from_params(composition: ResolvedComposition,
+                     report: Report) -> list[tuple[str, EffectRequest]]:
+        """Gli effetti che un **parametro** chiede, tradotti in richieste normali.
+
+        E' tutto quello che `ParamEffect` aggiunge al sistema: una traduzione.
+        Da qui in poi una piega chiesta da `curve = 0.8` e una piega scritta nel
+        piano sono la stessa cosa, e passano dalla stessa validazione — effetto
+        inesistente, ambito non dichiarato, valore fuori intervallo.
+
+        Non si scrive in `composition.effects`: la pipeline puo' girare due
+        volte sulla stessa composizione, e un elenco che cresce a ogni giro
+        darebbe due pieghe dove ne era stata chiesta una.
+        """
+        fuori: list[tuple[str, EffectRequest]] = []
+        for nodo in composition.walk():
+            legami = tuple(getattr(nodo.component, "param_effects", ()) or ())
+            if not legami:
+                continue
+            gia_nel_piano = {r.type for r in nodo.effects}
+            for legame in legami:
+                spec = nodo.component.params.get(legame.param)
+                if spec is None:
+                    report.warn("PARAM_EFFECT_PARAM_MISSING",
+                                "'%s' pilota '%s' ma non e' un parametro di '%s'"
+                                % (legame.param, legame.type, nodo.component.id),
+                                where=nodo.path,
+                                alternatives=sorted(nodo.component.params)[:6])
+                    continue
+                # Il piano vince sulla dichiarazione del componente, come per i
+                # parametri e per i figli: se qualcuno ha chiesto quell'effetto
+                # su questo nodo, il legame non ne aggiunge un secondo.
+                if legame.type in gia_nel_piano:
+                    report.note("PARAM_EFFECT_SUPERSEDED",
+                                "'%s' e' gia' chiesto sul nodo: '%s' non lo raddoppia"
+                                % (legame.type, legame.param), where=nodo.path)
+                    continue
+                valore = nodo.values.get(legame.param, spec.default)
+                if not legame.wanted(valore):
+                    continue
+                scope = Scope.parse(legame.scope, host=nodo.id).describe()
+                if legame.drives_amount:
+                    richiesta = EffectRequest(type=legame.type, scope=scope,
+                                              amount=float(valore))
+                else:
+                    richiesta = EffectRequest(type=legame.type, scope=scope,
+                                              params={legame.parameter: valore})
+                report.note("PARAM_EFFECT_REQUESTED",
+                            "'%s' = %s chiede '%s.%s'"
+                            % (legame.param, valore, legame.type, legame.parameter),
+                            where=nodo.path, why="dichiarato da '%s'" % nodo.component.id)
+                fuori.append((nodo.id, richiesta))
         return fuori
 
     def _one(self, host: str, richiesta: EffectRequest,

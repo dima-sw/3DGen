@@ -34,8 +34,10 @@ import trimesh
 
 from app.core.capability import Capability, Mount, Requirement
 from app.core.constraints import Constraint
+from app.core.frame import FrameSpec, frame_from_dict
 from app.core.params import ParamSpec
 from app.core.socket import DEFAULT_INSERT, Socket
+from app.core.vocabulary import ParamEffect
 
 
 @dataclass
@@ -190,11 +192,22 @@ class Component:
     description: str = ""
     styles: frozenset[str] = field(default_factory=frozenset)   # vuoto = qualunque
     layout_regions: Any = field(default_factory=tuple)
+    # La convenzione d'asse del componente: `up` e `front` del soggetto, piu'
+    # l'asse di crescita locale. Vuoto vuol dire "non dichiarata", e un frame
+    # non dichiarato non si confronta con nessuno: vedi `app/core/frame.py`.
+    frame: Any = None
+    # I parametri che pilotano un effetto installato invece di ricostruire la
+    # geometria. Una dichiarazione, non un motore: la traduzione in
+    # `EffectRequest` sta nella `EffectPipeline`.
+    param_effects: tuple[ParamEffect, ...] = ()
 
     def __post_init__(self) -> None:
         self.tags = frozenset(self.tags)
         self.styles = frozenset(self.styles)
         self.requires = frozenset(self.requires)
+        self.param_effects = tuple(self.param_effects)
+        if self.frame is not None and not isinstance(self.frame, FrameSpec):
+            self.frame = frame_from_dict(self.frame)
         if not callable(self.layout_regions):
             self.layout_regions = tuple(self.layout_regions or ())
         self.provides = tuple(c if isinstance(c, Capability) else Capability(str(c))

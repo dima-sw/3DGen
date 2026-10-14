@@ -58,9 +58,14 @@ CONGELATE = {
                     "on_request", "optional", "own_socket", "params", "replaces",
                     "replaces_parent", "requirement", "roll", "scale_mode", "tags"],
                    ["wanted_at"]),
-    "Component": (["build", "children", "constraints", "description", "id",
-                   "material", "mounts", "params", "provides", "requires", "role",
-                   "styles", "tags", "layout_regions"],
+    # [V5] `frame` e `param_effects` sono due campi nuovi, additivi: la
+    # convenzione d'asse dichiarata (`app/core/frame.py`) e i parametri che
+    # pilotano un effetto installato. Un componente che non li dichiara si
+    # comporta come prima.
+    "Component": (["build", "children", "constraints", "description", "frame",
+                   "id", "material", "mounts", "param_effects", "params",
+                   "provides", "requires", "role", "styles", "tags",
+                   "layout_regions"],
                   ["accepts", "describe", "expand", "provides_capability",
                    "supports_style"]),
     "Piece": (["material", "mesh", "metadata", "sockets", "tags"], ["socket"]),
@@ -86,10 +91,13 @@ CONGELATE = {
     # V1: `synonyms` sono i ponti fra parole dichiarati nel manifest. Dati, non
     # codice: servono al retrieval semantico a sapere che una jeep e' un'auto
     # senza che il core lo sappia.
+    # [V5] `frame` e' additivo: la convenzione d'asse che il manifest dichiara
+    # per i componenti del plugin, prima prosa libera in `metadata`.
     "PluginInfo": (["author", "capabilities", "dependencies", "description",
                     "homepage", "id", "license", "metadata", "name", "notes",
                     "path", "sources", "synonyms", "tags", "version",
-                    "kind", "data_components", "data_materials", "fingerprint"],
+                    "kind", "data_components", "data_materials", "fingerprint",
+                    "frame"],
                    ["describe"]),
     "Registry": ([],
                  ["capabilities", "capability", "component", "components",
@@ -160,7 +168,10 @@ CONGELATE = {
                           "mesh", "retrieval", "scene", "skipped",
                           "structural_changes", "to_dict",
                           "trimesh_scene"]),
-    "Options": (["budget", "check", "detail_level", "repair", "seed", "style"],
+    # [V5] `frame_policy` e' la politica del progetto sulle convenzioni d'asse
+    # discordanti: `diagnose` (il predefinito, come prima) o `strict`.
+    "Options": (["budget", "check", "detail_level", "frame_policy", "repair",
+                 "seed", "style"],
                 ["to_dict"]),
     "Planner": ([], ["plan"]),
     "TraitSpec": (["aliases", "description", "id", "operations", "owner",

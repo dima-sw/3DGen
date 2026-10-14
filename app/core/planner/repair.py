@@ -55,6 +55,18 @@ MAX_ALTERNATIVE = 5
 # Resta fuori, deliberatamente, `STRUCTURAL_VALUE_CONFLICT`: due richieste che
 # chiedono conteggi diversi sullo stesso canale sono un piano che si contraddice,
 # e la diagnosi non dice quale delle due l'autore volesse.
+#
+# **[V5]** `FRAME_CONVERTIBLE` entra qui per la stessa ragione misurata: quando
+# la politica del progetto e' `strict`, due asset che non concordano
+# sull'orientamento rendono il piano non valido, e la diagnosi porta **la
+# mossa** — `fx:rotate` con asse e gradi gia' calcolati, perche' la rotazione
+# fra due terne complete e' una sola. E' un difetto che una riscrittura puo'
+# davvero risolvere, aggiungendo quell'effetto sul sottoalbero nominato.
+#
+# `FRAME_AMBIGUOUS` resta fuori, deliberatamente: quando una delle due terne e'
+# incompleta la rotazione non e' determinata, quindi la diagnosi non puo'
+# suggerire niente che non sia un indovinello, e la correzione non sta nel piano
+# ma nel componente — e' l'autore dell'asset che deve dichiarare `up` e `front`.
 CORREGGIBILI = (
     "COMPONENT_NOT_FOUND", "PLUGIN_NOT_FOUND", "AMBIGUOUS_COMPONENT",
     "AMBIGUOUS_PROVIDER", "PROVIDER_INCOMPATIBLE", "SOCKET_INCOMPATIBLE",
@@ -63,6 +75,7 @@ CORREGGIBILI = (
     "NODE_NO_REF", "DUPLICATE_NODE_ID", "ON_TARGET_MISSING",
     "ON_TARGET_AMBIGUOUS", "PLAN_NO_ROOT", "PLAN_NOT_AN_OBJECT",
     "STRUCTURAL_PROTOTYPE_NOT_FOUND", "STRUCTURAL_EXACT_OVERCOUNT",
+    "FRAME_CONVERTIBLE",
 )
 
 _RIFERIMENTO = re.compile(r"'([A-Za-z0-9_.\-]+:[A-Za-z0-9_.\-]+)'")

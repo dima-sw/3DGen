@@ -45,6 +45,7 @@ from typing import Any, Iterable
 from app.core.capability import Capability
 from app.core.component import Component
 from app.core.errors import Report
+from app.core.frame import FrameError, frame_from_dict
 from app.core.archetypes import (ArchetypeSpec, ImplementationBinding,
                                   ProfileSpec)
 from app.core.material import MaterialSpec
@@ -103,6 +104,11 @@ class PluginInfo:
     data_components: tuple[str, ...] = ()
     data_materials: tuple[str, ...] = ()
     fingerprint: str = ""
+    # [V5] La convenzione d'asse del plugin: vale per i componenti che non ne
+    # dichiarano una propria. Prima di V5 la stessa informazione viveva come
+    # prosa in `metadata` ("torso e testa crescono +Y, arti +X, fronte +Z"),
+    # che nessuno poteva confrontare.
+    frame: Any = None
 
     def __post_init__(self) -> None:
         self.tags = frozenset(self.tags)
@@ -251,6 +257,15 @@ class Registry:
         return True
 
     def register_component(self, component: Component, plugin_id: str = "") -> bool:
+        # [V5] La convenzione d'asse di un plugin vale per i suoi componenti,
+        # finche' uno non dichiara la propria. E' il modo in cui `frame`
+        # smette di essere testo libero in `metadata` e diventa la
+        # dichiarazione che il resolver confronta: una riga nel manifest invece
+        # di una riga per componente, perche' una convenzione appartiene
+        # all'autore del plugin e non a ogni singolo pezzo.
+        info = self._plugins.get(plugin_id)
+        if component.frame is None and info is not None and info.frame is not None:
+            component.frame = info.frame
         return self._register(component, self._components, plugin_id,
                               "DUPLICATE_COMPONENT", "componente")
 
@@ -682,7 +697,7 @@ class Registry:
 
             allowed = {"id", "version", "type", "name", "description", "author",
                        "license", "homepage", "tags", "dependencies", "capabilities",
-                       "metadata", "synonyms", "components", "materials"}
+                       "metadata", "synonyms", "components", "materials", "frame"}
             if set(dati) - allowed:
                 self.report.add("INVALID_MANIFEST",
                                 "chiavi non supportate dal plugin dati: %s"
@@ -709,6 +724,21 @@ class Registry:
                         return None
                     if value not in entries:
                         entries.append(value)
+
+        # [V5] La convenzione d'asse del plugin. Un asse illeggibile e' un
+        # manifest sbagliato, non un campo da ignorare: la stessa politica che
+        # vale per una definizione dati (regola 22 di PROJECT-INDEX).
+        convenzione = None
+        if "frame" in dati:
+            try:
+                convenzione = frame_from_dict(dati.get("frame"))
+            except FrameError as exc:
+                self.report.add("INVALID_MANIFEST",
+                                "frame non valido in '%s': %s" % (id, exc),
+                                where=str(manifesto))
+                return None
+            if convenzione.empty:
+                convenzione = None
 
         sorgenti: list[str] = []
         for chiave in ("components", "effects", "styles", "materials", "traits",
@@ -785,7 +815,8 @@ class Registry:
             metadata=dict(dati.get("metadata", {}) or {}),
             synonyms=sinonimi,
             sources=tuple(sorgenti), path=cartella, kind=kind,
-            data_components=tuple(data_components), data_materials=tuple(data_materials))
+            data_components=tuple(data_components), data_materials=tuple(data_materials),
+            frame=convenzione)
 
     # ------------------------------------------------------------- verifiche #
     def verify(self) -> Report:
@@ -804,12 +835,60 @@ class Registry:
                         "'%s' dipende da '%s', che non e' installato"
                         % (info.id, dipendenza), where=info.id,
                         alternatives=sorted(self._plugins)[:6])
+        self._verify_param_effects()
         if not self._semantic_checked:
             self._verify_archetypes()
             self._verify_profiles()
             self._verify_bindings()
             self._semantic_checked = True
         return self._since(inizio)
+
+    def _verify_param_effects(self) -> None:
+        """Un parametro che pilota un effetto nomina qualcosa che esiste?
+
+        Qui e non al caricamento, per la stessa ragione delle dipendenze: un
+        componente puo' dichiarare `fx:bend` e il plugin `fx` arrivare dopo, in
+        ordine alfabetico. A caricamento finito la domanda ha una risposta.
+
+        E' un **errore** e non un avviso: un parametro che pilota un effetto
+        inesistente non e' un campo ignorabile, e' un knob che il planner
+        vedrebbe fra quelli disponibili e che non farebbe niente. Vale per
+        qualunque componente, di codice o di dati: il controllo non sa quale
+        delle due specie sta guardando.
+        """
+        for component in self.components():
+            for binding in getattr(component, "param_effects", ()) or ():
+                if binding.param not in component.params:
+                    self._semantic_add_once(
+                        "COMPONENT_EFFECT_PARAM_UNKNOWN",
+                        "'%s' pilota '%s' con '%s', che non e' un suo parametro"
+                        % (component.id, binding.type, binding.param),
+                        where=component.id,
+                        alternatives=sorted(component.params)[:6])
+                    continue
+                spec = self.effect(binding.type)
+                if spec is None:
+                    self._semantic_add_once(
+                        "COMPONENT_EFFECT_NOT_FOUND",
+                        "'%s' pilota l'effetto '%s', che non e' installato"
+                        % (component.id, binding.type), where=component.id,
+                        why="dichiarato dal parametro '%s'" % binding.param,
+                        alternatives=[e.id for e in self.effects()][:8])
+                    continue
+                if not binding.drives_amount and binding.parameter not in spec.params:
+                    self._semantic_add_once(
+                        "COMPONENT_EFFECT_KNOB_UNKNOWN",
+                        "'%s' scrive '%s.%s', che l'effetto non dichiara"
+                        % (component.id, binding.type, binding.parameter),
+                        where=component.id,
+                        alternatives=["amount", *sorted(spec.params)][:8])
+                    continue
+                if not spec.fits_scope(binding.scope.partition(":")[0]):
+                    self._semantic_add_once(
+                        "COMPONENT_EFFECT_SCOPE_UNSUPPORTED",
+                        "'%s' chiede '%s' su un ambito '%s' che l'effetto non "
+                        "dichiara" % (component.id, binding.type, binding.scope),
+                        where=component.id, alternatives=list(spec.scopes))
 
     def _verify_archetypes(self) -> None:
         for alias, ids in sorted(self._archetype_aliases.items()):
