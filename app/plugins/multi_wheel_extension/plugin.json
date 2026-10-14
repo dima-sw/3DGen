@@ -1,0 +1,15 @@
+{
+  "id": "multi_wheel_extension",
+  "version": "1.0.0",
+  "name": "Multi Wheel Structural Extension",
+  "description": "Structural trait for repeated wheel-like components.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["structural", "extension"],
+  "components": [],
+  "effects": [],
+  "styles": [],
+  "materials": [],
+  "traits": ["structural/wheels.py"],
+  "dependencies": ["vehicle_stylized"]
+}

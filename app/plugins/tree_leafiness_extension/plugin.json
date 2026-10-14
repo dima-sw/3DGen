@@ -1,0 +1,15 @@
+{
+  "id": "tree_leafiness_extension",
+  "version": "1.0.0",
+  "name": "Tree Leafiness Trait Extension",
+  "description": "Reference Semantic Trait extension for deformational foliage volume.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["trait", "extension", "semantic", "tree"],
+  "components": [],
+  "effects": [],
+  "styles": [],
+  "materials": [],
+  "traits": ["traits/leafiness.py"],
+  "dependencies": []
+}

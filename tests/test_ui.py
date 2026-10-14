@@ -24,6 +24,7 @@ pytest.importorskip("PySide6", reason="l'interfaccia e' facoltativa")
 from PySide6.QtWidgets import QApplication            # noqa: E402
 
 from app.ai.provider import OfflineProvider           # noqa: E402
+from app.core.config import SETTINGS                 # noqa: E402
 from app.core.planner.planner import MockPlanner      # noqa: E402
 
 
@@ -110,3 +111,21 @@ def test_the_detail_selector_speaks_of_parts(finestra):
               for i in range(finestra.density_box.count())]
     assert scelte == ["normale", "essenziale", "dettagliato"]
     assert finestra.dettaglio() == 2
+
+
+def test_provider_selector_has_no_model_selector(finestra):
+    cerebras = finestra.provider_box.findData("cerebras")
+    nvidia = finestra.provider_box.findData("nvidia_nim")
+    assert cerebras >= 0 and nvidia >= 0
+    assert not hasattr(finestra, "model_box")
+
+
+def test_selected_provider_and_failover_are_applied_to_the_session(finestra):
+    index = finestra.provider_box.findData("cerebras")
+    finestra.provider_box.setCurrentIndex(index)
+    finestra.failover_box.setChecked(False)
+    finestra._apply_ai_selection()
+
+    assert finestra.session.provider.key == "cerebras"
+    assert finestra.session.provider.model == SETTINGS.model("cerebras")
+    assert not finestra.session.provider.allow_local_fallback

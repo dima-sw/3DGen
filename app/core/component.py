@@ -189,11 +189,14 @@ class Component:
     material: str = "default"
     description: str = ""
     styles: frozenset[str] = field(default_factory=frozenset)   # vuoto = qualunque
+    layout_regions: Any = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         self.tags = frozenset(self.tags)
         self.styles = frozenset(self.styles)
         self.requires = frozenset(self.requires)
+        if not callable(self.layout_regions):
+            self.layout_regions = tuple(self.layout_regions or ())
         self.provides = tuple(c if isinstance(c, Capability) else Capability(str(c))
                               for c in self.provides)
         self.mounts = tuple(m if isinstance(m, Mount) else Mount(str(m))

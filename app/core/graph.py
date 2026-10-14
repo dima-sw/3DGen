@@ -79,6 +79,7 @@ FROM_DEFAULT = "default"      # valore predefinito del componente
 FROM_DERIVED = "derived"      # calcolato da un'espressione
 FROM_OVERRIDE = "override"    # deciso nel piano, da utente o LLM
 FROM_EFFECT = "effect"        # modificato da un effetto
+FROM_TRAIT = "trait"          # modificato da un Trait semantico
 
 SEPARATOR = "/"
 
@@ -166,6 +167,12 @@ class CompositionGraph:
     order: dict[str, list[str]] = field(default_factory=dict)   # figli, ordinati
     swaps: dict[str, str] = field(default_factory=dict)         # nodo -> nuovo ref
     operations: list[Operation] = field(default_factory=list)
+    traits: list[Any] = field(default_factory=list)
+    structural_traits: list[Any] = field(default_factory=list)
+    graph_rewrite_plan: Any = None
+    layout_plan: Any = None
+    structural_resolution: Any = None
+    concept_resolution: Any = None
 
     # ------------------------------------------------------------ costruzione #
     def set_root(self, id: str, ref: str, **params) -> CompositionNode:
@@ -505,9 +512,34 @@ class CompositionGraph:
                 fuori["children"] = figli
             return fuori
 
-        return {"version": self.version, "style": self.style,
+        fuori = {"version": self.version, "style": self.style,
                 "detail_level": self.detail_level, "seed": self.seed,
                 "root": esporta(self.nodes[self.root_id]) if self.root_id else {}}
+        if self.traits:
+            fuori["traits"] = [t.__dict__.copy() for t in self.traits]
+        if self.structural_traits:
+            richieste = []
+            for trait in self.structural_traits:
+                item = trait.__dict__.copy()
+                target = item.get("target")
+                if hasattr(target, "key"):
+                    item["target"] = {
+                        "role": target.role,
+                        "capability": target.capability,
+                        "tags": list(target.tags),
+                        "components": list(target.components),
+                    }
+                richieste.append(item)
+            fuori["structural_traits"] = richieste
+        if self.graph_rewrite_plan is not None:
+            fuori["graph_rewrite_plan"] = self.graph_rewrite_plan.to_dict()
+        if self.layout_plan is not None:
+            fuori["layout_plan"] = self.layout_plan.to_dict()
+        if self.concept_resolution is not None:
+            fuori["concept_resolution"] = (self.concept_resolution.to_dict()
+                                            if hasattr(self.concept_resolution, "to_dict")
+                                            else dict(self.concept_resolution))
+        return fuori
 
     @classmethod
     def from_dict(cls, data: dict) -> "CompositionGraph":
@@ -517,6 +549,15 @@ class CompositionGraph:
                     detail_level=int(data.get("detail_level", 2)),
                     seed=int(data.get("seed", 0)),
                     version=str(data.get("version", "1.0")))
+        from app.core.traits import trait_requests_from_dict
+        from app.core.structural import structural_trait_requests_from_dict
+        from app.core.archetypes import ConceptResolutionPlan
+
+        grafo.traits = trait_requests_from_dict(data.get("traits") or [])
+        grafo.structural_traits = structural_trait_requests_from_dict(
+            data.get("structural_traits") or [])
+        grafo.concept_resolution = ConceptResolutionPlan.from_dict(
+            data.get("concept_resolution"))
 
         def importa(voce: dict, padre: str) -> None:
             id, ref = voce["id"], voce.get("ref", "")

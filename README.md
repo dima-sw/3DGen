@@ -172,6 +172,18 @@ There is no language model judging whether a model "looks good".
 
 Given the same inputs, the checks produce the same results.
 
+La finestra permette di scegliere il provider AI primario e il failover
+automatico. Il modello predefinito appartiene al registry backend del provider;
+il failover usa
+il modello di default del candidato successivo, non il model ID primario. La
+variabili modello legacy tipo `HF_MODEL` o `OPENROUTER_MODEL` sono ignorate per
+i provider remoti: restano leggibili solo per compatibilita'. La
+catena mantiene l'ordine configurato per gli altri provider e normalizza
+`OpenRouter` come ultimo remoto, subito prima di `Ollama`. Cloudflare Workers
+AI richiede sia il token sia l'account ID; il nome legacy `cloudflare_id` e'
+accettato per quest'ultimo. Un provider incompleto resta non configurato e non
+impedisce l'avvio.
+
 ---
 
 ### Plugin descriptions are data

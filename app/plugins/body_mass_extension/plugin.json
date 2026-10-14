@@ -1,0 +1,15 @@
+{
+  "id": "body_mass_extension",
+  "version": "1.0.0",
+  "name": "Body Mass Trait Extension",
+  "description": "Reference Semantic Trait extension for organic body fullness via public component parameters.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["trait", "extension", "semantic"],
+  "components": [],
+  "effects": [],
+  "styles": [],
+  "materials": [],
+  "traits": ["traits/body_mass.py"],
+  "dependencies": []
+}

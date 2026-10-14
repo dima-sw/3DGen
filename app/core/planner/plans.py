@@ -36,7 +36,8 @@ MAX_PROFONDITA = 12
 CHIAVI_NODO = {"id", "ref", "swap", "params", "effects", "children", "at", "on",
                "optional", "on_request", "level", "scale_mode", "insert",
                "roll", "tags"}
-CHIAVI_RADICE = {"version", "style", "detail_level", "seed", "root"}
+CHIAVI_RADICE = {"version", "style", "detail_level", "seed", "traits",
+                 "structural_traits", "concept", "concept_resolution", "root"}
 CHIAVI_EFFETTO = {"type", "scope", "amount", "target"}
 
 
@@ -73,6 +74,11 @@ class _Controllo:
                              alternatives=sorted(CHIAVI_RADICE))
         radice = data.get("root")
         if not isinstance(radice, dict):
+            if isinstance(data.get("concept"), dict):
+                self.report.add("CONCEPT_REQUIRES_RESOLUTION",
+                                "un piano concept deve essere materializzato dal backend",
+                                where="concept")
+                return None
             self.report.add("PLAN_NO_ROOT", "il piano non ha una radice",
                             why="serve un oggetto 'root' con almeno 'ref'")
             return None
@@ -88,6 +94,8 @@ class _Controllo:
         seme = self._intero(data.get("seed"), 0, "seed", 0, 2 ** 31)
 
         self._nodo(radice, profondita=0)
+        self._traits(data.get("traits"))
+        self._structural_traits(data.get("structural_traits"))
         if not self.report.ok:
             return None
 
@@ -95,11 +103,45 @@ class _Controllo:
                                  version=str(data.get("version") or "1.0"))
         try:
             self._costruisci(grafo, radice, "")
+            from app.core.traits import trait_requests_from_dict
+            from app.core.structural import structural_trait_requests_from_dict
+
+            grafo.traits = trait_requests_from_dict(data.get("traits") or [])
+            grafo.structural_traits = structural_trait_requests_from_dict(
+                data.get("structural_traits") or [])
+            from app.core.archetypes import ConceptResolutionPlan
+            grafo.concept_resolution = ConceptResolutionPlan.from_dict(
+                data.get("concept_resolution"))
         except Exception as exc:                       # noqa: BLE001
             self.report.add("PLAN_NOT_BUILDABLE",
                             "il piano non si e' potuto montare: %s" % exc)
             return None
         return grafo
+
+    def _structural_traits(self, value) -> None:
+        if value is None:
+            return
+        if not isinstance(value, list):
+            self.report.add("STRUCTURAL_TRAITS_NOT_A_LIST",
+                            "'structural_traits' non e' un elenco")
+            return
+        for index, item in enumerate(value):
+            where = "structural_traits[%d]" % index
+            if not isinstance(item, dict):
+                self.report.add("STRUCTURAL_TRAIT_NOT_AN_OBJECT",
+                                "structural trait non e' un oggetto", where=where)
+                continue
+            trait = str(item.get("trait") or "")
+            if not trait:
+                self.report.add("STRUCTURAL_TRAIT_NO_ID",
+                                "structural trait senza id", where=where)
+                continue
+            if self.registry.structural_trait(trait) is None:
+                self.report.add("STRUCTURAL_TRAIT_NOT_FOUND",
+                                "structural trait sconosciuto: '%s'" % trait,
+                                where=where,
+                                alternatives=[t.id for t in
+                                              self.registry.structural_traits()][:8])
 
     # --------------------------------------------------------------- schema #
     def _nodo(self, voce: Any, profondita: int, dove: str = "root") -> None:
@@ -316,6 +358,50 @@ class _Controllo:
         if not isinstance(dove, str) or not dove.strip():
             self.report.add("ON_NOT_A_PATH", "'on' non e' un percorso", where=id)
             voce.pop("on", None)
+
+    # --------------------------------------------------------------- trait #
+    def _traits(self, items) -> None:
+        if items is None:
+            return
+        if not isinstance(items, list):
+            self.report.add("TRAITS_NOT_A_LIST", "'traits' non e' un elenco")
+            return
+        for index, item in enumerate(items):
+            where = "traits[%d]" % index
+            if not isinstance(item, dict):
+                self.report.add("TRAIT_NOT_AN_OBJECT",
+                                "un trait request non e' un oggetto", where=where)
+                continue
+            for chiave in sorted(set(item) - {"trait", "value", "op", "on", "scope"}):
+                self.report.warn("TRAIT_UNKNOWN_KEY",
+                                 "chiave ignorata su '%s': '%s'" % (where, chiave),
+                                 where=where)
+            name = str(item.get("trait") or "").strip()
+            if not name:
+                self.report.add("TRAIT_NO_ID", "un trait request non ha 'trait'",
+                                where=where)
+                continue
+            spec = self.registry.trait(name)
+            if spec is None:
+                code = "TRAIT_AMBIGUOUS" if self.registry.trait_ambiguous(name) \
+                    else "TRAIT_NOT_FOUND"
+                self.report.add(code, "trait non disponibile: '%s'" % name,
+                                where=where,
+                                alternatives=[t.id for t in self.registry.traits()][:8])
+                continue
+            op = str(item.get("op") or "set")
+            scope = str(item.get("scope") or "subtree")
+            if op not in spec.operations:
+                self.report.add("TRAIT_OPERATION_UNSUPPORTED",
+                                "'%s' non supporta op '%s'" % (spec.id, op),
+                                where=where, alternatives=spec.operations)
+            if scope not in spec.scopes or scope not in ("local", "subtree"):
+                self.report.add("TRAIT_SCOPE_UNSUPPORTED",
+                                "'%s' non supporta scope '%s'" % (spec.id, scope),
+                                where=where, alternatives=spec.scopes)
+            if "value" not in item:
+                self.report.add("TRAIT_NO_VALUE",
+                                "'%s' non ha un valore" % spec.id, where=where)
 
     # ------------------------------------------------------------- numeri #
     def _intero(self, valore, predefinito: int, nome: str,

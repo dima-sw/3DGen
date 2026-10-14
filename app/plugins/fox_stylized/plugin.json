@@ -1,0 +1,57 @@
+{
+  "id": "fox_stylized",
+  "version": "1.0.0",
+  "name": "Stylized Fox",
+  "description": "A deliberately authored angular low-poly fox benchmark.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "animal",
+    "fox",
+    "quadruped",
+    "low_poly",
+    "stylized",
+    "benchmark"
+  ],
+  "components": [
+    "components/fox.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "materials": [
+    "materials/palette.py"
+  ],
+  "capabilities": [
+    {
+      "name": "animal",
+      "description": "A complete stylized animal subject."
+    },
+    {
+      "name": "core_mount",
+      "description": "A general body or torso replacement location."
+    },
+    {
+      "name": "head_mount",
+      "description": "A general head replacement location."
+    },
+    {
+      "name": "limb_mount",
+      "description": "A general limb replacement location."
+    },
+    {
+      "name": "face_mount",
+      "description": "A general face accessory location."
+    },
+    {
+      "name": "gear_mount",
+      "description": "A general back accessory location."
+    }
+  ],
+  "dependencies": [],
+  "metadata": {
+    "benchmark": "stylized_fox",
+    "shape_language": "angular tapered elongated",
+    "core_changes": "none",
+    "kernel_changes": "none"
+  }
+}

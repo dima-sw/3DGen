@@ -1,0 +1,42 @@
+{
+  "id": "vehicle_stylized",
+  "version": "1.0.0",
+  "name": "Vehicle Stylized",
+  "description": "A deliberately designed low-poly compact car benchmark.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "vehicle",
+    "car",
+    "low_poly",
+    "stylized",
+    "benchmark"
+  ],
+  "components": [
+    "components/car.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "materials": [
+    "materials/palette.py"
+  ],
+  "capabilities": [
+    {
+      "name": "vehicle_mount",
+      "description": "Internal structural mount used by stylized vehicle pieces."
+    },
+    {
+      "name": "wheel_mount",
+      "description": "A vehicle socket intended for a simple wheel."
+    },
+    {
+      "name": "vehicle",
+      "description": "A complete vehicle."
+    }
+  ],
+  "dependencies": [],
+  "metadata": {
+    "benchmark": "stylized_compact_car",
+    "shape_language": "chunky tapered rounded/faceted"
+  }
+}

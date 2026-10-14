@@ -1171,7 +1171,9 @@ def test_a_bare_head_is_ambiguous_in_a_full_vocabulary(mondo):
     out = resolve(g, mondo)
     assert "AMBIGUOUS_COMPONENT" in out.report.codes()
     voce = [d for d in out.report if d.code == "AMBIGUOUS_COMPONENT"][0]
-    assert set(voce.alternatives) == {"humanoid:head", "robot:head"}
+    assert set(voce.alternatives) == {
+        "humanoid:head", "humanoid_anatomical:head", "fox_stylized:head",
+        "robot:head"}
 
 
 def test_a_bare_capability_finds_the_only_provider(mondo):

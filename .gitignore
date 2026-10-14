@@ -10,3 +10,5 @@ library/
 dist/
 build/
 *.spec
+.tmp-tests/
+audit-images/

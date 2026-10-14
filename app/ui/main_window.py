@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt, QTimer
+from PySide6.QtCore import QSettings, QSize, Qt, QTimer
 from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence
 from PySide6.QtWidgets import (
-    QComboBox, QDoubleSpinBox, QFileDialog, QFormLayout, QGroupBox, QHBoxLayout,
+    QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QFormLayout, QGroupBox, QHBoxLayout,
     QLabel, QListWidget, QMainWindow, QMessageBox, QPlainTextEdit, QProgressBar,
     QInputDialog, QLineEdit, QListWidgetItem, QPushButton, QSplitter, QStatusBar,
     QTabWidget, QTextBrowser, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
@@ -59,12 +59,14 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.session = Session(autosave=True)
+        self._ai_settings = QSettings("3DGen", "3DGen")
         self.busy = False
         self.last_mode = "generate"
         self.setWindowTitle("3DGen - generatore 3D controllato dall'AI")
         self.resize(1500, 900)
         self.setStyleSheet(STYLESHEET)
         self._build_ui()
+        self._populate_ai_controls()
         self._refresh_provider_label()
         self.refresh_library()
         self._log_ai("Pronto. Descrivi l'oggetto che vuoi creare e premi Genera.")
@@ -197,6 +199,19 @@ class MainWindow(QMainWindow):
                                     "triangoli servono a ottenerlo.")
         row.addWidget(self.density_box, 1)
         lay.addLayout(row)
+
+        ai_box = QGroupBox("Provider AI")
+        ai_form = QFormLayout(ai_box)
+        self.provider_box = QComboBox()
+        self.provider_box.currentIndexChanged.connect(self._on_provider_changed)
+        self.failover_box = QCheckBox("Failover automatico")
+        self.failover_box.setToolTip(
+            "Se disattivato, il provider selezionato fallisce "
+            "senza passare a un altro provider.")
+        self.failover_box.stateChanged.connect(self._persist_ai_selection)
+        ai_form.addRow("Provider", self.provider_box)
+        ai_form.addRow("", self.failover_box)
+        lay.addWidget(ai_box)
 
         self.btn_generate = QPushButton("Genera")
         self.btn_generate.setObjectName("primary")
@@ -575,6 +590,7 @@ class MainWindow(QMainWindow):
             return
         if self.busy or (mode == "variant" and self.session.current_plan is None):
             return
+        self._apply_ai_selection()
         self._set_busy(True, "Generazione in corso...")
         if mode == "variant":
             self._log_user("un'altra variante")
@@ -640,6 +656,15 @@ class MainWindow(QMainWindow):
         self._log_ai("%s  <span style='color:#6d7482'>(%.1fs)</span>"
                      % (version.message, version.seconds))
         self.refresh_all()
+        risultato = getattr(version, "result", None)
+        if risultato is not None and risultato.actual_provider:
+            richiesto = PROVIDERS.get(risultato.requested_provider)
+            usato = PROVIDERS.get(risultato.actual_provider)
+            richiesto = richiesto.label if richiesto else risultato.requested_provider
+            usato = usato.label if usato else risultato.actual_provider
+            extra = (" dopo failover" if risultato.failover_count else "")
+            self.provider_label.setText(
+                "Requested: %s | AI used: %s%s" % (richiesto, usato, extra))
         if self.last_mode != "variant":
             self.prompt.clear()
 
@@ -843,13 +868,63 @@ class MainWindow(QMainWindow):
                 self.log_view.verticalScrollBar().maximum())
 
     def _refresh_provider_label(self) -> None:
-        chain = SETTINGS.available_chain()
-        if chain:
-            labels = [PROVIDERS[c].label for c in chain]
-            text = "AI: " + " > ".join(labels) + "  (failover automatico, poi regole locali)"
-        else:
-            text = "AI: nessuna chiave configurata - funziona con le regole locali (offline)"
+        if not hasattr(self, "provider_box"):
+            return
+        provider = self.provider_box.currentData() or "offline"
+        label = PROVIDERS[provider].label if provider in PROVIDERS else "Locale"
+        fallback = [PROVIDERS[c].label for c in SETTINGS.available_chain()
+                    if c != provider]
+        suffix = " > ".join(fallback) if fallback else "regole locali"
+        failover = "failover automatico" if self.failover_box.isChecked() else "failover disattivato"
+        text = "AI primaria: %s  |  %s  |  dopo: %s" % (
+            label, failover, suffix)
         self.provider_label.setText(text)
+
+    def _populate_ai_controls(self) -> None:
+        """Carica provider e stato senza fare discovery di modelli."""
+        saved_provider = str(self._ai_settings.value("ai/provider", "") or "")
+        chain = SETTINGS.available_chain()
+        default_provider = saved_provider if saved_provider in PROVIDERS else (
+            chain[0] if chain else "offline")
+
+        self.provider_box.blockSignals(True)
+        self.provider_box.clear()
+        for key, spec in PROVIDERS.items():
+            configured = SETTINGS.configured(key)
+            label = spec.label if configured else "%s [non configurato]" % spec.label
+            self.provider_box.addItem(label, key)
+            index = self.provider_box.count() - 1
+            item = self.provider_box.model().item(index)
+            if item is not None:
+                item.setEnabled(configured)
+            missing = SETTINGS.missing_requirements(key)
+            tooltip = spec.note or ""
+            if missing:
+                tooltip += ("; manca: " + ", ".join(missing))
+            self.provider_box.setItemData(index, tooltip, Qt.ItemDataRole.ToolTipRole)
+        self.provider_box.addItem("Locale (regole)", "offline")
+        self.provider_box.setCurrentIndex(max(0, self.provider_box.findData(default_provider)))
+        self.provider_box.blockSignals(False)
+
+        self.failover_box.setChecked(bool(self._ai_settings.value("ai/failover", True, type=bool)))
+        self._on_provider_changed(self.provider_box.currentIndex())
+
+    def _on_provider_changed(self, index: int) -> None:
+        del index
+        self._persist_ai_selection()
+        self._refresh_provider_label()
+
+    def _persist_ai_selection(self, *_args) -> None:
+        if not hasattr(self, "provider_box") or self.provider_box.currentData() is None:
+            return
+        key = str(self.provider_box.currentData())
+        self._ai_settings.setValue("ai/provider", key)
+        self._ai_settings.setValue("ai/failover", self.failover_box.isChecked())
+        self._refresh_provider_label()
+
+    def _apply_ai_selection(self) -> None:
+        key = str(self.provider_box.currentData() or "offline")
+        self.session.configure_ai(key, failover=self.failover_box.isChecked())
 
     def _set_busy(self, busy: bool, message: str = "") -> None:
         self.busy = busy

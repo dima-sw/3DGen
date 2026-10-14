@@ -36,7 +36,8 @@ from app.core.capability import (CAPABILITY, CAPABILITY_AND_SIDE,
 from app.core.component import Component
 from app.core.errors import Report
 from app.core.graph import (FROM_DEFAULT, FROM_DERIVED, FROM_EFFECT,
-                            FROM_OVERRIDE, CompositionGraph, EffectRequest)
+                            FROM_OVERRIDE, FROM_TRAIT, CompositionGraph,
+                            EffectRequest)
 
 # Come si e' arrivati a un innesto. Nomi, non numeri, perche' finiscono in una
 # diagnosi che deve leggere un umano (o un modello linguistico).
@@ -97,6 +98,7 @@ class ResolvedLink:
     target_size: float = 0.0
     insert: float = 0.35
     roll: float = 0.0
+    layout_scale: float = 1.0
 
     @property
     def how(self) -> str:

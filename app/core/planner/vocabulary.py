@@ -47,6 +47,7 @@ from typing import Any
 
 MAX_DESCRIZIONE = 160          # caratteri di un testo di terze parti
 MAX_ELENCO = 12                # quante voci si elencano prima di dire «e altri»
+MAX_CONCEPT_SHORTLIST = 24     # contratti operativi; l'indice globale resta completo
 
 # Tutto cio' che potrebbe far credere a un modello che il dato sia finito e sia
 # cominciata un'istruzione. Non e' un elenco di parole vietate: sono i
@@ -233,6 +234,50 @@ class EffectEntry:
 
 
 @dataclass(frozen=True)
+class TraitEntry:
+    id: str
+    alias: str = ""
+    description: str = ""
+    type: str = "float"
+    min: float | None = None
+    max: float | None = None
+    choices: tuple = ()
+    ops: tuple[str, ...] = ()
+    scopes: tuple[str, ...] = ()
+    purpose: str = ""
+
+    def to_dict(self) -> dict:
+        fuori: dict[str, Any] = {"id": self.id, "type": self.type,
+                                 "ops": list(self.ops),
+                                 "scopes": list(self.scopes)}
+        if self.alias:
+            fuori["alias"] = self.alias
+        if self.description:
+            fuori["description"] = self.description
+        if self.min is not None:
+            fuori["min"] = self.min
+        if self.max is not None:
+            fuori["max"] = self.max
+        if self.choices:
+            fuori["choices"] = list(self.choices)
+        if self.purpose:
+            fuori["purpose"] = self.purpose
+        return fuori
+
+    def to_text(self) -> str:
+        name = self.alias or self.id
+        if self.choices:
+            domain = "{%s}" % ", ".join(str(c) for c in self.choices)
+        elif self.min is not None and self.max is not None:
+            domain = "[%g, %g]" % (self.min, self.max)
+        else:
+            domain = self.type
+        return '- %s %s ops=%s scopes=%s purpose="%s"' % (
+            name, domain, ",".join(self.ops), ",".join(self.scopes),
+            self.purpose or self.description)
+
+
+@dataclass(frozen=True)
 class CapabilityEntry:
     """Una capability: chi la fornisce e chi la accetta."""
 
@@ -285,6 +330,79 @@ class StyleEntry:
         return '- %s "%s"' % (self.id, self.description)
 
 
+@dataclass(frozen=True)
+class ArchetypeEntry:
+    """One compact entry in the global concept index."""
+
+    id: str
+    aliases: tuple[str, ...] = ()
+    description: str = ""
+
+    def to_dict(self) -> dict:
+        return {"id": self.id, "aliases": list(self.aliases),
+                "description": self.description}
+
+    def to_text(self) -> str:
+        return '- %s aliases=%s "%s"' % (
+            self.id, ",".join(self.aliases), self.description)
+
+
+@dataclass(frozen=True)
+class ArchetypeDetailEntry:
+    """Bounded operational data, separate from the global index."""
+
+    id: str
+    parents: tuple[str, ...] = ()
+    required_roles: tuple[str, ...] = ()
+    preferred_roles: tuple[str, ...] = ()
+    required_capabilities: tuple[str, ...] = ()
+    preferred_capabilities: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict:
+        return {"id": self.id, "parents": list(self.parents),
+                "required_roles": list(self.required_roles),
+                "preferred_roles": list(self.preferred_roles),
+                "required_capabilities": list(self.required_capabilities),
+                "preferred_capabilities": list(self.preferred_capabilities)}
+
+    def to_text(self) -> str:
+        return ("- %s parents=%s required_roles=%s required_capabilities=%s"
+                % (self.id, ",".join(self.parents), ",".join(self.required_roles),
+                   ",".join(self.required_capabilities)))
+
+
+@dataclass(frozen=True)
+class ProfileEntry:
+    id: str
+    aliases: tuple[str, ...] = ()
+    archetypes: tuple[str, ...] = ()
+    description: str = ""
+
+    def to_dict(self) -> dict:
+        return {"id": self.id, "aliases": list(self.aliases),
+                "archetypes": list(self.archetypes),
+                "description": self.description}
+
+    def to_text(self) -> str:
+        return '- %s archetypes=%s "%s"' % (
+            self.id, ",".join(self.archetypes), self.description)
+
+
+@dataclass(frozen=True)
+class BindingEntry:
+    id: str
+    implementation: str
+    supported_archetypes: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict:
+        return {"id": self.id, "implementation": self.implementation,
+                "supported_archetypes": list(self.supported_archetypes)}
+
+    def to_text(self) -> str:
+        return "- %s implementation=%s supports=%s" % (
+            self.id, self.implementation, ",".join(self.supported_archetypes))
+
+
 # --------------------------------------------------------------------------- #
 # Il vocabolario
 # --------------------------------------------------------------------------- #
@@ -301,7 +419,13 @@ class Vocabulary:
     components: tuple[ComponentEntry, ...] = ()
     capabilities: tuple[CapabilityEntry, ...] = ()
     effects: tuple[EffectEntry, ...] = ()
+    traits: tuple[TraitEntry, ...] = ()
+    structural_traits: tuple[TraitEntry, ...] = ()
     styles: tuple[StyleEntry, ...] = ()
+    archetypes: tuple[ArchetypeEntry, ...] = ()
+    archetype_details: tuple[ArchetypeDetailEntry, ...] = ()
+    profiles: tuple[ProfileEntry, ...] = ()
+    bindings: tuple[BindingEntry, ...] = ()
     tags: tuple[str, ...] = ()
     style: str = "low_poly"
     detail_level: int = 2
@@ -342,7 +466,13 @@ class Vocabulary:
             "components": [c.to_dict() for c in self.components],
             "capabilities": [c.to_dict() for c in self.capabilities],
             "effects": [e.to_dict() for e in self.effects],
+            "traits": [t.to_dict() for t in self.traits],
+            "structural_traits": [t.to_dict() for t in self.structural_traits],
             "styles": [s.to_dict() for s in self.styles],
+            "archetypes": [a.to_dict() for a in self.archetypes],
+            "archetype_details": [a.to_dict() for a in self.archetype_details],
+            "profiles": [p.to_dict() for p in self.profiles],
+            "bindings": [b.to_dict() for b in self.bindings],
             "tags": list(self.tags),
         }
 
@@ -350,13 +480,15 @@ class Vocabulary:
         return json.dumps(self.to_dict(), ensure_ascii=False, indent=indent,
                           sort_keys=False)
 
-    def to_text(self) -> str:
+    def to_text(self, compact: bool = False) -> str:
         """La forma compatta per un modello linguistico.
 
         Sezioni con un titolo, una voce per riga. Le descrizioni di terze parti
         stanno fra virgolette e su una riga sola: e' il punto in cui la
         sanificazione fatta a monte diventa visibile.
         """
+        if compact:
+            return self.to_compact_text()
         blocchi = [
             ("COMPONENTI (usa questi id, e nessun altro)",
              [c.to_text() for c in self.components]),
@@ -364,7 +496,14 @@ class Vocabulary:
              [c.to_text() for c in self.capabilities]),
             ("EFFETTI (usa questi id, e nessun altro)",
              [e.to_text() for e in self.effects]),
+            ("TRAITS (usa questi id o alias sicuri, e nessun altro)",
+             [t.to_text() for t in self.traits]),
+            ("STRUCTURAL TRAITS (contano o duplicano istanze; niente coordinate)",
+             [t.to_text() for t in self.structural_traits]),
             ("STILI", [s.to_text() for s in self.styles]),
+            ("ARCHETYPE GLOBAL INDEX", [a.to_text() for a in self.archetypes]),
+            ("ARCHETYPE SHORTLIST", [a.to_text() for a in self.archetype_details]),
+            ("PROFILES", [p.to_text() for p in self.profiles]),
             ("TAG", ["- " + ", ".join(self.tags)] if self.tags else []),
             ("PLUGIN INSTALLATI", [p.to_text() for p in self.plugins]),
         ]
@@ -373,6 +512,103 @@ class Vocabulary:
             if righe:
                 fuori.append("## %s\n%s" % (titolo, "\n".join(righe)))
         return "\n\n".join(fuori)
+
+    def to_compact_text(self) -> str:
+        """Forma senza sezioni duplicate, per endpoint con body piu' piccoli.
+
+        I componenti conservano tutto cio' che serve a scegliere un id, a
+        collegarlo e a valorizzare i parametri. Capability aggregate, plugin
+        installati e tag globali sono gia' implicati dai contratti dei pezzi e
+        non vengono ripetuti nel prompt. I set di parametri condivisi sono
+        dichiarati una volta e referenziati: il contratto resta completo senza
+        duplicarlo fra root e parti dello stesso plugin.
+        """
+        signatures = {
+            componente.id: tuple(p.to_text() for p in componente.params
+                                 if not p.derived)[:MAX_ELENCO]
+            for componente in self.components
+        }
+        counts: dict[tuple[str, ...], int] = {}
+        for signature in signatures.values():
+            if signature:
+                counts[signature] = counts.get(signature, 0) + 1
+        param_refs: dict[tuple[str, ...], str] = {}
+        for componente in self.components:
+            signature = signatures[componente.id]
+            if signature and counts.get(signature, 0) > 1 \
+                    and signature not in param_refs:
+                param_refs[signature] = "P%d" % (len(param_refs) + 1)
+
+        componenti = []
+        for componente in self.components:
+            parti = [componente.id]
+            if componente.provides:
+                parti.append("provides=" + ",".join(componente.provides))
+            if componente.mounts:
+                accetta = []
+                for mount in componente.mounts:
+                    lato = ":" + mount.side if mount.side else ""
+                    accetta.append(mount.capability + lato)
+                parti.append("accepts=" + ",".join(accetta))
+            signature = signatures[componente.id]
+            if signature in param_refs:
+                parti.append("params=@" + param_refs[signature])
+            elif signature:
+                parti.append("params=" + ";".join(signature))
+            componenti.append("- " + " | ".join(parti))
+
+        param_sets = ["- @%s %s" % (ref, ";".join(signature))
+                      for signature, ref in param_refs.items()]
+
+        effetti = []
+        for effetto in self.effects:
+            parti = [effetto.id]
+            if effetto.scopes:
+                parti.append("scopes=" + ",".join(effetto.scopes))
+            if effetto.amount is not None:
+                parti.append("amount=" + effetto.amount.to_text())
+            if effetto.params:
+                parti.append("params=" + ";".join(
+                    p.to_text() for p in effetto.params[:MAX_ELENCO]))
+            effetti.append("- " + " | ".join(parti))
+
+        traits = []
+        for trait in self.traits:
+            traits.append("- " + " | ".join([
+                trait.alias or trait.id,
+                trait.type,
+                "ops=" + ",".join(trait.ops),
+                "scopes=" + ",".join(trait.scopes),
+                "range=%s..%s" % (trait.min, trait.max)
+                if trait.min is not None or trait.max is not None else "",
+            ]).strip(" |"))
+
+        structural_traits = []
+        for trait in self.structural_traits:
+            structural_traits.append("- " + " | ".join([
+                trait.alias or trait.id,
+                trait.type,
+                "modes=" + ",".join(trait.ops),
+                "range=%s..%s" % (trait.min, trait.max)
+                if trait.min is not None or trait.max is not None else "",
+            ]).strip(" |"))
+
+        archetypes = ["- %s aliases=%s \"%s\"" %
+                      (a.id, ",".join(a.aliases), a.description)
+                      for a in self.archetypes]
+        profiles = ["- %s -> %s" % (p.id, ",".join(p.archetypes))
+                    for p in self.profiles]
+        blocchi = [("CONCEPT INDEX (semantic data)", archetypes),
+                   ("PROFILES (bounded references)", profiles),
+                   ("PARAM SETS (shared component contracts)", param_sets),
+                   ("COMPONENTI (usa questi id, e nessun altro)", componenti),
+                   ("EFFETTI (usa questi id, e nessun altro)", effetti),
+                   ("TRAITS (usa questi id o alias sicuri, e nessun altro)", traits),
+                   ("STRUCTURAL TRAITS (usa per conteggi espliciti)",
+                    structural_traits),
+                   ("STILI", ["- " + s.id for s in self.styles])]
+        return "\n\n".join("## %s\n%s" % (titolo, "\n".join(righe))
+                            for titolo, righe in blocchi if righe)
 
     def fingerprint(self) -> str:
         """Un'impronta stabile del vocabolario.
@@ -428,6 +664,40 @@ def _effetto(effetto) -> EffectEntry:
         tags=tuple(sorted(effetto.tags)))
 
 
+def _trait(trait, registry) -> TraitEntry:
+    alias = ""
+    for candidate in trait.aliases:
+        if registry.trait(candidate) is trait:
+            alias = candidate
+            break
+    value = trait.value
+    return TraitEntry(
+        id=trait.id, alias=sanitize(alias, 32),
+        description=sanitize(trait.description),
+        type=getattr(value, "type", "float"),
+        min=getattr(value, "min", None), max=getattr(value, "max", None),
+        choices=tuple(getattr(value, "choices", ()) or ()),
+        ops=tuple(trait.operations), scopes=tuple(trait.scopes),
+        purpose=sanitize(trait.purpose or trait.description))
+
+
+def _structural_trait(trait, registry) -> TraitEntry:
+    alias = ""
+    for candidate in trait.aliases:
+        if registry.structural_trait(candidate) is trait:
+            alias = candidate
+            break
+    value = trait.value
+    return TraitEntry(
+        id=trait.id, alias=sanitize(alias, 32),
+        description=sanitize(trait.description),
+        type=getattr(value, "type", "float"),
+        min=getattr(value, "min", None), max=getattr(value, "max", None),
+        choices=tuple(getattr(value, "choices", ()) or ()),
+        ops=tuple(trait.modes), scopes=("local", "children"),
+        purpose=sanitize(trait.purpose or trait.description))
+
+
 def build_vocabulary(registry, *, style: str = "low_poly",
                      detail_level: int = 2) -> Vocabulary:
     """Dal registry al vocabolario. Deterministico, e senza codice dentro.
@@ -455,9 +725,36 @@ def build_vocabulary(registry, *, style: str = "low_poly",
         capabilities=tuple(capacita),
         effects=tuple(_effetto(e) for e in sorted(registry.effects(),
                                                   key=lambda e: e.id)),
+        traits=tuple(_trait(t, registry) for t in registry.traits()),
+        structural_traits=tuple(_structural_trait(t, registry)
+                                for t in registry.structural_traits()),
         styles=tuple(StyleEntry(id=s.id, description=sanitize(s.description))
                      for s in sorted(registry.styles(), key=lambda s: s.id)),
+        archetypes=tuple(ArchetypeEntry(
+            id=a.id, aliases=tuple(sanitize(v, 32) for v in a.aliases),
+            description=sanitize(a.description)) for a in registry.archetypes()),
+        archetype_details=tuple(ArchetypeDetailEntry(
+            id=a.id, parents=tuple(a.parents),
+            required_roles=tuple(a.required_roles),
+            preferred_roles=tuple(a.preferred_roles),
+            required_capabilities=tuple(a.required_capabilities),
+            preferred_capabilities=tuple(a.preferred_capabilities))
+            for a in registry.archetypes()[:MAX_CONCEPT_SHORTLIST]),
+        profiles=tuple(ProfileEntry(
+            id=p.id, aliases=tuple(sanitize(v, 32) for v in p.aliases),
+            archetypes=tuple(p.archetypes), description=sanitize(p.description))
+            for p in registry.profiles()[:MAX_CONCEPT_SHORTLIST]),
+        bindings=tuple(BindingEntry(
+            id=b.id, implementation=b.implementation,
+            supported_archetypes=tuple(b.supported_archetypes))
+            for b in registry.implementation_bindings()[:MAX_CONCEPT_SHORTLIST]),
         tags=tuple(registry.tags()),
         style=style, detail_level=detail_level,
         metadata={"components": len(componenti),
-                  "plugins": len(registry.plugins())})
+                  "plugins": len(registry.plugins()),
+                   "archetypes": len(registry.archetypes()),
+                  "concept_shortlist_limit": MAX_CONCEPT_SHORTLIST,
+                  "concept_shortlist_entries": min(len(registry.archetypes()),
+                                                     MAX_CONCEPT_SHORTLIST),
+                  "profiles": len(registry.profiles()),
+                  "bindings": len(registry.implementation_bindings())})

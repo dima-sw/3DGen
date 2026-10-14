@@ -1,0 +1,15 @@
+{
+  "id": "multi_tail_extension",
+  "version": "1.0.0",
+  "name": "Multi Tail Structural Extension",
+  "description": "Structural trait for repeated tail-like components.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["structural", "extension"],
+  "components": [],
+  "effects": [],
+  "styles": [],
+  "materials": [],
+  "traits": ["structural/tails.py"],
+  "dependencies": ["fox_stylized"]
+}

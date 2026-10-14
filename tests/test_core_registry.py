@@ -553,4 +553,10 @@ def test_the_registry_does_not_choose_a_winner(ecosistema):
 
 def test_the_summary_counts_what_is_installed(ecosistema):
     assert ecosistema.summary() == {"plugin": 3, "componenti": 4, "effetti": 2,
-                                    "stili": 1, "capability": 3}
+                                    "stili": 1, "trait": 0, "trait_rules": 0,
+                                    "structural_traits": 1,
+                                    "structural_trait_rules": 0,
+                                    "layout_policies": 2,
+                                    "archetypes": 0, "profiles": 0,
+                                    "implementation_bindings": 0,
+                                    "capability": 3}

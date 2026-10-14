@@ -1,0 +1,49 @@
+{
+  "id": "tree_stylized",
+  "version": "1.0.0",
+  "name": "Stylized Tree",
+  "description": "A deliberately authored chunky asymmetric low-poly tree benchmark.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "nature",
+    "tree",
+    "low_poly",
+    "stylized",
+    "benchmark"
+  ],
+  "components": [
+    "components/tree.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "materials": [
+    "materials/palette.py"
+  ],
+  "capabilities": [
+    {
+      "name": "building",
+      "description": "A complete authored scene subject that can stand on a surface."
+    },
+    {
+      "name": "core_mount",
+      "description": "A general structural mount used by the tree trunk."
+    },
+    {
+      "name": "branch_mount",
+      "description": "A visible branch or branch-tip attachment location."
+    },
+    {
+      "name": "crown_mount",
+      "description": "A general upper canopy attachment location."
+    }
+  ],
+  "dependencies": [],
+  "metadata": {
+    "benchmark": "stylized_tree",
+    "shape_language": "chunky tapered asymmetric faceted",
+    "core_changes": "none",
+    "kernel_changes": "none",
+    "generic_contracts_reused": "nature:branch_mount, nature:nest, nature:bird"
+  }
+}

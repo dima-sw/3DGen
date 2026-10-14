@@ -37,8 +37,8 @@ legge sa che cosa aspettarsi.
 """
 from __future__ import annotations
 
-SCHEMA_VERSION = "1.0"
-SCHEMA_ID = "https://3dgen.local/schemas/composition-plan/1.0"
+SCHEMA_VERSION = "1.3"
+SCHEMA_ID = "https://3dgen.local/schemas/composition-plan/1.3"
 
 # Un nodo si riferisce a se stesso: un piano e' un albero di profondita'
 # qualunque, e la ricorsione dello schema dice esattamente questo. Il tetto di
@@ -102,6 +102,69 @@ _EFFETTO = {
     "additionalProperties": {"type": ["number", "string", "boolean"]},
 }
 
+_TRAIT = {
+    "type": "object",
+    "properties": {
+        "trait": {"type": "string", "minLength": 1},
+        "value": {"type": ["number", "string", "boolean"]},
+        "op": {"type": "string", "enum": ["set", "add"]},
+        "on": {"type": "string"},
+        "scope": {"type": "string", "enum": ["local", "subtree"]},
+    },
+    "required": ["trait", "value"],
+    "additionalProperties": False,
+}
+
+_STRUCTURAL_TRAIT = {
+    "type": "object",
+    "properties": {
+        "trait": {"type": "string", "minLength": 1},
+        "value": {"type": ["number", "string", "boolean"]},
+        "on": {"type": "string"},
+        "scope": {"type": "string", "enum": ["local", "children"]},
+        "mode": {"type": "string", "enum": ["exact", "best_effort"]},
+        "target": {
+            "type": "object",
+            "properties": {
+                "role": {"type": "string"},
+                "capability": {"type": "string"},
+                "tags": {"type": "array", "items": {"type": "string"}},
+                "components": {"type": "array", "items": {"type": "string"}},
+            },
+            "additionalProperties": False,
+        },
+    },
+    "required": ["trait", "value"],
+    "additionalProperties": False,
+}
+
+_CONCEPT = {
+    "type": "object",
+    "properties": {
+        "requested": {"type": "string", "minLength": 1},
+        "archetypes": {"type": "array", "items": {"type": "string"}},
+        "profiles": {"type": "array", "items": {"type": "string"}},
+        "adaptations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "trait": {"type": "string"},
+                    "value": {"type": ["number", "string", "boolean"]},
+                    "param": {"type": "string"},
+                    "param_role": {"type": "string"},
+                    "kind": {"type": "string"},
+                    "description": {"type": "string"},
+                },
+                "required": [],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["requested"],
+    "additionalProperties": False,
+}
+
 PLAN_SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": SCHEMA_ID,
@@ -114,11 +177,18 @@ PLAN_SCHEMA = {
         "style": {"type": "string", "description": "id di uno stile installato"},
         "detail_level": {"type": "integer", "minimum": 1, "maximum": 5},
         "seed": {"type": "integer", "minimum": 0},
+        "traits": {"type": "array", "items": {"$ref": "#/$defs/trait"}},
+        "structural_traits": {
+            "type": "array",
+            "items": {"$ref": "#/$defs/structural_trait"},
+        },
+        "concept": {"$ref": "#/$defs/concept"},
         "root": {"$ref": "#/$defs/nodo"},
     },
-    "required": ["root"],
+    "oneOf": [{"required": ["concept"]}, {"required": ["root"]}],
     "additionalProperties": False,
-    "$defs": {"nodo": _NODO, "effetto": _EFFETTO},
+    "$defs": {"nodo": _NODO, "effetto": _EFFETTO, "trait": _TRAIT,
+              "structural_trait": _STRUCTURAL_TRAIT, "concept": _CONCEPT},
 }
 
 
@@ -132,5 +202,6 @@ def plan_schema() -> dict:
 
 def describe() -> str:
     """Lo schema in due righe, per chi legge un prompt e non un JSON."""
-    return ("un oggetto con 'root'; ogni nodo ha 'ref' (o 'swap'), "
-            "facoltativi 'id', 'at', 'params', 'effects', 'children', 'on'")
+    return ("un oggetto con 'root' oppure 'concept'; ogni nodo ha 'ref' "
+            "(o 'swap'), facoltativi 'id', 'at', 'params', 'effects', "
+            "'children', 'on'")

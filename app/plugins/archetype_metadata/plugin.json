@@ -1,0 +1,13 @@
+{
+  "id": "archetype_metadata",
+  "version": "1.0.0",
+  "name": "Archetype Metadata",
+  "description": "Small semantic families, reusable profiles, and explicit bindings for installed benchmark roots.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["metadata", "archetypes", "concept_resolution"],
+  "archetypes": ["archetypes/catalog.py"],
+  "profiles": ["profiles/generic.py"],
+  "bindings": ["bindings/installed_roots.py"],
+  "dependencies": ["body_mass_extension", "fox_stylized", "vehicle_stylized", "tree_stylized"]
+}

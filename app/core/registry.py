@@ -44,7 +44,14 @@ from typing import Any, Iterable
 from app.core.capability import Capability
 from app.core.component import Component
 from app.core.errors import Report
+from app.core.archetypes import (ArchetypeSpec, ImplementationBinding,
+                                  ProfileSpec)
 from app.core.material import MaterialSpec
+from app.core.layout import LayoutPolicy, default_policies
+from app.core.params import ParamSpec
+from app.core.structural import (INSTANCE_COUNT, MAX_STRUCTURAL_COUNT,
+                                 StructuralTraitRule, StructuralTraitSpec)
+from app.core.traits import TraitRule, TraitSpec
 from app.core.vocabulary import EffectSpec, StyleProfile
 
 MANIFEST = "plugin.json"
@@ -133,7 +140,27 @@ class Registry:
         self._plugins: dict[str, PluginInfo] = {}
         self._components: dict[str, Component] = {}
         self._effects: dict[str, EffectSpec] = {}
+        self._traits: dict[str, TraitSpec] = {}
+        self._trait_aliases: dict[str, set[str]] = {}
+        self._trait_rules: dict[str, TraitRule] = {}
+        self._structural_traits: dict[str, StructuralTraitSpec] = {}
+        self._structural_trait_aliases: dict[str, set[str]] = {}
+        self._structural_trait_rules: dict[str, StructuralTraitRule] = {}
+        self._layout_policies: dict[str, LayoutPolicy] = {
+            policy.id: policy for policy in default_policies()
+        }
+        self._structural_traits[INSTANCE_COUNT] = StructuralTraitSpec(
+            id=INSTANCE_COUNT, aliases=("instance_count",),
+            description="ensure N instances of a compatible semantic child",
+            value=ParamSpec(1, min=0, max=MAX_STRUCTURAL_COUNT),
+            max_count=MAX_STRUCTURAL_COUNT, owner="core")
         self._styles: dict[str, StyleProfile] = {}
+        self._archetypes: dict[str, ArchetypeSpec] = {}
+        self._archetype_aliases: dict[str, set[str]] = {}
+        self._profiles: dict[str, ProfileSpec] = {}
+        self._profile_aliases: dict[str, set[str]] = {}
+        self._implementation_bindings: dict[str, ImplementationBinding] = {}
+        self._semantic_checked = False
         # I materiali stanno per **nome nudo**: `skin` e' un nome condiviso,
         # non il pezzo di un plugin. Chi lo dichiara per primo lo definisce.
         self._materials: dict[str, MaterialSpec] = {}
@@ -154,6 +181,7 @@ class Registry:
         componente potesse registrarne altri mentre si costruisce, lo stesso
         piano darebbe risultati diversi a seconda dell'ordine di espansione.
         """
+        self.verify()
         self._link_styles()
         self._frozen = True
         return self
@@ -185,6 +213,7 @@ class Registry:
     # ---------------------------------------------------------- registrazione #
     def register_plugin(self, info: PluginInfo) -> bool:
         self._guard()
+        self._semantic_checked = False
         if not info.id:
             self.report.add("INVALID_MANIFEST", "plugin senza id")
             return False
@@ -213,9 +242,137 @@ class Registry:
         return self._register(effect, self._effects, plugin_id,
                               "DUPLICATE_EFFECT", "effetto")
 
+    def register_trait(self, trait: TraitSpec, plugin_id: str = "") -> bool:
+        self._guard()
+        if not trait.id or SEPARATOR not in trait.id:
+            self.report.add("INVALID_TRAIT",
+                            "trait senza id canonico: '%s'" % trait.id,
+                            why="serve namespace:name")
+            return False
+        if trait.id in self._traits:
+            self.report.add("DUPLICATE_TRAIT",
+                            "trait gia' registrato: '%s'" % trait.id)
+            return False
+        self._traits[trait.id] = trait
+        for alias in trait.aliases:
+            if alias and SEPARATOR not in alias:
+                self._trait_aliases.setdefault(alias, set()).add(trait.id)
+        return True
+
+    def register_trait_rule(self, rule: TraitRule, plugin_id: str = "") -> bool:
+        self._guard()
+        if not self._qualify(rule, plugin_id, "trait rule"):
+            return False
+        if rule.id in self._trait_rules:
+            self.report.add("DUPLICATE_TRAIT_RULE",
+                            "trait rule gia' registrata: '%s'" % rule.id)
+            return False
+        self._trait_rules[rule.id] = rule
+        return True
+
+    def register_structural_trait(self, trait: StructuralTraitSpec,
+                                  plugin_id: str = "") -> bool:
+        self._guard()
+        if not trait.id or SEPARATOR not in trait.id:
+            self.report.add("INVALID_STRUCTURAL_TRAIT",
+                            "structural trait senza id canonico: '%s'" % trait.id,
+                            why="serve namespace:name")
+            return False
+        if trait.id in self._structural_traits:
+            self.report.add("DUPLICATE_STRUCTURAL_TRAIT",
+                            "structural trait gia' registrato: '%s'" % trait.id)
+            return False
+        self._structural_traits[trait.id] = trait
+        for alias in trait.aliases:
+            if alias and SEPARATOR not in alias:
+                self._structural_trait_aliases.setdefault(alias, set()).add(trait.id)
+        return True
+
+    def register_structural_trait_rule(self, rule: StructuralTraitRule,
+                                       plugin_id: str = "") -> bool:
+        self._guard()
+        if not self._qualify(rule, plugin_id, "structural trait rule"):
+            return False
+        if rule.id in self._structural_trait_rules:
+            self.report.add("DUPLICATE_STRUCTURAL_TRAIT_RULE",
+                            "structural trait rule gia' registrata: '%s'" % rule.id)
+            return False
+        self._structural_trait_rules[rule.id] = rule
+        return True
+
+    def register_layout_policy(self, policy: LayoutPolicy,
+                               plugin_id: str = "") -> bool:
+        self._guard()
+        if not self._qualify(policy, plugin_id, "layout policy"):
+            return False
+        if policy.id in self._layout_policies:
+            self.report.add("DUPLICATE_LAYOUT_POLICY",
+                            "layout policy gia' registrata: '%s'" % policy.id)
+            return False
+        self._layout_policies[policy.id] = policy
+        return True
+
     def register_style(self, style: StyleProfile, plugin_id: str = "") -> bool:
         return self._register(style, self._styles, plugin_id,
                               "DUPLICATE_STYLE", "stile")
+
+    def register_archetype(self, archetype: ArchetypeSpec,
+                           plugin_id: str = "") -> bool:
+        self._guard()
+        if not self._qualify_semantic(archetype, plugin_id, "archetype"):
+            return False
+        if archetype.id in self._archetypes:
+            self.report.add("DUPLICATE_ARCHETYPE",
+                            "Archetype gia' registrato: '%s'" % archetype.id)
+            return False
+        archetype.owner = archetype.owner or plugin_id
+        archetype.parents = tuple(self._qualify_ref(v, plugin_id)
+                                   for v in archetype.parents)
+        self._archetypes[archetype.id] = archetype
+        for alias in archetype.aliases:
+            if alias and SEPARATOR not in alias:
+                self._archetype_aliases.setdefault(alias, set()).add(archetype.id)
+        self._semantic_checked = False
+        return True
+
+    def register_profile(self, profile: ProfileSpec, plugin_id: str = "") -> bool:
+        self._guard()
+        if not self._qualify_semantic(profile, plugin_id, "profile"):
+            return False
+        if profile.id in self._profiles:
+            self.report.add("DUPLICATE_PROFILE",
+                            "Profile gia' registrato: '%s'" % profile.id)
+            return False
+        profile.owner = profile.owner or plugin_id
+        profile.archetypes = tuple(self._qualify_ref(v, plugin_id)
+                                   for v in profile.archetypes)
+        profile.includes = tuple(self._qualify_ref(v, plugin_id)
+                                 for v in profile.includes)
+        self._profiles[profile.id] = profile
+        for alias in profile.aliases:
+            if alias and SEPARATOR not in alias:
+                self._profile_aliases.setdefault(alias, set()).add(profile.id)
+        self._semantic_checked = False
+        return True
+
+    def register_implementation_binding(self, binding: ImplementationBinding,
+                                         plugin_id: str = "") -> bool:
+        self._guard()
+        if not self._qualify_semantic(binding, plugin_id, "implementation binding"):
+            return False
+        if binding.id in self._implementation_bindings:
+            self.report.add("DUPLICATE_IMPLEMENTATION_BINDING",
+                            "binding gia' registrato: '%s'" % binding.id)
+            return False
+        binding.owner = binding.owner or plugin_id
+        # The implementation may belong to another plugin: a third party can
+        # bind an existing Component without changing its original plugin.
+        binding.implementation = self._qualify_ref(binding.implementation, plugin_id)
+        binding.supported_archetypes = tuple(
+            self._qualify_ref(v, plugin_id) for v in binding.supported_archetypes)
+        self._implementation_bindings[binding.id] = binding
+        self._semantic_checked = False
+        return True
 
     def register_material(self, material: MaterialSpec,
                           plugin_id: str = "") -> bool:
@@ -250,6 +407,7 @@ class Registry:
     def _register(self, item, table: dict, plugin_id: str, code: str,
                   what: str) -> bool:
         self._guard()
+        self._semantic_checked = False
         if not self._qualify(item, plugin_id, what):
             return False
         if item.id in table:
@@ -284,6 +442,33 @@ class Registry:
                                 "un altro")
             return False
         return True
+
+    def _qualify_semantic(self, item, plugin_id: str, what: str) -> bool:
+        if not getattr(item, "id", ""):
+            self.report.add("INVALID_%s" % what.upper().replace(" ", "_"),
+                            "%s senza id" % what)
+            return False
+        if SEPARATOR not in item.id:
+            if not plugin_id:
+                self.report.add("INVALID_%s" % what.upper().replace(" ", "_"),
+                                "%s '%s' senza namespace" % (what, item.id),
+                                why="serve un id 'plugin:nome'")
+                return False
+            item.id = "%s%s%s" % (plugin_id, SEPARATOR, item.id)
+        elif plugin_id and item.id.partition(SEPARATOR)[0] != plugin_id:
+            self.report.add("SEMANTIC_ID_MISMATCH",
+                            "%s '%s' dichiarato dal plugin '%s'"
+                            % (what, item.id, plugin_id),
+                            why="un metadata object non puo' occupare un namespace diverso")
+            return False
+        return True
+
+    @staticmethod
+    def _qualify_ref(value: str, plugin_id: str) -> str:
+        value = str(value or "").strip()
+        if value and SEPARATOR not in value and plugin_id:
+            return "%s%s%s" % (plugin_id, SEPARATOR, value)
+        return value
 
     # -------------------------------------------------------------- scoperta #
     def load_directory(self, path) -> Report:
@@ -362,10 +547,26 @@ class Registry:
                 self.register_component(item, info.id)
             elif isinstance(item, EffectSpec):
                 self.register_effect(item, info.id)
+            elif isinstance(item, TraitSpec):
+                self.register_trait(item, info.id)
+            elif isinstance(item, TraitRule):
+                self.register_trait_rule(item, info.id)
+            elif isinstance(item, StructuralTraitSpec):
+                self.register_structural_trait(item, info.id)
+            elif isinstance(item, StructuralTraitRule):
+                self.register_structural_trait_rule(item, info.id)
+            elif isinstance(item, LayoutPolicy):
+                self.register_layout_policy(item, info.id)
             elif isinstance(item, StyleProfile):
                 self.register_style(item, info.id)
             elif isinstance(item, MaterialSpec):
                 self.register_material(item, info.id)
+            elif isinstance(item, ArchetypeSpec):
+                self.register_archetype(item, info.id)
+            elif isinstance(item, ProfileSpec):
+                self.register_profile(item, info.id)
+            elif isinstance(item, ImplementationBinding):
+                self.register_implementation_binding(item, info.id)
 
         if not raccolti:
             self.report.note("PLUGIN_EMPTY",
@@ -413,7 +614,8 @@ class Registry:
             return None
 
         sorgenti: list[str] = []
-        for chiave in ("components", "effects", "styles", "materials"):
+        for chiave in ("components", "effects", "styles", "materials", "traits",
+                       "archetypes", "profiles", "bindings"):
             valore = dati.get(chiave, [])
             if not isinstance(valore, list):
                 self.report.add("INVALID_MANIFEST",
@@ -477,7 +679,157 @@ class Registry:
                         "'%s' dipende da '%s', che non e' installato"
                         % (info.id, dipendenza), where=info.id,
                         alternatives=sorted(self._plugins)[:6])
+        if not self._semantic_checked:
+            self._verify_archetypes()
+            self._verify_profiles()
+            self._verify_bindings()
+            self._semantic_checked = True
         return self._since(inizio)
+
+    def _verify_archetypes(self) -> None:
+        for alias, ids in sorted(self._archetype_aliases.items()):
+            if len(ids) > 1:
+                self._semantic_add_once(
+                    "ARCHETYPE_ALIAS_AMBIGUOUS",
+                    "alias Archetype ambiguo '%s': %s" % (alias, ", ".join(sorted(ids))),
+                    where=alias)
+        for spec in self.archetypes():
+            for parent in spec.parents:
+                if self._archetypes.get(parent) is None:
+                    self._semantic_add_once(
+                        "ARCHETYPE_PARENT_MISSING",
+                        "Archetype '%s' richiede il parent '%s'" % (spec.id, parent),
+                        where=spec.id, alternatives=self.archetype_ids())
+            for request in spec.default_traits:
+                trait_id = str(getattr(request, "trait", "") or
+                               (request.get("trait", "")
+                                if isinstance(request, dict) else ""))
+                if trait_id and self.trait(trait_id) is None:
+                    self._semantic_add_once(
+                        "ARCHETYPE_TRAIT_MISSING",
+                        "Archetype '%s' usa Trait '%s' non installato"
+                        % (spec.id, trait_id), where=spec.id)
+            for request in spec.structural_expectations:
+                trait_id = str(getattr(request, "trait", "") or
+                               (request.get("trait", "")
+                                if isinstance(request, dict) else ""))
+                if trait_id and self.structural_trait(trait_id) is None:
+                    self._semantic_add_once(
+                        "ARCHETYPE_STRUCTURAL_TRAIT_MISSING",
+                        "Archetype '%s' usa Structural Trait '%s' non installato"
+                        % (spec.id, trait_id), where=spec.id)
+
+        visiting: set[str] = set()
+        visited: set[str] = set()
+
+        def walk(aid: str, stack: tuple[str, ...] = ()) -> None:
+            if aid in visiting:
+                ciclo = stack[stack.index(aid):] + (aid,) if aid in stack else (aid,)
+                self._semantic_add_once(
+                    "ARCHETYPE_CYCLE", "ciclo Archetype: %s" % " -> ".join(ciclo),
+                    where=aid)
+                return
+            if aid in visited:
+                return
+            visiting.add(aid)
+            spec = self._archetypes.get(aid)
+            if spec is not None:
+                for parent in sorted(spec.parents):
+                    if parent in self._archetypes:
+                        walk(parent, stack + (aid,))
+            visiting.remove(aid)
+            visited.add(aid)
+
+        for aid in sorted(self._archetypes):
+            walk(aid)
+
+    def _verify_profiles(self) -> None:
+        for alias, ids in sorted(self._profile_aliases.items()):
+            if len(ids) > 1:
+                self._semantic_add_once(
+                    "PROFILE_ALIAS_AMBIGUOUS",
+                    "alias Profile ambiguo '%s': %s" % (alias, ", ".join(sorted(ids))),
+                    where=alias)
+        for profile in self.profiles():
+            for aid in profile.archetypes:
+                if self._archetypes.get(aid) is None:
+                    self._semantic_add_once(
+                        "PROFILE_ARCHETYPE_MISSING",
+                        "Profile '%s' richiede l'Archetype '%s'"
+                        % (profile.id, aid), where=profile.id,
+                        alternatives=self.archetype_ids())
+            for included in profile.includes:
+                if self._profiles.get(included) is None:
+                    self._semantic_add_once(
+                        "PROFILE_INCLUDE_MISSING",
+                        "Profile '%s' include '%s', che non e' installato"
+                        % (profile.id, included), where=profile.id,
+                        alternatives=self.profile_ids())
+            for request in profile.default_traits:
+                trait_id = str(getattr(request, "trait", "") or
+                               (request.get("trait", "")
+                                if isinstance(request, dict) else ""))
+                if trait_id and self.trait(trait_id) is None:
+                    self._semantic_add_once(
+                        "PROFILE_TRAIT_MISSING",
+                        "Profile '%s' usa Trait '%s' non installato"
+                        % (profile.id, trait_id), where=profile.id)
+            for request in profile.structural_defaults:
+                trait_id = str(getattr(request, "trait", "") or
+                               (request.get("trait", "")
+                                if isinstance(request, dict) else ""))
+                if trait_id and self.structural_trait(trait_id) is None:
+                    self._semantic_add_once(
+                        "PROFILE_STRUCTURAL_TRAIT_MISSING",
+                        "Profile '%s' usa Structural Trait '%s' non installato"
+                        % (profile.id, trait_id), where=profile.id)
+
+        visiting: set[str] = set()
+        visited: set[str] = set()
+
+        def walk(pid: str, stack: tuple[str, ...] = ()) -> None:
+            if pid in visiting:
+                ciclo = stack[stack.index(pid):] + (pid,) if pid in stack else (pid,)
+                self._semantic_add_once(
+                    "PROFILE_CYCLE", "ciclo Profile: %s" % " -> ".join(ciclo),
+                    where=pid)
+                return
+            if pid in visited:
+                return
+            visiting.add(pid)
+            profile = self._profiles.get(pid)
+            if profile is not None:
+                for included in sorted(profile.includes):
+                    if included in self._profiles:
+                        walk(included, stack + (pid,))
+            visiting.remove(pid)
+            visited.add(pid)
+
+        for pid in sorted(self._profiles):
+            walk(pid)
+
+    def _verify_bindings(self) -> None:
+        for binding in self.implementation_bindings():
+            if self.component(binding.implementation) is None:
+                self._semantic_add_once(
+                    "BINDING_IMPLEMENTATION_MISSING",
+                    "binding '%s' indica '%s', che non e' installato"
+                    % (binding.id, binding.implementation), where=binding.id,
+                    alternatives=[c.id for c in self.components()][:8])
+            for aid in binding.supported_archetypes:
+                if self.archetype(aid) is None:
+                    self._semantic_add_once(
+                        "BINDING_ARCHETYPE_MISSING",
+                        "binding '%s' indica Archetype '%s' non installato"
+                        % (binding.id, aid), where=binding.id,
+                        alternatives=self.archetype_ids())
+
+    def _semantic_add_once(self, code: str, message: str, **kwargs) -> None:
+        where = kwargs.get("where", "")
+        if any(d.code == code and d.where == where and d.message == message
+               for d in self.report.entries):
+            return
+        self.report.add(code, message, **kwargs)
 
     def _since(self, inizio: int) -> Report:
         return Report(list(self.report.entries[inizio:]))
@@ -500,6 +852,45 @@ class Registry:
                 and (not style or c.supports_style(style))
                 and volute <= c.tags]
 
+    def archetype(self, id: str) -> ArchetypeSpec | None:
+        return self._semantic_lookup(self._archetypes, self._archetype_aliases, id)
+
+    def archetypes(self) -> list[ArchetypeSpec]:
+        return self._all(self._archetypes)
+
+    def archetype_ids(self) -> list[str]:
+        return sorted(self._archetypes)
+
+    def archetype_ambiguous(self, alias: str) -> bool:
+        return SEPARATOR not in alias and len(self._archetype_aliases.get(alias, set())) > 1
+
+    def profile(self, id: str) -> ProfileSpec | None:
+        return self._semantic_lookup(self._profiles, self._profile_aliases, id)
+
+    def profiles(self) -> list[ProfileSpec]:
+        return self._all(self._profiles)
+
+    def profile_ids(self) -> list[str]:
+        return sorted(self._profiles)
+
+    def profile_ambiguous(self, alias: str) -> bool:
+        return SEPARATOR not in alias and len(self._profile_aliases.get(alias, set())) > 1
+
+    def implementation_binding(self, id: str) -> ImplementationBinding | None:
+        return self._lookup(self._implementation_bindings, id)
+
+    def implementation_bindings(self, archetype: str = "") -> list[ImplementationBinding]:
+        if not archetype:
+            return self._all(self._implementation_bindings)
+        return [b for b in self._all(self._implementation_bindings)
+                if archetype in b.supported_archetypes]
+
+    def concept_index(self) -> list[dict[str, Any]]:
+        """Compact global index: no requirements, profiles or bindings."""
+        return [{"id": a.id, "aliases": list(a.aliases),
+                 "description": str(a.description)[:160]}
+                for a in self.archetypes()]
+
     def effect(self, id: str) -> EffectSpec | None:
         return self._lookup(self._effects, id)
 
@@ -514,6 +905,52 @@ class Registry:
     def effects_for(self, capability: str = "", scope: str = "") -> list[EffectSpec]:
         """Gli effetti che dichiarano di avere senso su questa capability."""
         return [e for e in self.effects(scope=scope) if e.fits(capability)]
+
+    def trait(self, id: str) -> TraitSpec | None:
+        if id in self._traits:
+            return self._traits[id]
+        if SEPARATOR in id:
+            return None
+        ids = self._trait_aliases.get(id, set())
+        if len(ids) == 1:
+            return self._traits[next(iter(ids))]
+        return None
+
+    def traits(self) -> list[TraitSpec]:
+        return self._all(self._traits)
+
+    def trait_ambiguous(self, alias: str) -> bool:
+        return SEPARATOR not in alias and len(self._trait_aliases.get(alias, set())) > 1
+
+    def trait_rules(self, trait: str = "") -> list[TraitRule]:
+        spec = self.trait(trait) if trait else None
+        canonical = spec.id if spec is not None else trait
+        return [r for r in self._all(self._trait_rules)
+                if not canonical or r.trait == canonical]
+
+    def structural_trait(self, id: str) -> StructuralTraitSpec | None:
+        found = self._lookup(self._structural_traits, id)
+        if found is not None or SEPARATOR in id:
+            return found
+        ids = self._structural_trait_aliases.get(id, set())
+        if len(ids) == 1:
+            return self._structural_traits[next(iter(ids))]
+        return None
+
+    def structural_traits(self) -> list[StructuralTraitSpec]:
+        return self._all(self._structural_traits)
+
+    def structural_trait_rules(self, trait: str = "") -> list[StructuralTraitRule]:
+        spec = self.structural_trait(trait) if trait else None
+        canonical = spec.id if spec is not None else trait
+        return [r for r in self._all(self._structural_trait_rules)
+                if not canonical or r.trait == canonical]
+
+    def layout_policy(self, id: str) -> LayoutPolicy | None:
+        return self._lookup(self._layout_policies, id)
+
+    def layout_policies(self) -> list[LayoutPolicy]:
+        return self._all(self._layout_policies)
 
     def style(self, id: str) -> StyleProfile | None:
         return self._lookup(self._styles, id)
@@ -649,6 +1086,13 @@ class Registry:
     def summary(self) -> dict[str, int]:
         return {"plugin": len(self._plugins), "componenti": len(self._components),
                 "effetti": len(self._effects), "stili": len(self._styles),
+                "trait": len(self._traits), "trait_rules": len(self._trait_rules),
+                "structural_traits": len(self._structural_traits),
+                "structural_trait_rules": len(self._structural_trait_rules),
+                "layout_policies": len(self._layout_policies),
+                "archetypes": len(self._archetypes),
+                "profiles": len(self._profiles),
+                "implementation_bindings": len(self._implementation_bindings),
                 "capability": len(self.capabilities())}
 
     def describe(self) -> str:
@@ -676,6 +1120,19 @@ class Registry:
             return table[key]
         if SEPARATOR in key:
             return None
+        candidati = [table[k] for k in sorted(table)
+                     if k.partition(SEPARATOR)[2] == key]
+        return candidati[0] if len(candidati) == 1 else None
+
+    @staticmethod
+    def _semantic_lookup(table: dict, aliases: dict[str, set[str]], key: str):
+        if key in table:
+            return table[key]
+        if SEPARATOR in key:
+            return None
+        ids = aliases.get(key, set())
+        if len(ids) == 1:
+            return table[next(iter(ids))]
         candidati = [table[k] for k in sorted(table)
                      if k.partition(SEPARATOR)[2] == key]
         return candidati[0] if len(candidati) == 1 else None
@@ -722,8 +1179,10 @@ def _harvest(modulo) -> list:
     fuori, visti = [], set()
 
     def aggiungi(valore) -> None:
-        if isinstance(valore, (Component, EffectSpec, StyleProfile,
-                               MaterialSpec)):
+        if isinstance(valore, (Component, EffectSpec, TraitSpec, TraitRule,
+                               StructuralTraitSpec, StructuralTraitRule,
+                               LayoutPolicy, StyleProfile, MaterialSpec,
+                               ArchetypeSpec, ProfileSpec, ImplementationBinding)):
             if id(valore) not in visti:
                 visti.add(id(valore))
                 fuori.append(valore)

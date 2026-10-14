@@ -46,7 +46,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.core.errors import Report
-from app.core.graph import FROM_DERIVED, FROM_EFFECT, EffectRequest
+from app.core.graph import FROM_DERIVED, FROM_EFFECT, FROM_TRAIT, EffectRequest
 from app.core.params import ExpressionError, evaluate, numeric
 from app.core.params import resolve as resolve_params
 from app.core.resolved import ResolvedComposition, ResolvedNode, ResolvedValue
@@ -312,7 +312,7 @@ class EffectPipeline:
         """
         for nodo in composition.walk():
             derivati = {n: s for n, s in nodo.component.params.items()
-                        if s.is_derived and nodo.source(n) != FROM_EFFECT}
+                        if s.is_derived and nodo.source(n) not in (FROM_EFFECT, FROM_TRAIT)}
             if not derivati:
                 continue
             padre = composition.node(nodo.link.parent) if nodo.link else None

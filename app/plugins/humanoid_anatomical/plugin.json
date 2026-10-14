@@ -1,0 +1,38 @@
+{
+  "id": "humanoid_anatomical",
+  "version": "1.0.0",
+  "name": "Humanoid Anatomical",
+  "description": "Umanoide procedurale piu' anatomico: proporzioni umane, torso stratificato, arti in catena e volto dettagliato.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "umanoide",
+    "humanoid",
+    "umano",
+    "human",
+    "persona",
+    "person",
+    "anatomical",
+    "anatomico",
+    "character",
+    "personaggio",
+    "full_body",
+    "corpo_intero",
+    "figura",
+    "procedural"
+  ],
+  "components": [
+    "components/anatomy.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "materials": [],
+  "capabilities": [],
+  "dependencies": [
+    "primitives",
+    "humanoid"
+  ],
+  "metadata": {
+    "convenzione": "torso e testa crescono lungo +Y; arti e catene crescono lungo +X; fronte verso +Z"
+  }
+}

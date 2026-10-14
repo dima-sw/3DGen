@@ -40,7 +40,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from app.ai.provider import LLMProvider, make_provider
+from app.ai.provider import LLMError, LLMProvider, make_provider
 from app.assets.library import AssetLibrary, AssetRecord
 from app.build.exporter import Check, export, validate
 from app.core.logging_setup import get
@@ -128,7 +128,11 @@ class GenerationResult:
     prompt: str = ""
     plan_json: dict = field(default_factory=dict)
     plan: Any = None                 # CompositionGraph
+    structural: Any = None
     resolved: Any = None
+    traits: Any = None
+    layout: Any = None
+    concept_resolution: Any = None
     effects: Any = None
     build: Any = None
     report: Any = None
@@ -136,6 +140,27 @@ class GenerationResult:
     repaired: bool = False
     seconds: float = 0.0
     options: Any = None
+    provenance: dict = field(default_factory=dict)
+
+    @property
+    def requested_provider(self) -> str:
+        return str(self.provenance.get("requested_provider", ""))
+
+    @property
+    def requested_model(self) -> str:
+        return str(self.provenance.get("requested_model", ""))
+
+    @property
+    def actual_provider(self) -> str:
+        return str(self.provenance.get("actual_provider", ""))
+
+    @property
+    def actual_model(self) -> str:
+        return str(self.provenance.get("actual_model", ""))
+
+    @property
+    def failover_count(self) -> int:
+        return int(self.provenance.get("failover_count", 0) or 0)
 
     # ------------------------------------------------------------- lettura #
     @property
@@ -223,7 +248,13 @@ class GenerationResult:
     def describe(self) -> str:
         pezzi = ["richiesta: %s" % self.prompt,
                  "planner: %s%s" % (self.planner,
-                                    " (corretto)" if self.repaired else "")]
+                                     " (corretto)" if self.repaired else "")]
+        if self.requested_provider:
+            used = self.actual_provider or "nessuno"
+            used_model = ("/%s" % self.actual_model) if self.actual_model else ""
+            pezzi.append("AI: %s/%s -> %s%s | failover %d" % (
+                self.requested_provider, self.requested_model or "default",
+                used, used_model, self.failover_count))
         if self.build is not None:
             pezzi.append(self.build.describe())
         if self.report is not None and len(self.report):
@@ -237,6 +268,13 @@ class GenerationResult:
                 "triangles": self.triangles,
                 "explain": self.explain(), "changes": self.changes(),
                 "skipped": self.skipped(),
+                "structural": self.structural.to_dict()
+                if self.structural is not None else {},
+                "concept_resolution": self.concept_resolution.to_dict()
+                if self.concept_resolution is not None else {},
+                "traits": self.traits.to_dict() if self.traits is not None else {},
+                "layout": self.layout.to_dict() if self.layout is not None else {},
+                "provenance": self.provenance,
                 "diagnostics": [{"code": d.code, "message": d.message,
                                  "where": d.where, "severity": d.severity}
                                 for d in self.diagnostics]}
@@ -320,6 +358,14 @@ class Session:
             self.planner = make_planner(self.provider)
         return self.planner
 
+    def configure_ai(self, provider: str | None = None, model: str | None = None,
+                     failover: bool = True) -> LLMProvider:
+        """Applica il provider scelto; ``model`` e' legacy e ignorato dai remoti."""
+        self.provider = make_provider(provider or None, model=model or None,
+                                      failover=bool(failover))
+        self.planner = None
+        return self.provider
+
     # ------------------------------------------------ dalla frase al modello #
     def plan(self, prompt: str, options: Options | None = None) -> GenerationResult:
         """Il piano, senza costruirlo. Utile a chi vuole vederlo o correggerlo."""
@@ -367,10 +413,18 @@ class Session:
     # ------------------------------------------------------------- interno #
     def _versione(self, risultato: GenerationResult) -> Version:
         opzioni = risultato.options or Options()
+        messaggio = "; ".join(risultato.explain()[:3])
+        if risultato.requested_provider:
+            usato = risultato.actual_provider or "nessuno"
+            modello = ("/%s" % risultato.actual_model) if risultato.actual_model else ""
+            messaggio = (messaggio + "; " if messaggio else "") + (
+                "AI %s/%s -> %s%s" % (risultato.requested_provider,
+                                       risultato.requested_model or "default",
+                                       usato, modello))
         return Version(label=risultato.prompt.strip()[:48] or "modello",
                        plan=risultato.plan,
                        scene=risultato.scene(self.catalog()),
-                       message="; ".join(risultato.explain()[:3]),
+                       message=messaggio,
                        seconds=risultato.seconds, prompt=risultato.prompt,
                        options=opzioni.to_dict(), result=risultato)
 
@@ -391,15 +445,26 @@ class Session:
         risultato = GenerationResult(prompt=prompt, plan_json=risposta.plan,
                                      planner=risposta.source or planner.name,
                                      report=Report(), options=opzioni)
+        self._set_provenance(risultato, risposta.provenance)
         for nota in risposta.notes:
             risultato.report.note("PLANNER_NOTE", nota)
-        grafo = self._verifica(risposta.plan, risultato, opzioni)
+        piano = self._risolvi_concept(risposta.plan, risultato, opzioni,
+                                       semantic_source=("llm"
+                                                        if risposta.source == "llm"
+                                                        else "mock"))
+        risultato.plan_json = piano
+        concept_failed = (risultato.concept_resolution is not None and
+                          not risultato.concept_resolution.selected_root_implementation)
+        grafo = None if concept_failed else self._verifica(piano, risultato, opzioni)
 
         # La correzione, e una sola. Si tenta solo se c'e' qualcosa che una
         # riscrittura del piano puo' davvero cambiare: un budget esaurito non
         # si corregge cambiando dei nomi.
         rimedio = repair_brief(risultato.report)
-        if opzioni.repair and not risultato.report.ok and rimedio.worth_retrying:
+        concept_unrepresentable = (risultato.concept_resolution is not None and
+                                   not risultato.concept_resolution.selected_root_implementation)
+        if (opzioni.repair and not risultato.report.ok and rimedio.worth_retrying
+                and not concept_unrepresentable):
             risultato = self._correggi(planner, richiesta, risposta, rimedio,
                                        risultato, opzioni)
             grafo = risultato.plan
@@ -422,11 +487,16 @@ class Session:
         """
         try:
             return planner.plan(richiesta)
-        except Exception as exc:                          # noqa: BLE001
+        except LLMError as exc:
+            provider = getattr(planner, "provider", None)
+            if provider is not None and not getattr(provider, "allow_local_fallback", True):
+                raise
             log.warning("il planner ha fallito (%s): passo a quello locale", exc)
             risposta = MockPlanner().plan(richiesta)
             risposta.source = "mock_fallback"
-            risposta.notes.append("il planner remoto non ha risposto: %s" % exc)
+            risposta.notes.append("il planner remoto non ha risposto: %s" % str(exc))
+            if provider is not None:
+                risposta.provenance = provider.provenance()
             return risposta
 
     def _correggi(self, planner, richiesta, risposta, rimedio,
@@ -450,7 +520,16 @@ class Session:
                                      planner=seconda.source or planner.name,
                                      repaired=True, report=Report(),
                                      options=opzioni)
-        self._verifica(seconda.plan, candidato, opzioni)
+        self._set_provenance(candidato, seconda.provenance)
+        piano = self._risolvi_concept(seconda.plan, candidato, opzioni,
+                                       semantic_source=("llm"
+                                                        if seconda.source == "llm"
+                                                        else "mock"))
+        candidato.plan_json = piano
+        concept_failed = (candidato.concept_resolution is not None and
+                          not candidato.concept_resolution.selected_root_implementation)
+        if not concept_failed:
+            self._verifica(piano, candidato, opzioni)
 
         prima = plan_score(primo.report, primo.resolved, primo.plan)
         dopo = plan_score(candidato.report, candidato.resolved, candidato.plan)
@@ -465,6 +544,30 @@ class Session:
             why="punteggio %s prima, %s dopo" % (prima.describe(), dopo.describe()))
         return candidato
 
+    @staticmethod
+    def _set_provenance(result: GenerationResult, provenance: dict | None) -> None:
+        """Copia solo metadati sicuri e utili, mai payload o credenziali."""
+        data = provenance or {}
+        attempts = []
+        for attempt in data.get("attempts", ()) or ():
+            if not isinstance(attempt, dict):
+                continue
+            safe = {key: str(attempt.get(key, ""))
+                    for key in ("provider", "model", "outcome", "diagnostic",
+                                "error_kind", "status_code", "phase")}
+            if isinstance(attempt.get("request_metrics"), dict):
+                safe["request_metrics"] = dict(attempt["request_metrics"])
+            attempts.append(safe)
+        result.provenance = {
+            "requested_provider": str(data.get("requested_provider", "")),
+            "requested_model": str(data.get("requested_model", "")),
+            "actual_provider": str(data.get("actual_provider", "")),
+            "actual_model": str(data.get("actual_model", "")),
+            "failover_count": int(data.get("failover_count", 0) or 0),
+            "phase": str(data.get("phase", "")),
+            "attempts": attempts,
+        }
+
     def _verifica(self, piano: dict, risultato: GenerationResult,
                   opzioni: Options):
         """Schema, grafo, registry, parametri; poi la risoluzione vera.
@@ -474,17 +577,43 @@ class Session:
         quello lo sa solo il resolver.
         """
         from app.core.planner.plans import validate_plan
+        from app.core.layout import resolve_layout
         from app.core.resolver import resolve
+        from app.core.structural import resolve_structural_traits
+        from app.core.traits import resolve_traits
+        from app.core.archetypes import ConceptResolutionPlan
+
+        saved_resolution = ConceptResolutionPlan.from_dict(
+            piano.get("concept_resolution") if isinstance(piano, dict) else None)
+        if saved_resolution is not None:
+            risultato.concept_resolution = saved_resolution
+            if not self._validate_saved_concept(saved_resolution, risultato.report):
+                return None
 
         grafo, _ = validate_plan(piano, self.catalog(), style=opzioni.style,
                                  report=risultato.report)
         risultato.plan = grafo
         if grafo is None:
             return None
+        if risultato.concept_resolution is not None:
+            grafo.concept_resolution = risultato.concept_resolution
+        else:
+            risultato.concept_resolution = grafo.concept_resolution
+        if not self._validate_saved_concept(grafo.concept_resolution,
+                                            risultato.report):
+            return grafo
         self._adatta(grafo, risultato, opzioni)
+        risultato.structural = resolve_structural_traits(
+            grafo, self.catalog(), report=risultato.report)
+        if not risultato.report.ok:
+            return grafo
         risultato.resolved = resolve(grafo, self.catalog(), style=opzioni.style,
                                      budget=self._budget(opzioni),
                                      report=risultato.report)
+        risultato.traits = resolve_traits(risultato.resolved, self.catalog(),
+                                          report=risultato.report)
+        risultato.layout = resolve_layout(risultato.resolved, self.catalog(),
+                                          report=risultato.report)
         return grafo
 
     @staticmethod
@@ -545,13 +674,117 @@ class Session:
                       report=risultato.report)
 
     def _verifica_grafo(self, grafo, risultato: GenerationResult,
-                        opzioni: Options) -> None:
+                         opzioni: Options) -> None:
+        from app.core.layout import resolve_layout
         from app.core.resolver import resolve
+        from app.core.structural import resolve_structural_traits
+        from app.core.traits import resolve_traits
 
         self._adatta(grafo, risultato, opzioni)
+        risultato.concept_resolution = getattr(grafo, "concept_resolution", None)
+        if not self._validate_saved_concept(risultato.concept_resolution,
+                                            risultato.report):
+            return
+        risultato.structural = resolve_structural_traits(
+            grafo, self.catalog(), report=risultato.report)
+        if not risultato.report.ok:
+            return
         risultato.resolved = resolve(grafo, self.catalog(), style=opzioni.style,
                                      budget=self._budget(opzioni),
                                      report=risultato.report)
+        risultato.traits = resolve_traits(risultato.resolved, self.catalog(),
+                                          report=risultato.report)
+        risultato.layout = resolve_layout(risultato.resolved, self.catalog(),
+                                          report=risultato.report)
+
+    def _validate_saved_concept(self, resolution, report) -> bool:
+        if resolution is None or not resolution.selected_binding:
+            return True
+        binding = self.catalog().implementation_binding(resolution.selected_binding)
+        if binding is None:
+            report.add("SAVED_BINDING_MISSING",
+                       "il binding salvato non e' installato: '%s'"
+                       % resolution.selected_binding,
+                       where="concept_resolution")
+            return False
+        if binding.implementation != resolution.selected_root_implementation:
+            report.add("SAVED_BINDING_CHANGED",
+                       "il binding salvato non indica piu' lo stesso root",
+                       where=resolution.selected_binding)
+            return False
+        return True
+
+    def _risolvi_concept(self, piano: dict, risultato: GenerationResult,
+                         opzioni: Options, *, semantic_source: str = "local") -> dict:
+        """Complete a semantic-only planner output with a backend-selected root."""
+        if not isinstance(piano, dict) or not isinstance(piano.get("concept"), dict):
+            return piano
+        from copy import deepcopy
+        from app.core.archetypes import ConceptResolver
+
+        concept = piano["concept"]
+        requested = str(concept.get("requested") or risultato.prompt or "").strip()
+        resolution = ConceptResolver(self.catalog()).resolve(
+            requested,
+            archetypes=concept.get("archetypes") or (),
+            profiles=concept.get("profiles") or (),
+            adaptations=concept.get("adaptations") or (),
+            semantic_source=semantic_source,
+            style=opzioni.style)
+        risultato.concept_resolution = resolution
+        for diagnostic in resolution.diagnostics:
+            severity = diagnostic.get("severity", "error")
+            if severity == "warning":
+                risultato.report.warn(diagnostic["code"], diagnostic["message"],
+                                      where=diagnostic.get("where", ""))
+            else:
+                risultato.report.add(diagnostic["code"], diagnostic["message"],
+                                     where=diagnostic.get("where", ""))
+        if not resolution.selected_root_implementation:
+            return piano
+
+        completed = deepcopy(piano)
+        root = dict(completed.get("root") or {})
+        component = self.catalog().component(resolution.selected_root_implementation)
+        root["id"] = root.get("id") or (component.name if component else "root")
+        root["ref"] = resolution.selected_root_implementation
+        params = dict(resolution.materialized_params)
+        params.update(root.get("params") or {})
+        if params:
+            root["params"] = params
+        completed["root"] = root
+        completed["traits"] = self._merge_inferred_requests(
+            resolution.materialized_traits, completed.get("traits") or {})
+        completed["structural_traits"] = self._merge_inferred_requests(
+            resolution.materialized_structural_traits,
+            completed.get("structural_traits") or {}, structural=True)
+        return completed
+
+    @staticmethod
+    def _merge_inferred_requests(defaults, explicit, structural: bool = False):
+        explicit = list(explicit or []) if isinstance(explicit, list) else []
+        keys = set()
+        for item in explicit:
+            if not isinstance(item, dict):
+                continue
+            target = item.get("target") if structural else ""
+            target_key = repr(sorted(target.items())) if isinstance(target, dict) else repr(target)
+            default_scope = "local" if structural else "subtree"
+            keys.add((str(item.get("trait") or ""), str(item.get("on") or "root"),
+                      str(item.get("scope") or default_scope), target_key))
+        out = []
+        for item in defaults or ():
+            if not isinstance(item, dict):
+                continue
+            target = item.get("target") if structural else ""
+            target_key = repr(sorted(target.items())) if isinstance(target, dict) else repr(target)
+            default_scope = "local" if structural else "subtree"
+            key = (str(item.get("trait") or ""), str(item.get("on") or "root"),
+                   str(item.get("scope") or default_scope), target_key)
+            if key not in keys:
+                out.append(dict(item))
+        out.extend(item for item in explicit if isinstance(item, dict))
+        return out
 
     # ------------------------------------------------------------- stato #
     @property

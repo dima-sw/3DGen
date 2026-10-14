@@ -1,0 +1,15 @@
+{
+  "id": "multi_arm_extension",
+  "version": "1.0.0",
+  "name": "Multi Arm Structural Extension",
+  "description": "Structural trait for repeated arm-like components.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["structural", "extension"],
+  "components": [],
+  "effects": [],
+  "styles": [],
+  "materials": [],
+  "traits": ["structural/arms.py"],
+  "dependencies": ["humanoid_anatomical"]
+}
