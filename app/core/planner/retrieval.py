@@ -161,12 +161,15 @@ def document_for(component, registry=None) -> str:
 def stamp_for(component, registry=None) -> str:
     """Identita' versionata. Se cambia una virgola del documento, cambia."""
     versione = ""
+    contenuto = ""
     if registry is not None:
         info = registry.plugin(component.plugin)
         versione = getattr(info, "version", "") if info is not None else ""
+        contenuto = getattr(info, "fingerprint", "") if info is not None else ""
     impronta = hashlib.sha1(
         document_for(component, registry).encode("utf-8")).hexdigest()[:12]
-    return "%s@%s#%s" % (component.id, versione, impronta)
+    return "%s@%s#%s%s" % (component.id, versione, impronta,
+                            ":" + contenuto if contenuto else "")
 
 
 COMPONENTS = Corpus(name="components",
@@ -189,7 +192,8 @@ def registry_signature(registry) -> str:
     non cambia nessun documento, ma cambia il vocabolario. Due controlli
     separati perche' sono due cose diverse, non per prudenza.
     """
-    return "|".join("%s@%s" % (p.id, p.version)
+    return "|".join("%s@%s%s" % (p.id, p.version,
+                                "#" + p.fingerprint if p.fingerprint else "")
                     for p in sorted(registry.plugins(), key=lambda p: p.id))
 
 

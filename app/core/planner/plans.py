@@ -20,6 +20,58 @@ e non ha chiesto niente.
 Perche' quella e' una lettura, non una difesa: solleva sul primo dato storto e
 si ferma li'. Qui si vuole l'elenco **completo** dei difetti, perche' la
 correzione e' una sola e deve poterli affrontare tutti insieme.
+
+## Un elemento facoltativo sconosciuto non distrugge una struttura valida
+
+La regola, in una riga: **cio' che si puo' ignorare in sicurezza si ignora e si
+dichiara; cio' che rende il piano ambiguo o incostruibile resta fatale.**
+
+E' la stessa forma della regola che V2 ha applicato al ramo `concept`. Un
+modello linguistico inventa campi facoltativi — `instance_count` al posto di un
+trait installato — e un piano con una radice buona non deve morire per questo.
+Quindi un `trait` o uno `structural_trait` **sconosciuto** diventa
+`UNKNOWN_TRAIT_SKIPPED`, severita' avviso, e viene tolto dal piano: la richiesta
+non si inventa, si dichiara persa.
+
+Restano **fatali**, deliberatamente:
+
+* `COMPONENT_NOT_FOUND` — la radice non esiste: non c'e' niente da costruire;
+* un attacco essenziale impossibile — il resolver lo dice, non si nasconde;
+* lo schema: `TRAITS_NOT_A_LIST`, `TRAIT_NOT_AN_OBJECT`, `TRAIT_NO_ID`,
+  `TRAIT_NO_VALUE`, e gli equivalenti strutturali. Un elemento malformato non
+  e' un elemento sconosciuto: non si sa nemmeno cosa chiedesse;
+* `TRAIT_AMBIGUOUS` — il nome esiste **due volte**. Ignorarlo sarebbe scegliere
+  per conto di qualcuno; il caso che la regola copre e' «non esiste», non
+  «non si sa quale»;
+* `TRAIT_OPERATION_UNSUPPORTED` / `TRAIT_SCOPE_UNSUPPORTED` — trait noto, valore
+  invalido: la richiesta e' leggibile e sbagliata;
+* `EFFECT_NOT_FOUND`. Un effetto e' scritto **su un nodo** e dice come quel nodo
+  deve venire: ignorarlo cambia la geometria in silenzio, non la lascia
+  incompleta. La milestone che introduce questa politica la limita ai due
+  generi di trait, e allargarla qui sarebbe una decisione diversa.
+
+## Una forma sbagliata ma inequivocabile si normalizza, e si dichiara
+
+Terza categoria, aggiunta in V3.5, e **non** e' un allargamento della seconda.
+Le tre si distinguono per quanta scelta richiedono:
+
+    sconosciuto          il nome non esiste            si ignora e si dichiara
+    ambiguo / invalido   serve decidere al posto di chi ha scritto   fatale
+    forma sbagliata      la lettura e' una sola        si normalizza e si dichiara
+
+Il caso misurato e' un `params` annidato su un effetto **noto**:
+``{"type": "fx:bend", "amount": 0.2, "params": {"along": "Y"}}``. Alcuni
+fornitori lo scrivono cosi' e altri no, e il contratto vuole i parametri
+sull'effetto. Si srotola solo quando ogni chiave interna e' un parametro
+dichiarato da quell'effetto e nessuna entra in conflitto con un valore gia'
+presente: allora non c'e' niente da decidere, e si registra
+`EFFECT_PARAMS_FLATTENED` (avviso). Appena una chiave non esiste, c'e' un
+conflitto o `params` non e' un oggetto, la lettura non e' piu' unica e il caso
+ricade nella seconda categoria: `EFFECT_PARAM_NOT_FOUND`, fatale.
+
+La regola e' per **qualunque** `EffectSpec` installato — l'elenco dei parametri
+e' quello che l'effetto dichiara — e non conosce nessun effetto per nome.
+Vedi `_appiattisci_params`.
 """
 from __future__ import annotations
 
@@ -27,6 +79,7 @@ from typing import Any
 
 from app.core.errors import Report
 from app.core.graph import CompositionGraph
+from app.core.structural import UNKNOWN_TRAIT_SKIPPED
 
 MAX_NODI = 200            # un piano piu' grande di cosi' e' un errore, non un modello
 MAX_PROFONDITA = 12
@@ -37,7 +90,12 @@ CHIAVI_NODO = {"id", "ref", "swap", "params", "effects", "children", "at", "on",
                "optional", "on_request", "level", "scale_mode", "insert",
                "roll", "tags"}
 CHIAVI_RADICE = {"version", "style", "detail_level", "seed", "traits",
-                 "structural_traits", "concept", "concept_resolution", "root"}
+                 "structural_traits", "concept", "concept_resolution",
+                 # Diagnostica scritta dal sistema e riletta senza fidarsene:
+                 # vedi `structural_provenance_from_dict`. Sta fra le chiavi
+                 # accettate perche' un progetto riaperto passa da qui, non da
+                 # `CompositionGraph.from_dict`.
+                 "structural_provenance", "root"}
 CHIAVI_EFFETTO = {"type", "scope", "amount", "target"}
 
 
@@ -60,6 +118,11 @@ class _Controllo:
         self.report = report if report is not None else Report()
         self.visti: set[str] = set()
         self.nodi = 0
+        # Gli indici dei trait che il piano nomina e il vocabolario non
+        # contiene: si tolgono invece di far cadere tutto. Vedi la testa del
+        # file per quali casi restano fatali.
+        self.traits_ignorati: set[int] = set()
+        self.structural_ignorati: set[int] = set()
 
     # ------------------------------------------------------------------ run #
     def run(self, data: Any) -> CompositionGraph | None:
@@ -106,17 +169,33 @@ class _Controllo:
             from app.core.traits import trait_requests_from_dict
             from app.core.structural import structural_trait_requests_from_dict
 
-            grafo.traits = trait_requests_from_dict(data.get("traits") or [])
+            grafo.traits = trait_requests_from_dict(
+                self._tenuti(data.get("traits"), self.traits_ignorati))
             grafo.structural_traits = structural_trait_requests_from_dict(
-                data.get("structural_traits") or [])
+                self._tenuti(data.get("structural_traits"),
+                             self.structural_ignorati))
             from app.core.archetypes import ConceptResolutionPlan
             grafo.concept_resolution = ConceptResolutionPlan.from_dict(
                 data.get("concept_resolution"))
+            from app.core.graph import structural_provenance_from_dict
+
+            grafo.structural_provenance = structural_provenance_from_dict(
+                data.get("structural_provenance"), grafo)
         except Exception as exc:                       # noqa: BLE001
             self.report.add("PLAN_NOT_BUILDABLE",
                             "il piano non si e' potuto montare: %s" % exc)
             return None
         return grafo
+
+    @staticmethod
+    def _tenuti(items, ignorati: set[int]) -> list:
+        """L'elenco senza gli elementi dichiarati persi.
+
+        Si filtra qui e non dove si diagnostica, perche' un avviso e una
+        rimozione sono due cose: la prima si legge, la seconda cambia il piano.
+        """
+        return [item for index, item in enumerate(items or [])
+                if index not in ignorati]
 
     def _structural_traits(self, value) -> None:
         if value is None:
@@ -137,11 +216,14 @@ class _Controllo:
                                 "structural trait senza id", where=where)
                 continue
             if self.registry.structural_trait(trait) is None:
-                self.report.add("STRUCTURAL_TRAIT_NOT_FOUND",
-                                "structural trait sconosciuto: '%s'" % trait,
-                                where=where,
-                                alternatives=[t.id for t in
-                                              self.registry.structural_traits()][:8])
+                self.report.warn(UNKNOWN_TRAIT_SKIPPED,
+                                 "structural trait sconosciuto, ignorato: "
+                                 "trait = '%s'" % trait, where=where,
+                                 why="un elemento facoltativo sconosciuto non "
+                                     "invalida il resto del piano",
+                                 alternatives=[t.id for t in
+                                               self.registry.structural_traits()][:8])
+                self.structural_ignorati.add(index)
 
     # --------------------------------------------------------------- schema #
     def _nodo(self, voce: Any, profondita: int, dove: str = "root") -> None:
@@ -338,6 +420,7 @@ class _Controllo:
                     why="il piano puo' usare solo gli effetti del vocabolario",
                     alternatives=[e.id for e in self.registry.effects()][:8])
                 continue
+            self._appiattisci_params(effetto, spec, tipo, id)
             # Le chiavi in piu' sono i **parametri dell'effetto**: `direction`
             # per una posa, `axis` per una piega. Non sono rumore da ignorare —
             # senza di loro meta' degli effetti non si potrebbe chiedere da un
@@ -350,6 +433,71 @@ class _Controllo:
                     "l'effetto '%s' non ha un parametro '%s'" % (tipo, chiave),
                     where=id, alternatives=sorted(spec.params)[:8],
                     why="un nome inventato sembra una richiesta e non lo e'")
+
+    def _appiattisci_params(self, effetto: dict, spec, tipo: str, id: str) -> None:
+        """Un `params` annidato su un effetto noto, srotolato quando non c'e'
+        niente da decidere.
+
+        Alcuni fornitori scrivono i parametri di un effetto dentro un oggetto
+        `params` che il contratto non prevede (`{"type": "fx:bend", "amount":
+        0.2, "params": {"along": "Y"}}`), e altri li scrivono dove vanno. E' un
+        errore di **forma**, non di contenuto: la richiesta e' leggibile e una
+        sola. Si normalizza, come V2 srotola un prefisso inventato dentro un id,
+        e la trasformazione si dichiara invece di avvenire in silenzio.
+
+        Si srotola **solo** quando ogni passaggio e' forzato:
+
+        * `params` e' un oggetto;
+        * ogni sua chiave e' un parametro dichiarato da **questo** effetto;
+        * nessuna di quelle chiavi e' gia' scritta al livello superiore.
+
+        Appena una di queste cade — una chiave che non esiste, un conflitto con
+        un valore gia' presente, un `params` che non e' un oggetto — non c'e'
+        una lettura sola, e `params` resta una chiave in piu' su un effetto
+        noto: cioe' `EFFECT_PARAM_NOT_FOUND`, fatale come prima. Non si indovina
+        al posto di chi ha scritto il piano, che e' la stessa regola per cui un
+        trait **ambiguo** resta fatale mentre uno sconosciuto si ignora.
+
+        Non c'e' niente qui dentro che conosca `fx:bend`: `spec.params` e'
+        l'elenco che l'effetto dichiara, qualunque effetto sia.
+        """
+        if "params" in spec.params:
+            # Un effetto che dichiara **davvero** un parametro chiamato
+            # `params` non va interpretato: il suo valore e' un valore.
+            return
+        annidati = effetto.get("params")
+        if annidati is None:
+            return
+        if not isinstance(annidati, dict) or not annidati:
+            return
+        ignote = sorted(k for k in annidati if k not in spec.params)
+        conflitti = sorted(k for k in annidati if k in effetto)
+        if ignote or conflitti:
+            # Si lascia `params` dov'e' e **non** si aggiunge un secondo codice
+            # fatale: il controllo che segue lo riportera' come chiave
+            # sconosciuta su un effetto noto, cioe' `EFFECT_PARAM_NOT_FOUND`,
+            # fatale come prima di V3.5. Questa riga e' un avviso che dice
+            # perche' la normalizzazione si e' rifiutata — serve alla
+            # correzione unica, che altrimenti vede solo «non c'e' un
+            # parametro params» e non sa che era vicina.
+            self.report.warn(
+                "EFFECT_PARAMS_NOT_FLATTENED",
+                "'params' di '%s' non si puo' srotolare" % tipo, where=id,
+                why="%s" % ("; ".join(filter(None, [
+                    "chiavi che l'effetto non dichiara: %s" % ", ".join(ignote)
+                    if ignote else "",
+                    "chiavi gia' presenti sull'effetto: %s" % ", ".join(conflitti)
+                    if conflitti else ""]))),
+                alternatives=sorted(spec.params)[:8])
+            return
+        effetto.pop("params")
+        effetto.update(annidati)
+        self.report.warn(
+            "EFFECT_PARAMS_FLATTENED",
+            "'params' di '%s' srotolato: %s" % (tipo, ", ".join(sorted(annidati))),
+            where=id,
+            why="i parametri di un effetto stanno sull'effetto; la forma "
+                "annidata era interpretabile in un solo modo")
 
     def _on(self, voce: dict, id: str) -> None:
         dove = voce.get("on")
@@ -383,11 +531,25 @@ class _Controllo:
                 continue
             spec = self.registry.trait(name)
             if spec is None:
-                code = "TRAIT_AMBIGUOUS" if self.registry.trait_ambiguous(name) \
-                    else "TRAIT_NOT_FOUND"
-                self.report.add(code, "trait non disponibile: '%s'" % name,
-                                where=where,
-                                alternatives=[t.id for t in self.registry.traits()][:8])
+                # Due casi diversi, e sono due decisioni diverse: un nome che
+                # non esiste si ignora, un nome che esiste **due volte** no —
+                # ignorarlo vorrebbe dire scegliere al posto di chi ha scritto
+                # il piano.
+                if self.registry.trait_ambiguous(name):
+                    self.report.add("TRAIT_AMBIGUOUS",
+                                    "trait non disponibile: '%s'" % name,
+                                    where=where,
+                                    alternatives=[t.id for t in
+                                                  self.registry.traits()][:8])
+                    continue
+                self.report.warn(UNKNOWN_TRAIT_SKIPPED,
+                                 "trait sconosciuto, ignorato: trait = '%s'" % name,
+                                 where=where,
+                                 why="un elemento facoltativo sconosciuto non "
+                                     "invalida il resto del piano",
+                                 alternatives=[t.id for t in
+                                               self.registry.traits()][:8])
+                self.traits_ignorati.add(index)
                 continue
             op = str(item.get("op") or "set")
             scope = str(item.get("scope") or "subtree")

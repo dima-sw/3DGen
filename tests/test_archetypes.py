@@ -108,12 +108,38 @@ def test_compact_vocabulary_references_repeated_parameter_contracts_losslessly()
 
 
 def test_compact_production_payload_stays_within_groq_budget():
+    """Il corpo compatto sta nel budget **dichiarato** dal fornitore.
+
+    La soglia era `24_576`, un margine scelto a mano piu' stretto del budget
+    vero. V3.5 l'ha superata di 1,4 KB per due ragioni che sono il contenuto
+    della milestone: il prompt di sistema adesso dichiara le chiavi `traits` e
+    `structural_traits` (+1,1 KB) e ogni trait dice che cosa seleziona (+0,8 KB
+    sulla libreria intera). Senza quelle due cose il planner non poteva
+    scegliere uno structural trait — vedi `V3.5-RESULTS.md`.
+
+    Rinumerare un margine a mano vuol dire rifarlo alla prossima riga di
+    prompt. Si misura invece contro `PROVIDERS["groq"].input_budget`, che e'
+    la soglia vera: e' quella che fa passare `LLMPlanner` alla forma compatta,
+    quindi e' quella che questo test esisteva per proteggere. La verifica di
+    crescita resta, e in una forma che non ha numeri da tarare: la forma
+    compatta deve essere **piu' piccola** di quella piena.
+
+    Questo e' comunque il caso peggiore: la libreria intera, senza la rosa che
+    V1 ha messo davanti al planner.
+    """
+    from app.core.config import PROVIDERS
+
     vocabulary = build_vocabulary(registry())
     request = PlanRequest("crea una lince low-poly", vocabulary,
                           style="low_poly", detail_level=3, seed=17)
     user, _ = LLMPlanner._render_message(request, compact=True)
+    pieno, _ = LLMPlanner._render_message(request, compact=False)
     estimate = LLMPlanner._estimate_payload(SISTEMA, user, plan_schema())
-    assert estimate < 24_576
+
+    budget = PROVIDERS["groq"].input_budget
+    assert budget, "groq dichiara un input_budget: senza, questo test non dice niente"
+    assert estimate < budget, estimate
+    assert estimate < LLMPlanner._estimate_payload(SISTEMA, pieno, plan_schema())
 
 
 def test_binding_must_reference_real_component_and_archetype():

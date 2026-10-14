@@ -5,11 +5,35 @@
   "description": "Structural trait for repeated tail-like components.",
   "author": "3DGen",
   "license": "MIT",
-  "tags": ["structural", "extension"],
+  "tags": [
+    "structural",
+    "extension"
+  ],
   "components": [],
   "effects": [],
   "styles": [],
   "materials": [],
-  "traits": ["structural/tails.py"],
-  "dependencies": ["fox_stylized"]
+  "traits": [
+    "structural/tails.py"
+  ],
+  "dependencies": [
+    "fox_stylized"
+  ],
+  "synonyms": {
+    "code": [
+      "coda",
+      "tail",
+      "tails"
+    ],
+    "coda": [
+      "code",
+      "tail",
+      "tails"
+    ],
+    "tails": [
+      "tail",
+      "coda",
+      "code"
+    ]
+  }
 }

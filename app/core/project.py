@@ -51,6 +51,8 @@ PRIMA_VERSIONE_LEGGIBILE = 2
 PROJECT_FILE = "project.json"
 HISTORY_DIR = "history"
 PREVIEW_FILE = "preview.png"
+PLUGIN_VERSION_CHANGED = "PLUGIN_VERSION_CHANGED"
+PLUGIN_CONTENT_CHANGED = "PLUGIN_CONTENT_CHANGED"
 
 
 class ProjectError(ValueError):
@@ -72,6 +74,12 @@ class ProjectInfo:
     # plugin presenti quando il progetto e' stato salvato: id -> versione.
     # Serve alla riproducibilita', non a installare niente.
     plugins: dict[str, str] = field(default_factory=dict)
+    # id -> impronta del **contenuto**, per i plugin che ne dichiarano una.
+    # Un plugin di codice non la dichiara (importare un modulo non e' leggere
+    # un file dichiarato), un plugin dati si': cambiare un GLB senza alzare la
+    # versione e' esattamente il caso che la versione non racconta. Campo
+    # aggiunto: un progetto salvato prima non ne ha, e si legge come prima.
+    fingerprints: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def now(cls, name: str) -> "ProjectInfo":
@@ -85,6 +93,34 @@ class ProjectInfo:
                       for id, versione in sorted(self.plugins.items())
                       if id not in presenti)
 
+    def changed_plugins(self, registry) -> list[dict[str, str]]:
+        """I plugin che ci sono ancora ma non sono piu' gli stessi.
+
+        Il complemento di `missing_plugins`, e la stessa ragione: un progetto
+        riaperto viene **ricostruito**, quindi se la libreria e' cambiata il
+        modello puo' essere diverso da quello salvato. Due casi distinti,
+        perche' dicono due cose diverse: la versione e' cambiata (l'autore lo
+        ha dichiarato) oppure il contenuto e' cambiato a versione ferma
+        (nessuno lo ha dichiarato). Nessun giudizio: il formato dice che cosa
+        e' cambiato, chi legge decide.
+        """
+        cambiati = []
+        for id, versione in sorted(self.plugins.items()):
+            info = registry.plugin(id)
+            if info is None:
+                continue                      # lo dice gia' missing_plugins
+            attuale = getattr(info, "version", "")
+            if attuale != versione:
+                cambiati.append({"plugin": id, "code": PLUGIN_VERSION_CHANGED,
+                                 "was": versione, "now": attuale})
+                continue
+            impronta = self.fingerprints.get(id, "")
+            adesso = getattr(info, "fingerprint", "") or ""
+            if impronta and adesso and impronta != adesso:
+                cambiati.append({"plugin": id, "code": PLUGIN_CONTENT_CHANGED,
+                                 "was": impronta[:12], "now": adesso[:12]})
+        return cambiati
+
 
 def _entry_name(index: int) -> str:
     return "%s/%04d.json" % (HISTORY_DIR, index + 1)
@@ -93,6 +129,13 @@ def _entry_name(index: int) -> str:
 def plugins_of(registry) -> dict[str, str]:
     """id -> versione, per tutti i plugin installati. Ordinato e stabile."""
     return {p.id: p.version for p in sorted(registry.plugins(), key=lambda p: p.id)}
+
+
+def fingerprints_of(registry) -> dict[str, str]:
+    """id -> impronta del contenuto, solo per i plugin che ne dichiarano una."""
+    return {p.id: p.fingerprint
+            for p in sorted(registry.plugins(), key=lambda p: p.id)
+            if getattr(p, "fingerprint", "")}
 
 
 # --------------------------------------------------------------------------- #
@@ -114,6 +157,7 @@ def save(session, path: str | Path, name: str = "",
     info.versions = len(session.history)
     info.labels = [v.label for v in session.history]
     info.plugins = plugins_of(session.catalog())
+    info.fingerprints = fingerprints_of(session.catalog())
 
     with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         archive.writestr(PROJECT_FILE,
@@ -223,6 +267,10 @@ def load(path: str | Path, session=None, provider=None, library=None):
     mancanti = info.missing_plugins(target.catalog())
     if mancanti:
         log.warning("plugin non installati: %s", ", ".join(mancanti))
+    cambiati = info.changed_plugins(target.catalog())
+    if cambiati:
+        log.warning("plugin cambiati dal salvataggio: %s",
+                    ", ".join(v["plugin"] for v in cambiati))
 
     for payload in payloads:
         grafo = payload.get("graph") or {}
@@ -238,6 +286,22 @@ def load(path: str | Path, session=None, provider=None, library=None):
         raise ProjectError("il progetto non contiene versioni ricostruibili")
     target.cursor = max(0, min(int(info.cursor), len(target.history) - 1))
     target.missing_plugins = mancanti
+    target.changed_plugins = cambiati
+    # La diagnosi sta sul **risultato ricostruito**, non accanto ad esso: chi
+    # riapre un progetto legge `result.diagnostics` come dopo una generazione
+    # qualunque, e non deve sapere che esiste un secondo elenco.
+    for versione in target.history:
+        risultato = getattr(versione, "result", None)
+        report = getattr(risultato, "report", None)
+        if report is None:
+            continue
+        for voce in cambiati:
+            report.warn(voce["code"],
+                        "plugin '%s' cambiato dal salvataggio: %s -> %s"
+                        % (voce["plugin"], voce["was"] or "-", voce["now"] or "-"),
+                        where=voce["plugin"],
+                        why="il progetto conserva il piano, non la mesh: la "
+                            "geometria viene ricostruita con la libreria di adesso")
     log.info("progetto aperto: %s (%d versioni, corrente %d)",
              source.name, len(target.history), target.cursor + 1)
     return target

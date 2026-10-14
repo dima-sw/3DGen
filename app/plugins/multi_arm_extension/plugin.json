@@ -5,11 +5,40 @@
   "description": "Structural trait for repeated arm-like components.",
   "author": "3DGen",
   "license": "MIT",
-  "tags": ["structural", "extension"],
+  "tags": [
+    "structural",
+    "extension"
+  ],
   "components": [],
   "effects": [],
   "styles": [],
   "materials": [],
-  "traits": ["structural/arms.py"],
-  "dependencies": ["humanoid_anatomical"]
+  "traits": [
+    "structural/arms.py"
+  ],
+  "dependencies": [
+    "humanoid_anatomical"
+  ],
+  "synonyms": {
+    "braccia": [
+      "braccio",
+      "arm",
+      "arms",
+      "limb",
+      "arto"
+    ],
+    "braccio": [
+      "braccia",
+      "arm",
+      "limb",
+      "arto"
+    ],
+    "arms": [
+      "arm",
+      "braccio",
+      "braccia",
+      "limb",
+      "arto"
+    ]
+  }
 }

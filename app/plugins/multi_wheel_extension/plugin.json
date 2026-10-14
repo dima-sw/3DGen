@@ -5,11 +5,34 @@
   "description": "Structural trait for repeated wheel-like components.",
   "author": "3DGen",
   "license": "MIT",
-  "tags": ["structural", "extension"],
+  "tags": [
+    "structural",
+    "extension"
+  ],
   "components": [],
   "effects": [],
   "styles": [],
   "materials": [],
-  "traits": ["structural/wheels.py"],
-  "dependencies": ["vehicle_stylized"]
+  "traits": [
+    "structural/wheels.py"
+  ],
+  "dependencies": [
+    "vehicle_stylized"
+  ],
+  "synonyms": {
+    "ruote": [
+      "ruota",
+      "wheel",
+      "wheels",
+      "tire",
+      "pneumatico",
+      "gomma"
+    ],
+    "wheels": [
+      "wheel",
+      "ruota",
+      "ruote",
+      "tire"
+    ]
+  }
 }

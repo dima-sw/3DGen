@@ -23,8 +23,13 @@ migliore e una fuga di informazione nel peggiore.
 
 Solo cio' che una riscrittura del piano puo' cambiare: un componente che non
 esiste, un innesto incompatibile, un effetto sconosciuto, un parametro che non
-c'e'. Un budget esaurito o una compenetrazione non si correggono cambiando dei
-nomi, e riproporli spenderebbe la correzione per niente.
+c'e', una richiesta strutturale su una radice che non possiede quella parte. Un
+budget esaurito o una compenetrazione non si correggono cambiando dei nomi, e
+riproporli spenderebbe la correzione per niente.
+
+Il criterio non e' «quanto e' grave» ma **«una riscrittura ha le informazioni
+per rimediare?»**. Perche' ogni voce di `CORREGGIBILI` sia li' sta scritto
+accanto all'elenco.
 """
 from __future__ import annotations
 
@@ -35,6 +40,21 @@ MAX_VOCI = 8
 MAX_ALTERNATIVE = 5
 
 # Le diagnosi che una riscrittura del piano puo' davvero risolvere.
+#
+# **[V3.5]** I due codici strutturali sono entrati qui per una ragione misurata,
+# non per completezza. Da quando il planner usa davvero `structural_traits`
+# esiste un piano nuovo e plausibile che prima non si scriveva: un trait giusto
+# su una radice che non possiede quella parte — `character:arm_count = 4` con
+# radice `humanoid:leg`, misurato sulla richiesta 3 del PRODUCT-AUDIT. E' un
+# difetto che una riscrittura **puo'** risolvere, perche' la diagnosi dice sia il
+# bersaglio cercato (`role=arm tags=arm`) sia i ruoli che ci sono davvero, ed e'
+# esattamente la famiglia di `SOCKET_INCOMPATIBLE`: il piano ha nominato due
+# cose che non stanno insieme. Senza questa riga la correzione unica non partiva
+# nemmeno, e un piano recuperabile restava a zero triangoli.
+#
+# Resta fuori, deliberatamente, `STRUCTURAL_VALUE_CONFLICT`: due richieste che
+# chiedono conteggi diversi sullo stesso canale sono un piano che si contraddice,
+# e la diagnosi non dice quale delle due l'autore volesse.
 CORREGGIBILI = (
     "COMPONENT_NOT_FOUND", "PLUGIN_NOT_FOUND", "AMBIGUOUS_COMPONENT",
     "AMBIGUOUS_PROVIDER", "PROVIDER_INCOMPATIBLE", "SOCKET_INCOMPATIBLE",
@@ -42,6 +62,7 @@ CORREGGIBILI = (
     "EFFECT_NOT_FOUND", "EFFECT_SCOPE_INVALID", "PARAM_NOT_FOUND",
     "NODE_NO_REF", "DUPLICATE_NODE_ID", "ON_TARGET_MISSING",
     "ON_TARGET_AMBIGUOUS", "PLAN_NO_ROOT", "PLAN_NOT_AN_OBJECT",
+    "STRUCTURAL_PROTOTYPE_NOT_FOUND", "STRUCTURAL_EXACT_OVERCOUNT",
 )
 
 _RIFERIMENTO = re.compile(r"'([A-Za-z0-9_.\-]+:[A-Za-z0-9_.\-]+)'")

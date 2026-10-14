@@ -130,6 +130,9 @@ class ResolvedNode:
     # quanti figli ha gia' preso ciascun innesto. Due pezzi nello stesso posto
     # sono due pezzi compenetrati, e non si vede finche' non si guarda.
     occupied: dict[str, int] = field(default_factory=dict)
+    # L'attacco puo' sostituire il materiale del componente, anche quando
+    # nasce dall'espansione e non esiste come nodo nel piano originale.
+    material: str = ""
 
     def __post_init__(self) -> None:
         self.tags = frozenset(self.tags)

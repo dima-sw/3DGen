@@ -8,7 +8,7 @@ library/
 .env.local
 *.log
 dist/
-build/
+/build/
 *.spec
 .tmp-tests/
 audit-images/

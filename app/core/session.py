@@ -189,6 +189,8 @@ class GenerationResult:
 
         if self.build is None:
             return None
+        if registry is None:
+            registry = getattr(self, "_registry", None)
         return to_scene(self.build, registry, plan=self.plan, ground=ground)
 
     def trimesh_scene(self):
@@ -207,7 +209,7 @@ class GenerationResult:
         posto di qualcos'altro. Serve a chi guarda un modello e non capisce da
         dove venga un pezzo — e servira' con migliaia di plugin installati.
         """
-        righe = self.degradation()
+        righe = self.degradation() + self.structural_changes()
         if self.resolved is None:
             return righe
         for nodo in self.resolved.walk():
@@ -223,6 +225,30 @@ class GenerationResult:
             if nodo.substituted:
                 riga += ", al posto di '%s'" % nodo.swapped_from
             righe.append(riga)
+        return righe
+
+    def structural_changes(self) -> list[str]:
+        """Quali richieste strutturali sono state **applicate**, e con che esito.
+
+        Il complemento di `skipped()`: lo stesso referto, letto dal lato di cio'
+        che e' andato a buon fine. Una riga per operazione applicata, con il
+        trait che l'ha chiesta, la regola che l'ha tradotta, il prototipo
+        clonato e quante copie sono nate. Vuota quando il piano non chiedeva
+        niente di strutturale — e quel vuoto e' un'informazione: vuol dire che
+        la richiesta non e' mai arrivata a questo livello.
+
+        Legge `StructuralTraitResolution.applied`, che V3 scriveva gia' e che
+        nessuno mostrava.
+        """
+        righe = []
+        for voce in getattr(self.structural, "applied", ()) or ():
+            operazione = voce.get("operation") or {}
+            creati = len(voce.get("created") or ())
+            righe.append(
+                "'%s' = %s applicato: %d copie di '%s' (regola '%s', %d presenti)"
+                % (operazione.get("trait", ""), operazione.get("count", "?"),
+                   creati, voce.get("prototype", ""),
+                   operazione.get("rule", ""), voce.get("existing", 0)))
         return righe
 
     def changes(self) -> list[str]:
@@ -241,9 +267,46 @@ class GenerationResult:
         return righe
 
     def skipped(self) -> list[str]:
-        """Cosa non e' entrato nel modello, e resta da spiegare."""
+        """Cosa non e' entrato nel modello, e resta da spiegare.
+
+        Comprende i trait che il piano chiedeva e il vocabolario non contiene:
+        da V3 non sono piu' un errore fatale, quindi se non comparissero qui
+        sarebbero una richiesta persa in silenzio — che e' il difetto che la
+        politica doveva togliere, non spostare.
+
+        **[V3.5]** Comprende anche le due richieste che `ok` non distingueva:
+        uno structural trait la cui riscrittura e' stata **saltata** (la parte
+        c'era gia' in numero sufficiente) e un'**adaptation** di concept che
+        l'implementazione scelta non supporta. Senza queste, `ok=True` voleva
+        dire «e' uscita della geometria» e veniva letto come «la richiesta e'
+        stata soddisfatta», che sono due cose diverse: il prompt 3 del
+        PRODUCT-AUDIT costruiva 412 triangoli senza mai applicare le quattro
+        braccia. Si leggono da `StructuralTraitResolution.skipped` e da
+        `ConceptResolutionPlan.unsupported`, che esistevano gia': non c'e' un
+        secondo elenco che possa divergere da loro.
+        """
+        from app.core.structural import UNKNOWN_TRAIT_SKIPPED
+
         fuori = list(getattr(self.resolved, "unresolved", ()) or ())
         fuori += [n.id for n in getattr(self.build, "skipped", ()) or ()]
+        for voce in self.diagnostics:
+            if voce.code == UNKNOWN_TRAIT_SKIPPED:
+                fuori.append("%s: %s" % (voce.code, voce.message))
+        for voce in getattr(self.structural, "skipped", ()) or ():
+            if voce.get("code") == UNKNOWN_TRAIT_SKIPPED:
+                continue                       # gia' detto dalla diagnostica
+            operazione = voce.get("operation") or {}
+            fuori.append(
+                "STRUCTURAL_TRAIT_NOT_APPLIED: '%s' = %s, non applicato "
+                "(istanze presenti: %s)"
+                % (operazione.get("trait", ""), operazione.get("count", "?"),
+                   voce.get("existing", "?")))
+        for voce in getattr(self.concept_resolution, "unsupported", ()) or ():
+            if not isinstance(voce, dict):
+                continue
+            fuori.append("ADAPTATION_UNSUPPORTED: %s"
+                         % ", ".join("%s=%s" % (k, v) for k, v in sorted(voce.items())
+                                     if k != "materialized"))
         return fuori
 
     def describe(self) -> str:
@@ -289,6 +352,7 @@ class GenerationResult:
                 "triangles": self.triangles,
                 "explain": self.explain(), "changes": self.changes(),
                 "skipped": self.skipped(),
+                "structural_changes": self.structural_changes(),
                 "structural": self.structural.to_dict()
                 if self.structural is not None else {},
                 "concept_resolution": self.concept_resolution.to_dict()
@@ -334,6 +398,10 @@ class Session:
     plugin_paths: tuple = ()
     # plugin che un progetto aperto usava e che qui non ci sono
     missing_plugins: list = field(default_factory=list)
+    # plugin ancora installati ma non piu' gli stessi: versione diversa, o
+    # contenuto diverso a versione ferma. La stessa informazione sta anche
+    # nelle diagnostiche dei risultati ricostruiti.
+    changed_plugins: list = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if self.provider is None:
@@ -708,6 +776,9 @@ class Session:
     def _costruisci(self, piano, risultato: GenerationResult,
                     opzioni: Options) -> None:
         """Effetti e geometria. Il piano puo' arrivare gia' risolto o no."""
+        # Il risultato conserva la libreria che ha costruito i suoi materiali.
+        # Anche scene() chiamato fuori dalla Session deve risolvere quei nomi.
+        risultato._registry = self.catalog()
         from app.build.assembler import build as assembla
         from app.build.validate import validate as controlla
         from app.core.effect import apply_effects

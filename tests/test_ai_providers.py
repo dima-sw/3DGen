@@ -226,7 +226,13 @@ def test_planner_uses_compact_vocabulary_when_provider_budget_requires_it():
     LLMPlanner(provider).plan(PlanRequest("ping", Vocabulary()))
     assert "CAPABILITY (come i pezzi si incastrano)" not in provider.user
     assert provider.metrics["compact"] is True
-    assert provider.metrics["payload_estimate"] < 8000
+    # Con un vocabolario **vuoto** cio' che resta e' il prompt di sistema piu'
+    # lo schema: non c'e' niente da comprimere, e questo numero misura loro due.
+    # Era 8 000; V3.5 ha aggiunto al prompt le chiavi `traits` e
+    # `structural_traits` (+1,1 KB) e il valore misurato e' passato a 8 651.
+    # La soglia sale di conseguenza, e la proprieta' che il test verifica —
+    # il percorso compatto si attiva e il corpo resta piccolo — non cambia.
+    assert provider.metrics["payload_estimate"] < 9216
 
 
 def test_ollama_chooses_installed_compatible_model_without_downloading(monkeypatch):

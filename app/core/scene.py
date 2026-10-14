@@ -24,6 +24,10 @@ class SceneNode:
     mesh: trimesh.Trimesh
     material: MaterialSpec
     tags: list[str] = field(default_factory=list)
+    # Colori gia' presenti sulla mesh, quando nessun materiale nominato li
+    # sostituisce. Il materiale resta la tinta rappresentativa per le viste
+    # che disegnano un solo colore per nodo.
+    preserve_visual: bool = False
 
     @property
     def triangles(self) -> int:
@@ -112,6 +116,9 @@ class Scene:
 
         for n in self.nodes:
             mesh = n.mesh.copy()
+            if n.preserve_visual and getattr(mesh.visual, "defined", False):
+                scene.add_geometry(mesh, node_name=n.id, geom_name=n.id)
+                continue
             r, g, b, a = n.material.rgba()
             maps = None
             if textured:

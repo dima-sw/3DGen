@@ -48,12 +48,27 @@ from typing import Any
 MAX_DESCRIZIONE = 160          # caratteri di un testo di terze parti
 MAX_ELENCO = 12                # quante voci si elencano prima di dire «e altri»
 MAX_CONCEPT_SHORTLIST = 24     # contratti operativi; l'indice globale resta completo
+MAX_SELECT_COMPACT = 6         # quanti bersagli di un trait entrano nella forma compatta
 
 # Tutto cio' che potrebbe far credere a un modello che il dato sia finito e sia
 # cominciata un'istruzione. Non e' un elenco di parole vietate: sono i
 # **delimitatori** del formato in cui il dato viene consegnato.
 _STRUTTURA = re.compile(r"[`\r\n\t\x00-\x1f\x7f]+")
 _MARCATORI = re.compile(r"(?i)\b(system|assistant|user)\s*:")
+
+# I titoli delle due sezioni dei trait. Nominano la **chiave del piano**, non
+# solo il genere: un modello che legge «STRUCTURAL TRAITS» e non vede
+# `structural_traits` deve indovinare dove scrivere, e indovina male — e' la
+# causa misurata in `V3.5-RESULTS.md`. Sono costanti perche' le usano due
+# renderer e un test, e tre copie della stessa stringa divergono.
+PLAN_KEY_TRAITS = "traits"
+PLAN_KEY_STRUCTURAL = "structural_traits"
+TITOLO_TRAITS = ('TRAITS -> chiave del piano "%s": cambiano le proprieta\' di '
+                 "parti che esistono gia' (usa questi id o alias, e nessun altro)"
+                 % PLAN_KEY_TRAITS)
+TITOLO_STRUCTURAL = ('STRUCTURAL TRAITS -> chiave del piano "%s": cambiano '
+                     "quante parti ci sono (usa questi id o alias, e nessun altro)"
+                     % PLAN_KEY_STRUCTURAL)
 
 
 def sanitize(testo: Any, limite: int = MAX_DESCRIZIONE) -> str:
@@ -235,6 +250,26 @@ class EffectEntry:
 
 @dataclass(frozen=True)
 class TraitEntry:
+    """Un trait — semantico o strutturale — nella forma in cui si puo' chiedere.
+
+    Tre campi esistono per una ragione misurata, e sono quelli che V3.5 ha
+    aggiunto perche' senza di loro un modello non poteva scegliere:
+
+    `plan_key`  sotto quale chiave del piano questo trait si scrive. Il titolo
+                della sezione in `to_text()` e' una didascalia; la chiave e' il
+                contratto, e un modello che non la vede la indovina.
+    `aliases`   **tutti** gli alias sicuri, non il primo. Gli alias sono le
+                parole con cui una richiesta nomina la cosa (`braccia`,
+                `ruote`): tenerne uno solo buttava via proprio quelle.
+    `selects`   che cosa il trait tocca, letto dai bersagli che le sue regole
+                dichiarano (`role:arm`, `tags:wheel`, `component:plugin:pezzo`).
+                E' la differenza fra «un numero fra 0 e 64» e «quante parti con
+                ruolo arm»: la prima non si puo' scegliere, la seconda si'.
+
+    Nessuno dei tre contiene conoscenza di dominio scritta qui: sono i dati che
+    il plugin ha dichiarato, resi visibili.
+    """
+
     id: str
     alias: str = ""
     description: str = ""
@@ -245,13 +280,22 @@ class TraitEntry:
     ops: tuple[str, ...] = ()
     scopes: tuple[str, ...] = ()
     purpose: str = ""
+    aliases: tuple[str, ...] = ()
+    selects: tuple[str, ...] = ()
+    plan_key: str = ""
 
     def to_dict(self) -> dict:
         fuori: dict[str, Any] = {"id": self.id, "type": self.type,
                                  "ops": list(self.ops),
                                  "scopes": list(self.scopes)}
+        if self.plan_key:
+            fuori["plan_key"] = self.plan_key
         if self.alias:
             fuori["alias"] = self.alias
+        if self.aliases:
+            fuori["aliases"] = list(self.aliases)
+        if self.selects:
+            fuori["selects"] = list(self.selects)
         if self.description:
             fuori["description"] = self.description
         if self.min is not None:
@@ -264,17 +308,52 @@ class TraitEntry:
             fuori["purpose"] = self.purpose
         return fuori
 
-    def to_text(self) -> str:
-        name = self.alias or self.id
+    @property
+    def domain(self) -> str:
         if self.choices:
-            domain = "{%s}" % ", ".join(str(c) for c in self.choices)
-        elif self.min is not None and self.max is not None:
-            domain = "[%g, %g]" % (self.min, self.max)
-        else:
-            domain = self.type
-        return '- %s %s ops=%s scopes=%s purpose="%s"' % (
-            name, domain, ",".join(self.ops), ",".join(self.scopes),
-            self.purpose or self.description)
+            return "{%s}" % ", ".join(str(c) for c in self.choices)
+        if self.min is not None and self.max is not None:
+            return "[%g, %g]" % (self.min, self.max)
+        return self.type
+
+    @property
+    def names(self) -> str:
+        """Gli id e gli alias con cui questo trait si puo' nominare."""
+        altri = [a for a in self.aliases if a and a != self.id]
+        return self.id if not altri else "%s|%s" % (self.id, "|".join(altri))
+
+    def to_text(self) -> str:
+        pezzi = ["- %s %s" % (self.names, self.domain)]
+        if self.selects:
+            pezzi.append("selects=" + ",".join(self.selects))
+        if self.ops:
+            pezzi.append("ops=" + ",".join(self.ops))
+        if self.scopes:
+            pezzi.append("scopes=" + ",".join(self.scopes))
+        pezzi.append('purpose="%s"' % (self.purpose or self.description))
+        return " ".join(pezzi)
+
+    def to_compact_text(self) -> str:
+        """La stessa voce, senza cio' che si ricava dal resto.
+
+        `selects` e `purpose` restano anche qui: sono le due cose che dicono
+        *che cosa* il trait chiede, e un fornitore con il corpo piccolo e'
+        proprio quello che ne ha piu' bisogno. La coda di `selects` si taglia
+        invece di sparire — dodici ruoli elencati per intero costano molto e
+        dicono poco piu' dei primi sei piu' «e altri sei».
+        """
+        pezzi = [self.names, self.domain]
+        if self.selects:
+            testa = list(self.selects[:MAX_SELECT_COMPACT])
+            resto = len(self.selects) - len(testa)
+            if resto > 0:
+                testa.append("+%d" % resto)
+            pezzi.append("selects=" + ",".join(testa))
+        if self.ops:
+            pezzi.append("ops=" + ",".join(self.ops))
+        testo = "- " + " | ".join(pezzi)
+        glossa = self.purpose or self.description
+        return '%s "%s"' % (testo, glossa) if glossa else testo
 
 
 @dataclass(frozen=True)
@@ -496,10 +575,8 @@ class Vocabulary:
              [c.to_text() for c in self.capabilities]),
             ("EFFETTI (usa questi id, e nessun altro)",
              [e.to_text() for e in self.effects]),
-            ("TRAITS (usa questi id o alias sicuri, e nessun altro)",
-             [t.to_text() for t in self.traits]),
-            ("STRUCTURAL TRAITS (contano o duplicano istanze; niente coordinate)",
-             [t.to_text() for t in self.structural_traits]),
+            (TITOLO_TRAITS, [t.to_text() for t in self.traits]),
+            (TITOLO_STRUCTURAL, [t.to_text() for t in self.structural_traits]),
             ("STILI", [s.to_text() for s in self.styles]),
             ("ARCHETYPE GLOBAL INDEX", [a.to_text() for a in self.archetypes]),
             ("ARCHETYPE SHORTLIST", [a.to_text() for a in self.archetype_details]),
@@ -572,26 +649,8 @@ class Vocabulary:
                     p.to_text() for p in effetto.params[:MAX_ELENCO]))
             effetti.append("- " + " | ".join(parti))
 
-        traits = []
-        for trait in self.traits:
-            traits.append("- " + " | ".join([
-                trait.alias or trait.id,
-                trait.type,
-                "ops=" + ",".join(trait.ops),
-                "scopes=" + ",".join(trait.scopes),
-                "range=%s..%s" % (trait.min, trait.max)
-                if trait.min is not None or trait.max is not None else "",
-            ]).strip(" |"))
-
-        structural_traits = []
-        for trait in self.structural_traits:
-            structural_traits.append("- " + " | ".join([
-                trait.alias or trait.id,
-                trait.type,
-                "modes=" + ",".join(trait.ops),
-                "range=%s..%s" % (trait.min, trait.max)
-                if trait.min is not None or trait.max is not None else "",
-            ]).strip(" |"))
+        traits = [t.to_compact_text() for t in self.traits]
+        structural_traits = [t.to_compact_text() for t in self.structural_traits]
 
         archetypes = ["- %s aliases=%s \"%s\"" %
                       (a.id, ",".join(a.aliases), a.description)
@@ -603,9 +662,8 @@ class Vocabulary:
                    ("PARAM SETS (shared component contracts)", param_sets),
                    ("COMPONENTI (usa questi id, e nessun altro)", componenti),
                    ("EFFETTI (usa questi id, e nessun altro)", effetti),
-                   ("TRAITS (usa questi id o alias sicuri, e nessun altro)", traits),
-                   ("STRUCTURAL TRAITS (usa per conteggi espliciti)",
-                    structural_traits),
+                   (TITOLO_TRAITS, traits),
+                   (TITOLO_STRUCTURAL, structural_traits),
                    ("STILI", ["- " + s.id for s in self.styles])]
         return "\n\n".join("## %s\n%s" % (titolo, "\n".join(righe))
                             for titolo, righe in blocchi if righe)
@@ -664,15 +722,72 @@ def _effetto(effetto) -> EffectEntry:
         tags=tuple(sorted(effetto.tags)))
 
 
-def _trait(trait, registry) -> TraitEntry:
-    alias = ""
-    for candidate in trait.aliases:
-        if registry.trait(candidate) is trait:
-            alias = candidate
-            break
+def _alias_sicuri(trait, lookup) -> tuple[str, ...]:
+    """Gli alias che risolvono davvero a **questo** trait.
+
+    Un alias dichiarato da due plugin e' ambiguo, e il registry lo fa sapere
+    restituendo altro (o niente) da `lookup`: proporre un nome ambiguo al
+    planner vorrebbe dire invitarlo a scrivere qualcosa che poi diventa
+    `TRAIT_AMBIGUOUS`. Si tengono tutti quelli sicuri e non il primo, perche'
+    gli alias sono le **parole della richiesta** — `braccia`, `ruote` — e
+    tenerne uno solo buttava via proprio quelle.
+    """
+    return tuple(sanitize(a, 32) for a in trait.aliases
+                 if a and a != trait.id and lookup(a) is trait)
+
+
+def _selettori(target, component: str = "", ids: set[str] | None = None) -> list[str]:
+    """Un bersaglio dichiarato, in parole che un modello puo' confrontare.
+
+    Non interpreta niente: legge `role`, `capability`, `tags` e `components`
+    cosi' come la regola li ha scritti. Se un giorno un bersaglio avesse un
+    facet in piu', questa funzione lo mostrerebbe senza sapere che cos'e'.
+
+    `ids`, quando c'e', e' la rosa: un id di componente fuori dalla rosa non si
+    nomina. E' la stessa regola di `CapabilityEntry.providers` — un elenco di
+    id riporterebbe nel prompt la libreria che il retrieval ha appena escluso,
+    e il carico tornerebbe a crescere con i plugin installati.
+    """
+    fuori: list[str] = []
+    for nome, valore in (("role", getattr(target, "role", "")),
+                         ("capability", getattr(target, "capability", ""))):
+        if valore:
+            fuori.append("%s:%s" % (nome, sanitize(valore, 32)))
+    for tag in getattr(target, "tags", ()) or ():
+        fuori.append("tag:%s" % sanitize(tag, 32))
+    for id in list(getattr(target, "components", ()) or ()) + \
+            ([component] if component else []):
+        if ids is not None and id not in ids:
+            continue
+        voce = "component:%s" % sanitize(id, 64)
+        if voce not in fuori:
+            fuori.append(voce)
+    return fuori
+
+
+def _trait(trait, registry, ids: set[str] | None = None) -> TraitEntry:
+    alias = _alias_sicuri(trait, registry.trait)
     value = trait.value
+    # Cio' che un trait semantico tocca lo dichiara il `match` delle sue regole:
+    # ruoli, tag, componenti, capability. E' la stessa lettura che fa
+    # `_rilevante_trait` per decidere se mostrarlo — qui serve a dire **su che
+    # cosa** agisce, non solo che esiste.
+    selects: list[str] = []
+    for regola in registry.trait_rules(trait.id):
+        bersaglio = regola.match
+        for ruolo in bersaglio.roles:
+            _aggiungi(selects, "role:%s" % sanitize(ruolo, 32))
+        for capability in getattr(bersaglio, "capabilities", ()) or ():
+            _aggiungi(selects, "capability:%s" % sanitize(capability, 32))
+        for tag in bersaglio.tags:
+            _aggiungi(selects, "tag:%s" % sanitize(tag, 32))
+        for id in bersaglio.components:
+            if ids is None or id in ids:
+                _aggiungi(selects, "component:%s" % sanitize(id, 64))
     return TraitEntry(
-        id=trait.id, alias=sanitize(alias, 32),
+        id=trait.id, alias=alias[0] if alias else "",
+        aliases=alias, selects=tuple(selects[:MAX_ELENCO]),
+        plan_key=PLAN_KEY_TRAITS,
         description=sanitize(trait.description),
         type=getattr(value, "type", "float"),
         min=getattr(value, "min", None), max=getattr(value, "max", None),
@@ -681,21 +796,32 @@ def _trait(trait, registry) -> TraitEntry:
         purpose=sanitize(trait.purpose or trait.description))
 
 
-def _structural_trait(trait, registry) -> TraitEntry:
-    alias = ""
-    for candidate in trait.aliases:
-        if registry.structural_trait(candidate) is trait:
-            alias = candidate
-            break
+def _structural_trait(trait, registry, ids: set[str] | None = None) -> TraitEntry:
+    alias = _alias_sicuri(trait, registry.structural_trait)
     value = trait.value
+    # Che cosa questo trait **conta** sta nel `target` delle sue regole: lo
+    # stesso selettore con cui V3 scegliera' il prototipo. Mostrarlo e' cio' che
+    # distingue `character:arm_count` ("quante parti con ruolo arm") da
+    # `std:instance_count` (nessun bersaglio: lo indica la richiesta).
+    selects: list[str] = []
+    for regola in registry.structural_trait_rules(trait.id):
+        for voce in _selettori(regola.target, regola.component, ids):
+            _aggiungi(selects, voce)
     return TraitEntry(
-        id=trait.id, alias=sanitize(alias, 32),
+        id=trait.id, alias=alias[0] if alias else "",
+        aliases=alias, selects=tuple(selects[:MAX_ELENCO]),
+        plan_key=PLAN_KEY_STRUCTURAL,
         description=sanitize(trait.description),
         type=getattr(value, "type", "float"),
         min=getattr(value, "min", None), max=getattr(value, "max", None),
         choices=tuple(getattr(value, "choices", ()) or ()),
         ops=tuple(trait.modes), scopes=("local", "children"),
         purpose=sanitize(trait.purpose or trait.description))
+
+
+def _aggiungi(elenco: list[str], voce: str) -> None:
+    if voce and voce not in elenco:
+        elenco.append(voce)
 
 
 def _rilevante_trait(trait, registry, ruoli: set[str], tag: set[str],
@@ -813,8 +939,9 @@ def build_vocabulary(registry, *, style: str = "low_poly",
         components=tuple(_componente(c) for c in componenti),
         capabilities=tuple(capacita),
         effects=tuple(effetti),
-        traits=tuple(_trait(t, registry) for t in traits),
-        structural_traits=tuple(_structural_trait(t, registry)
+        traits=tuple(_trait(t, registry, ids if rosa else None) for t in traits),
+        structural_traits=tuple(_structural_trait(t, registry,
+                                                  ids if rosa else None)
                                 for t in strutturali),
         styles=tuple(StyleEntry(id=s.id, description=sanitize(s.description))
                      for s in sorted(registry.styles(), key=lambda s: s.id)),

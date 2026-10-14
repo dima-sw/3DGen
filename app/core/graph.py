@@ -60,14 +60,57 @@ Ripetere un componente e' legittimo — un ramo che porta un ramo che porta una
 foglia — a patto che **qualcosa cambi**: parametri diversi, livello che scende,
 budget che si consuma. Ripetere lo stesso componente con gli stessi parametri
 non e' ricorsione, e' un ciclo travestito, e non finirebbe mai.
+
+## Due identita' per nodo, e non sono la stessa cosa
+
+    planner node id        `node.id`          chi scrive il piano
+    stable node identity   `identity(id)`     il sistema
+
+L'**id del piano** e' un nome libero: lo scrive un modello linguistico o una
+persona, serve a indirizzare (`on`, `swap`, `target`, le diagnosi) e vale solo
+dentro quel piano. `car`, `jeep`, `jeep1`, `fantasy_tree_01` sono tutti id
+legittimi per la stessa cosa, e questo e' voluto: obbligare il planner a
+indovinare un nome preciso vorrebbe dire legare il significato a una stringa.
+
+Per questo un id del piano **non puo' essere l'identita' semantica di un nodo**.
+Una riscrittura strutturale che riconosce "lo stesso braccio", un clone che non
+deve rompere i riferimenti, una futura modifica incrementale che preserva "la
+stessa testa": tutte hanno bisogno di qualcosa che il planner non possa
+scegliere.
+
+`identity(id)` e' quel qualcosa, e viene **derivata** invece di essere scritta:
+
+    sha1( identita' del padre | ref | firma dell'attacco | ordinale )
+
+La firma dell'attacco e' `own_socket` piu' il requisito (capability, socket,
+lato, tag ordinati); l'ordinale conta i fratelli con la stessa coppia
+(ref, firma) nell'ordine di inserimento. La radice deriva dal solo `ref`.
+
+Conseguenze, che sono i requisiti:
+
+* la genera il sistema, non il modello: e' una funzione pura, non un campo che
+  qualcuno possa riempire;
+* sopravvive a serialization e deserialization perche' si **ricalcola** — un
+  `.my3d` scritto prima di questa versione la ottiene senza cambiare formato;
+* non cambia quando cambiano parametri o effetti: non entrano nel calcolo;
+* usa `ref`, non `resolved_ref`, quindi uno `swap` **non** la cambia: e' lo
+  stesso nodo costruito da un altro componente;
+* non cambia se si rinomina l'id del piano;
+* due cloni strutturali hanno identita' diverse, perche' hanno ordinali diversi.
+
+Limite dichiarato: cancellare un fratello con la stessa firma sposta gli
+ordinali di quelli che lo seguivano. Finche' non esiste una strada che cancella
+nodi (la modifica incrementale), e' un confine noto, non un difetto nascosto.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from hashlib import sha1
 from typing import Any, Iterator
 
 from app.core.component import Attachment
 from app.core.errors import Report
+from app.core.socket import DEFAULT_INSERT
 
 # --------------------------------------------------------------------------- #
 # Provenienza di un valore
@@ -173,6 +216,10 @@ class CompositionGraph:
     layout_plan: Any = None
     structural_resolution: Any = None
     concept_resolution: Any = None
+    # Da dove vengono i nodi nati da una riscrittura strutturale. Solo
+    # diagnostica: si esporta, si rilegge, e una voce che non corrisponde a
+    # nessun nodo vero viene buttata invece di essere creduta.
+    structural_provenance: list[dict[str, Any]] = field(default_factory=list)
 
     # ------------------------------------------------------------ costruzione #
     def set_root(self, id: str, ref: str, **params) -> CompositionNode:
@@ -326,6 +373,58 @@ class CompositionGraph:
         viene da un provider e basta.
         """
         return self.swaps.get(id, self.nodes[id].ref if id in self.nodes else "")
+
+    # ---------------------------------------------------------- identita' #
+    def identity(self, id: str) -> str:
+        """L'identita' stabile del nodo: derivata, non scritta da nessuno.
+
+        Vedi la sezione "Due identita' per nodo" in testa al file per il perche'
+        e per i limiti. Qui basta sapere che e' una funzione pura della
+        struttura: stesso albero, stessa identita', su qualunque macchina e
+        dopo qualunque salvataggio.
+        """
+        if id not in self.nodes:
+            return ""
+        return self.identities().get(id, "")
+
+    def identities(self) -> dict[str, str]:
+        """Tutte le identita' stabili, id del piano -> identita'.
+
+        Si calcola in un passo dalla radice verso le foglie, perche' l'identita'
+        di un nodo contiene quella del padre: calcolarle una per volta vorrebbe
+        dire risalire la catena ogni volta.
+        """
+        fuori: dict[str, str] = {}
+        if not self.root_id or self.root_id not in self.nodes:
+            return fuori
+        radice = self.nodes[self.root_id]
+        fuori[radice.id] = _digest("", radice.ref, "", 0)
+        coda = [radice.id]
+        while coda:
+            padre = coda.pop(0)
+            visti: dict[tuple[str, str], int] = {}
+            for figlio in self.children(padre):
+                firma = _signature(figlio.attachment)
+                chiave = (figlio.ref, firma)
+                ordinale = visti.get(chiave, 0)
+                visti[chiave] = ordinale + 1
+                fuori[figlio.id] = _digest(fuori.get(padre, ""), figlio.ref,
+                                           firma, ordinale)
+                coda.append(figlio.id)
+        return fuori
+
+    def by_identity(self, identity: str) -> CompositionNode | None:
+        """Il nodo con quell'identita' stabile, se c'e' ancora.
+
+        E' la domanda che fa una riscrittura — «questo nodo esiste gia'?» — e
+        quella che fara' la modifica incrementale: «lo stesso braccio di prima».
+        """
+        if not identity:
+            return None
+        for id, valore in self.identities().items():
+            if valore == identity:
+                return self.nodes.get(id)
+        return None
 
     def providers(self) -> dict[str, str]:
         """Il piano risolto: un nodo, un componente effettivo.
@@ -492,10 +591,15 @@ class CompositionGraph:
                 collegamento: dict[str, Any] = {}
                 richiesta = attacco.requirement
                 if richiesta is not None and (richiesta.capability or richiesta.socket_id):
+                    # I `tags` del requisito escono con gli altri tre campi:
+                    # sono cio' che distingue una ruota davanti da una dietro, e
+                    # senza di loro un piano riaperto perdeva quella differenza.
+                    # Lo schema li dichiarava gia' sotto `at`.
                     collegamento["at"] = {k: v for k, v in
                                           (("socket", richiesta.socket_id),
                                            ("capability", richiesta.capability),
-                                           ("side", richiesta.side)) if v}
+                                           ("side", richiesta.side),
+                                           ("tags", sorted(richiesta.tags))) if v}
                 if attacco.on:
                     collegamento["on"] = attacco.on
                 if attacco.on_request:
@@ -506,6 +610,16 @@ class CompositionGraph:
                     collegamento["scale_mode"] = attacco.scale_mode
                 if attacco.level != 2:
                     collegamento["level"] = attacco.level
+                # `insert` e `roll` sono dichiarabili dal piano e lo schema li
+                # accetta: senza riscriverli, un progetto riaperto montava i
+                # pezzi a una profondita' diversa da quella chiesta e la
+                # geometria cambiava senza che niente lo dicesse. Si scrivono
+                # solo quando non sono il valore predefinito, quindi un file
+                # salvato prima di questa riga si rilegge come prima.
+                if abs(attacco.insert - DEFAULT_INSERT) > 1e-12:
+                    collegamento["insert"] = attacco.insert
+                if attacco.roll:
+                    collegamento["roll"] = attacco.roll
                 fuori.update(collegamento)
             figli = [esporta(c) for c in self.children(nodo.id)]
             if figli:
@@ -531,6 +645,9 @@ class CompositionGraph:
                     }
                 richieste.append(item)
             fuori["structural_traits"] = richieste
+        if self.structural_provenance:
+            fuori["structural_provenance"] = [dict(v) for v in
+                                              self.structural_provenance]
         if self.graph_rewrite_plan is not None:
             fuori["graph_rewrite_plan"] = self.graph_rewrite_plan.to_dict()
         if self.layout_plan is not None:
@@ -564,7 +681,8 @@ class CompositionGraph:
             dove = voce.get("at") or {}
             richiesta = Requirement(capability=dove.get("capability", ""),
                                     socket_id=dove.get("socket", ""),
-                                    side=dove.get("side", ""))
+                                    side=dove.get("side", ""),
+                                    tags=frozenset(dove.get("tags") or ()))
             params = dict(voce.get("params") or {})
             if not padre:
                 grafo.set_root(id, ref, **params)
@@ -574,11 +692,15 @@ class CompositionGraph:
                              on_request=bool(voce.get("on_request", True)),
                              optional=bool(voce.get("optional", True)),
                              level=int(voce.get("level", 2)), on=dove,
-                             scale_mode=voce.get("scale_mode", "socket"), **params)
+                             scale_mode=voce.get("scale_mode", "socket"),
+                             insert=float(voce.get("insert", DEFAULT_INSERT)),
+                             roll=float(voce.get("roll", 0.0)), **params)
             else:
                 grafo.add_child(id, ref, padre, requirement=richiesta,
                                 level=int(voce.get("level", 2)),
-                                scale_mode=voce.get("scale_mode", "none"), **params)
+                                scale_mode=voce.get("scale_mode", "none"),
+                                insert=float(voce.get("insert", DEFAULT_INSERT)),
+                                roll=float(voce.get("roll", 0.0)), **params)
             if voce.get("swap"):
                 grafo.swap(id, voce["swap"])
             for effetto in voce.get("effects") or []:
@@ -592,6 +714,8 @@ class CompositionGraph:
 
         if data.get("root"):
             importa(data["root"], "")
+        grafo.structural_provenance = structural_provenance_from_dict(
+            data.get("structural_provenance"), grafo)
         return grafo
 
     # ------------------------------------------------------------- interno #
@@ -642,3 +766,77 @@ class CompositionGraph:
     def _path_matches(self, path: str) -> bool:
         pezzi = path.split(SEPARATOR)
         return self.path(pezzi[-1]) == path
+
+
+# --------------------------------------------------------------------------- #
+# Identita' stabile: le due funzioni pure su cui si regge
+# --------------------------------------------------------------------------- #
+PROVENANCE_KEYS = ("trait", "rule", "component", "prototype", "identity",
+                   "clone_index", "clone_count")
+
+
+def structural_provenance_from_dict(items: Any,
+                                    graph: "CompositionGraph" | None = None
+                                    ) -> list[dict[str, Any]]:
+    """Rilegge la provenienza dei cloni, senza fidarsene.
+
+    E' l'unico pezzo di V3 che arriva da un file e non da un calcolo, quindi si
+    tiene soltanto cio' che si puo' ancora verificare: una voce la cui identita'
+    non corrisponde a nessun nodo del grafo descrive un nodo che non c'e' piu',
+    e tenerla vorrebbe dire spiegare una cosa inesistente. Nessuna voce puo'
+    creare, spostare o rinominare niente: e' diagnostica.
+    """
+    valide = graph.identities().values() if graph is not None else None
+    fuori: list[dict[str, Any]] = []
+    for voce in items or ():
+        if not isinstance(voce, dict):
+            continue
+        identita = str(voce.get("identity") or "")
+        if valide is not None and identita not in valide:
+            continue
+        pulita: dict[str, Any] = {}
+        for chiave in PROVENANCE_KEYS:
+            if chiave not in voce:
+                continue
+            valore = voce[chiave]
+            pulita[chiave] = int(valore) if chiave in ("clone_index",
+                                                       "clone_count") \
+                and isinstance(valore, (int, float)) and not isinstance(valore, bool) \
+                else str(valore)
+        if pulita:
+            fuori.append(pulita)
+    return fuori
+
+
+def _signature(attachment: Attachment | None) -> str:
+    """Come un nodo sta appeso, in una stringa.
+
+    Entra nell'identita' perche' distingue due nodi che nominano lo stesso
+    componente in due posti diversi — una ruota davanti e una dietro, che
+    differiscono per i tag `front`/`rear` del requisito — senza dipendere
+    dall'id che qualcuno ha scelto.
+
+    E' il **requisito**, e soltanto quello: capability, socket, lato, tag. Non
+    i parametri e non gli effetti, perche' cambiare la larghezza di un braccio
+    non lo rende un altro braccio. E non `own_socket`, per una ragione piu'
+    prosaica e piu' vincolante: il formato del piano non lo scrive, quindi un
+    `own_socket` dentro l'identita' la farebbe cambiare a ogni salva-e-riapri.
+    Un'identita' che non sopravvive al round-trip non e' un'identita'.
+    """
+    if attachment is None:
+        return ""
+    richiesta = getattr(attachment, "requirement", None)
+    if richiesta is None:
+        return "|||"
+    return "|".join([
+        str(getattr(richiesta, "capability", "") or ""),
+        str(getattr(richiesta, "socket_id", "") or ""),
+        str(getattr(richiesta, "side", "") or ""),
+        ",".join(sorted(str(t) for t in getattr(richiesta, "tags", ()) or ())),
+    ])
+
+
+def _digest(parent: str, ref: str, signature: str, ordinal: int) -> str:
+    """L'identita' vera e propria. Corta perche' finisce in una diagnosi."""
+    grezzo = "\x00".join([parent, str(ref or ""), signature, str(int(ordinal))])
+    return sha1(grezzo.encode("utf-8")).hexdigest()[:12]

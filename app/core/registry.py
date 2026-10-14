@@ -35,6 +35,7 @@ giorno in cui non saranno nostri.
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 import sys
 from dataclasses import dataclass, field
@@ -75,10 +76,9 @@ class RegistryError(RuntimeError):
 class PluginInfo:
     """Il manifest, letto e validato. Niente di piu'.
 
-    `sources` sono i file Python dichiarati: e' li' che stanno i componenti,
-    perche' costruire geometria richiede codice e nessuno schema JSON puo'
-    sostituirlo. Il manifest dice **quali file**, non cosa contengono: cosi'
-    aggiungere un componente non obbliga a tenere allineate due descrizioni.
+    `sources` sono i file Python dei plugin di codice. I plugin `kind="data"`
+    dichiarano invece definizioni JSON: nessun loro file Python viene importato.
+    Entrambi installano gli stessi oggetti del contratto pubblico.
     """
 
     id: str
@@ -99,6 +99,10 @@ class PluginInfo:
     synonyms: dict[str, tuple[str, ...]] = field(default_factory=dict)
     sources: tuple[str, ...] = ()
     path: Path | None = None
+    kind: str = "code"
+    data_components: tuple[str, ...] = ()
+    data_materials: tuple[str, ...] = ()
+    fingerprint: str = ""
 
     def __post_init__(self) -> None:
         self.tags = frozenset(self.tags)
@@ -153,9 +157,17 @@ class Registry:
         self._layout_policies: dict[str, LayoutPolicy] = {
             policy.id: policy for policy in default_policies()
         }
+        # L'unico trait strutturale del core, e il solo che **non** dichiara un
+        # bersaglio: non sa che parte stia contando, quindi la richiesta deve
+        # dirglielo con `on`. `purpose` lo dice, perche' un modello che lo
+        # scegliesse al posto di un trait con bersaglio otterrebbe un conteggio
+        # senza prototipo. Non c'e' nessuna parola di dominio qui dentro: e'
+        # esattamente cio' che manca a questo trait a renderlo generico.
         self._structural_traits[INSTANCE_COUNT] = StructuralTraitSpec(
             id=INSTANCE_COUNT, aliases=("instance_count",),
             description="ensure N instances of a compatible semantic child",
+            purpose="generic fallback: how many copies of the node named by "
+                    "'on'; declares no target, so prefer a trait that does",
             value=ParamSpec(1, min=0, max=MAX_STRUCTURAL_COUNT),
             max_count=MAX_STRUCTURAL_COUNT, owner="core")
         self._styles: dict[str, StyleProfile] = {}
@@ -527,6 +539,47 @@ class Registry:
         # si carica tutto **prima** di registrare qualcosa: un modulo che
         # esplode a meta' non deve lasciare mezzo vocabolario nell'indice
         raccolti: list = []
+        if info.kind == "data":
+            from app.core.data_plugin import (DataPluginError, load_component,
+                                               load_material, safe_path)
+
+            try:
+                files = {safe_path(cartella, MANIFEST)}
+                for relativo in info.data_components:
+                    file = safe_path(cartella, relativo)
+                    item = load_component(file, cartella)
+                    raccolti.append(item)
+                    files.update(item._data_files)
+                for relativo in info.data_materials:
+                    file = safe_path(cartella, relativo)
+                    raccolti.append(load_material(file, cartella))
+                    files.add(file)
+                # Contenuto referenziato, non timestamp o percorso assoluto:
+                # copiare un plugin non cambia l'identita' del suo contenuto.
+                digest = hashlib.sha256()
+                root = cartella.resolve()
+                for file in sorted(files, key=lambda p: p.relative_to(root).as_posix()):
+                    digest.update(file.relative_to(root).as_posix().encode("utf-8"))
+                    digest.update(b"\0")
+                    digest.update(file.read_bytes())
+                    digest.update(b"\0")
+                info.fingerprint = digest.hexdigest()
+            except (DataPluginError, OSError, ValueError) as exc:
+                self.report.add(getattr(exc, "code", "PLUGIN_LOAD_FAILED"),
+                                "plugin '%s' scartato: %s" % (info.id, exc),
+                                where=str(cartella))
+                return None
+            # Il plugin dati e' atomico anche per id duplicati/non propri.
+            seen = set()
+            for item in raccolti:
+                if isinstance(item, Component):
+                    if not self._qualify(item, info.id, "componente"):
+                        return None
+                    if item.id in seen or item.id in self._components:
+                        self.report.add("DUPLICATE_COMPONENT", item.id,
+                                        where=str(cartella))
+                        return None
+                    seen.add(item.id)
         for relativo in info.sources:
             file = cartella / relativo
             try:
@@ -617,9 +670,51 @@ class Registry:
                             why="serve una lista di id di plugin")
             return None
 
+        kind = dati.get("type", "code")
+        if kind not in ("code", "data"):
+            self.report.add("INVALID_MANIFEST", "type deve essere 'code' o 'data'",
+                            where=str(manifesto))
+            return None
+        data_components: list[str] = []
+        data_materials: list[str] = []
+        if kind == "data":
+            from app.core.data_plugin import DataPluginError, safe_path
+
+            allowed = {"id", "version", "type", "name", "description", "author",
+                       "license", "homepage", "tags", "dependencies", "capabilities",
+                       "metadata", "synonyms", "components", "materials"}
+            if set(dati) - allowed:
+                self.report.add("INVALID_MANIFEST",
+                                "chiavi non supportate dal plugin dati: %s"
+                                % ", ".join(sorted(set(dati) - allowed)),
+                                where=str(manifesto))
+                return None
+            for key, entries in (("components", data_components),
+                                 ("materials", data_materials)):
+                values = dati.get(key, [])
+                if not isinstance(values, list):
+                    self.report.add("INVALID_MANIFEST", "%s deve essere una lista" % key,
+                                    where=str(manifesto))
+                    return None
+                for value in values:
+                    try:
+                        path = safe_path(cartella, value)
+                        if path.suffix.lower() != ".json":
+                            raise ValueError("le definizioni dati devono essere file JSON")
+                        if not path.is_file():
+                            raise ValueError("file dichiarato e assente: %s" % value)
+                    except (DataPluginError, OSError, TypeError, ValueError) as exc:
+                        self.report.add(getattr(exc, "code", "INVALID_MANIFEST"), str(exc),
+                                        where=str(manifesto))
+                        return None
+                    if value not in entries:
+                        entries.append(value)
+
         sorgenti: list[str] = []
         for chiave in ("components", "effects", "styles", "materials", "traits",
                        "archetypes", "profiles", "bindings"):
+            if kind == "data":
+                break
             valore = dati.get(chiave, [])
             if not isinstance(valore, list):
                 self.report.add("INVALID_MANIFEST",
@@ -689,7 +784,8 @@ class Registry:
             dependencies=tuple(dipendenze), capabilities=tuple(capacita), notes=note,
             metadata=dict(dati.get("metadata", {}) or {}),
             synonyms=sinonimi,
-            sources=tuple(sorgenti), path=cartella)
+            sources=tuple(sorgenti), path=cartella, kind=kind,
+            data_components=tuple(data_components), data_materials=tuple(data_materials))
 
     # ------------------------------------------------------------- verifiche #
     def verify(self) -> Report:

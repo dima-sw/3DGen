@@ -294,11 +294,23 @@ def test_planner_schema_and_vocabulary_include_registered_traits_only(catalog):
     assert graph is not None, report.describe()
     assert graph.traits[0].trait == "body_mass"
 
+    # V3, cambio di contratto deliberato. Fino a V2 questo caso pretendeva
+    # `graph is None` e il codice `TRAIT_NOT_FOUND`: un solo trait inventato da
+    # un modello linguistico distruggeva un piano con una radice valida. E' lo
+    # stesso difetto di forma che V2 ha tolto al ramo `concept` (V2-RESULTS
+    # §1.4), ed e' il motivo per cui il prompt 3 del PRODUCT-AUDIT restituiva
+    # zero geometria. Adesso un elemento **facoltativo e sconosciuto** si ignora
+    # e si dichiara, e la richiesta persa resta leggibile in `skipped()`.
+    # Cio' che resta fatale e' elencato in testa a `app/core/planner/plans.py`:
+    # fra l'altro un trait ambiguo, uno malformato e un effetto inesistente.
     bad = {"version": "1.1", "traits": [{"trait": "mega_fatness", "value": 1}],
            "root": {"id": "root", "ref": "humanoid_anatomical:body"}}
     graph, report = validate_plan(bad, catalog)
-    assert graph is None
-    assert "TRAIT_NOT_FOUND" in report.codes()
+    assert graph is not None, report.describe()
+    assert "UNKNOWN_TRAIT_SKIPPED" in report.codes()
+    assert "TRAIT_NOT_FOUND" not in report.codes()
+    assert report.ok                       # avviso, non errore
+    assert graph.traits == []              # ignorato, non inventato
 
 
 def test_graph_and_my3d_roundtrip_preserve_traits(tmp_path, catalog):

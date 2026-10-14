@@ -337,6 +337,7 @@ class Resolver:
             depth=percorso.count(SEPARATOR),
             requested_ref=chiesto, tags=nodo.tags,
             effects=list(nodo.effects), from_plan=True,
+            material=attacco.material if attacco is not None else "",
             swapped_from=chiesto if nodo.id in graph.swaps else "")
 
         if padre is not None and attacco is not None:
@@ -431,7 +432,8 @@ class Resolver:
         id = self._id_libero("%s%s%s" % (padre.id, SEPARATOR, attacco.id), out)
         risolto = ResolvedNode(id=id, component=componente, path=percorso,
                                depth=padre.depth + 1, requested_ref=attacco.component,
-                               tags=attacco.tags, from_plan=False)
+                               tags=attacco.tags, from_plan=False,
+                               material=attacco.material)
 
         # i parametri prima del collegamento: la ripetizione si riconosce sui
         # valori risolti, non sugli scostamenti dichiarati. Confrontare un

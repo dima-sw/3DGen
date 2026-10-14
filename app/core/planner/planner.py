@@ -435,6 +435,27 @@ installato. Se non esiste una corrispondenza diretta, usa la forma "concept":
 deve contenere soltanto requested, Archetypes/Profile registrati e adaptations.
 In quel caso non comporre children e non aggiungere root.
 
+TRAITS E STRUCTURAL TRAITS
+Due manopole diverse, due chiavi diverse del piano, entrambe facoltative e
+allo stesso livello di "root" o "concept":
+- "traits": cambiano le PROPRIETA' di parti che esistono gia'.
+- "structural_traits": cambiano QUANTE parti ci sono.
+Se la richiesta cambia il numero di parti, la risposta e' uno structural trait
+del vocabolario, scelto per cio' che la sua riga dichiara di contare
+("selects="). Non inventare un campo di conteggio, e non mettere un conteggio
+fra i "params" di un componente ne' fra le "adaptations" di un concept: un nome
+che non e' elencato nel vocabolario non chiede niente. Se nessuno degli
+structural trait elencati conta la parte nominata, non usarne nessuno.
+
+  "traits": [{"trait": "<elencato>", "value": <numero>, "on": "<id di un nodo>",
+              "scope": "local|subtree", "op": "set|add"}]
+  "structural_traits": [{"trait": "<elencato>", "value": <numero>,
+                         "mode": "exact|best_effort"}]
+
+"mode" dice che fare se il pezzo scelto come radice non possiede quella parte:
+"exact" fa fallire il piano, "best_effort" costruisce il resto e dichiara la
+richiesta persa.
+
 FORMA SEMANTICA (quando il concept non ha una implementation diretta)
 {
   "concept": {
@@ -444,13 +465,15 @@ FORMA SEMANTICA (quando il concept non ha una implementation diretta)
     "adaptations": [{"trait": "registered:trait", "value": 0.5}]
   },
   "style": "<uno degli stili>",
-  "detail_level": 1|2|3
+  "detail_level": 1|2|3,
+  "traits": [...], "structural_traits": [...]
 }
 
 FORMA DIRETTA (quando scegli un componente installato)
 {
   "style": "<uno degli stili>",
   "detail_level": 1|2|3,
+  "traits": [...], "structural_traits": [...],
   "root": {
     "id": "<nome libero e unico>",
     "ref": "<plugin:componente>",

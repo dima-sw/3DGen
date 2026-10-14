@@ -88,7 +88,8 @@ CONGELATE = {
     # senza che il core lo sappia.
     "PluginInfo": (["author", "capabilities", "dependencies", "description",
                     "homepage", "id", "license", "metadata", "name", "notes",
-                    "path", "sources", "synonyms", "tags", "version"],
+                    "path", "sources", "synonyms", "tags", "version",
+                    "kind", "data_components", "data_materials", "fingerprint"],
                    ["describe"]),
     "Registry": ([],
                  ["capabilities", "capability", "component", "components",
@@ -111,13 +112,19 @@ CONGELATE = {
                   "register_implementation_binding", "register_profile",
                   "synonyms",      # V1: i ponti fra parole dei plugin installati
                   "verify"]),
+    # V3: `identity`/`identities`/`by_identity` sono l'identita' stabile dei
+    # nodi — derivata, non un campo, per questo sono metodi e non attributi.
+    # `structural_provenance` e' da dove vengono i nodi nati da una riscrittura.
     "CompositionGraph": (["detail_level", "nodes", "operations", "order",
                           "parents", "root_id", "seed", "style", "swaps",
                           "traits", "structural_traits", "graph_rewrite_plan",
                           "layout_plan", "structural_resolution",
-                          "concept_resolution", "version"],
-                         ["add_child", "ancestors", "attach", "children",
-                          "describe", "effect", "node", "override", "parent",
+                          "concept_resolution", "structural_provenance",
+                          "version"],
+                         ["add_child", "ancestors", "attach", "by_identity",
+                          "children",
+                          "describe", "effect", "identities", "identity",
+                          "node", "override", "parent",
                           "path", "providers", "resolved_ref", "set_root",
                           "subtree", "swap", "swapped", "to_dict", "validate",
                           "walk", "wanted"]),
@@ -125,8 +132,12 @@ CONGELATE = {
     "Builder": ([], ["run"]),
     # V1: `component_index` e `shortlist` sono lo stadio di retrieval davanti al
     # planner. `vocabulary` resta, con due parametri facoltativi in piu'.
-    "Session": (["autosave", "cursor", "history", "library", "missing_plugins",
-                 "planner", "plugin_paths", "provider", "registry"],
+    # V4: `changed_plugins` e' additivo e sta accanto a `missing_plugins`. Un
+    # progetto riaperto con un plugin dati modificato a versione ferma va
+    # ricostruito con la libreria di adesso, e questo lo dice.
+    "Session": (["autosave", "changed_plugins", "cursor", "history", "library",
+                 "missing_plugins", "planner", "plugin_paths", "provider",
+                 "registry"],
                 ["animations", "build", "can_redo", "can_undo", "catalog",
                  "checks", "component_index", "configure_ai", "export",
                  "export_animated", "generate", "goto",
@@ -140,8 +151,14 @@ CONGELATE = {
     "GenerationResult": (["build", "concept_resolution", "effects", "layout", "options", "plan", "plan_json",
                           "planner", "prompt", "provenance", "repaired", "report", "resolved",
                           "seconds", "shortlist", "structural", "traits"],
+                         # V3.5: `structural_changes()` dice quali richieste
+                         # strutturali sono state **applicate**. E' il
+                         # complemento di `skipped()`: senza i due insieme,
+                         # `ok=True` non distingueva una richiesta soddisfatta
+                         # da una persa. Additivo, come il resto di questo file.
                          ["changes", "degradation", "describe", "explain",
-                          "mesh", "retrieval", "scene", "skipped", "to_dict",
+                          "mesh", "retrieval", "scene", "skipped",
+                          "structural_changes", "to_dict",
                           "trimesh_scene"]),
     "Options": (["budget", "check", "detail_level", "repair", "seed", "style"],
                 ["to_dict"]),
@@ -176,8 +193,10 @@ CONGELATE = {
                                 ["normalized_target"]),
     "StructuralTraitRule": (["id", "trait", "prototype", "component", "group",
                               "target", "description"], []),
+    # V3: `on` e' l'ambito in cui cercare il prototipo, non il prototipo.
+    # `prototype` resta, e resta un percorso, ma adesso e' facoltativo.
     "EnsureCountOperation": (["op", "prototype", "count", "group", "mode", "trait",
-                               "rule", "component", "target"], ["to_dict"]),
+                               "rule", "component", "target", "on"], ["to_dict"]),
     "GraphRewritePlan": (["operations"], ["to_dict"]),
     "StructuralTraitResolution": (["plan", "applied", "created", "skipped",
                                     "conflicts", "diagnostics"], ["to_dict"]),
