@@ -83,9 +83,12 @@ CONGELATE = {
     "MaterialSpec": (["base_color", "description", "metallic", "name", "opacity",
                       "roughness"],
                      ["describe", "rgba"]),
+    # V1: `synonyms` sono i ponti fra parole dichiarati nel manifest. Dati, non
+    # codice: servono al retrieval semantico a sapere che una jeep e' un'auto
+    # senza che il core lo sappia.
     "PluginInfo": (["author", "capabilities", "dependencies", "description",
                     "homepage", "id", "license", "metadata", "name", "notes",
-                    "path", "sources", "tags", "version"],
+                    "path", "sources", "synonyms", "tags", "version"],
                    ["describe"]),
     "Registry": ([],
                  ["capabilities", "capability", "component", "components",
@@ -106,6 +109,7 @@ CONGELATE = {
                   "implementation_bindings", "profile", "profile_ambiguous",
                   "profile_ids", "profiles", "register_archetype",
                   "register_implementation_binding", "register_profile",
+                  "synonyms",      # V1: i ponti fra parole dei plugin installati
                   "verify"]),
     "CompositionGraph": (["detail_level", "nodes", "operations", "order",
                           "parents", "root_id", "seed", "style", "swaps",
@@ -119,19 +123,25 @@ CONGELATE = {
                           "walk", "wanted"]),
     "Resolver": ([], ["run"]),
     "Builder": ([], ["run"]),
+    # V1: `component_index` e `shortlist` sono lo stadio di retrieval davanti al
+    # planner. `vocabulary` resta, con due parametri facoltativi in piu'.
     "Session": (["autosave", "cursor", "history", "library", "missing_plugins",
                  "planner", "plugin_paths", "provider", "registry"],
                 ["animations", "build", "can_redo", "can_undo", "catalog",
-                 "checks", "configure_ai", "export", "export_animated", "generate", "goto",
+                 "checks", "component_index", "configure_ai", "export",
+                 "export_animated", "generate", "goto",
                  "load_from_library", "open_project", "plan", "redo",
                  "regenerate", "restore", "save_project", "save_to_library",
-                 "skeleton", "start_autosave", "stop_autosave", "undo",
-                 "vocabulary"]),
+                 "shortlist", "skeleton", "start_autosave", "stop_autosave",
+                 "undo", "vocabulary"]),
+    # V1: `shortlist` e' la rosa di componenti che il planner ha avuto davanti,
+    # e `retrieval()` la racconta. Senza, un piano non e' spiegabile: non si
+    # saprebbe fra che cosa il modello stava scegliendo.
     "GenerationResult": (["build", "concept_resolution", "effects", "layout", "options", "plan", "plan_json",
                           "planner", "prompt", "provenance", "repaired", "report", "resolved",
-                          "seconds", "structural", "traits"],
-                         ["changes", "describe", "explain", "mesh", "scene",
-                          "skipped", "to_dict", "trimesh_scene"]),
+                          "seconds", "shortlist", "structural", "traits"],
+                         ["changes", "describe", "explain", "mesh", "retrieval",
+                          "scene", "skipped", "to_dict", "trimesh_scene"]),
     "Options": (["budget", "check", "detail_level", "repair", "seed", "style"],
                 ["to_dict"]),
     "Planner": ([], ["plan"]),

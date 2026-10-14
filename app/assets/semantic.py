@@ -23,7 +23,7 @@ import unicodedata
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Any, Callable, Iterable, Sequence
 
 import numpy as np
 
@@ -78,12 +78,20 @@ def tokenize(text: str) -> list[str]:
     return [w for w in _SPLIT.split(norm) if len(w) > 2 and w not in _STOP]
 
 
-def expand(tokens: Sequence[str], weight: float = 0.55) -> dict[str, float]:
-    """Aggiunge i sinonimi con peso ridotto: aiutano senza dominare."""
+def expand(tokens: Sequence[str], weight: float = 0.55,
+           thesaurus: dict[str, tuple[str, ...]] | None = None) -> dict[str, float]:
+    """Aggiunge i sinonimi con peso ridotto: aiutano senza dominare.
+
+    Il dizionario e' un parametro perche' i ponti fra parole sono conoscenza di
+    dominio: quello predefinito resta qui per non cambiare il comportamento di
+    chi non ne passa uno, ma un plugin puo' portarne di propri (vedi
+    `Registry.synonyms`).
+    """
+    ponti = THESAURUS if thesaurus is None else thesaurus
     bag: dict[str, float] = {}
     for token in tokens:
         bag[token] = bag.get(token, 0.0) + 1.0
-        for synonym in THESAURUS.get(token, ()):
+        for synonym in ponti.get(token, ()):
             bag[synonym] = bag.get(synonym, 0.0) + weight
     return bag
 
@@ -128,13 +136,18 @@ class TfidfEmbedder(Embedder):
 
     name = "tfidf"
 
-    def __init__(self, synonym_weight: float = 0.55) -> None:
+    def __init__(self, synonym_weight: float = 0.55,
+                 thesaurus: dict[str, tuple[str, ...]] | None = None) -> None:
         self.vocabulary: dict[str, int] = {}
         self.idf: np.ndarray = np.zeros(0)
         self.synonym_weight = synonym_weight
+        self.thesaurus = thesaurus
+
+    def _expand(self, text: str) -> dict[str, float]:
+        return expand(tokenize(text), self.synonym_weight, self.thesaurus)
 
     def fit(self, documents: Sequence[str]) -> None:
-        bags = [expand(tokenize(d), self.synonym_weight) for d in documents]
+        bags = [self._expand(d) for d in documents]
         vocabulary: dict[str, int] = {}
         for bag in bags:
             for term in bag:
@@ -154,7 +167,7 @@ class TfidfEmbedder(Embedder):
             return np.zeros((len(texts), 1))
         matrix = np.zeros((len(texts), len(self.vocabulary)))
         for row, text in enumerate(texts):
-            for term, weight in expand(tokenize(text), self.synonym_weight).items():
+            for term, weight in self._expand(text).items():
                 index = self.vocabulary.get(term)
                 if index is not None:
                     matrix[row, index] = weight * self.idf[index]
@@ -168,13 +181,19 @@ class TfidfEmbedder(Embedder):
         # senza vocabolario e idf i vettori salvati sarebbero inservibili:
         # non si potrebbe proiettare una nuova interrogazione nello stesso spazio
         return {"vocabulary": self.vocabulary, "idf": self.idf.tolist(),
-                "synonym_weight": self.synonym_weight}
+                "synonym_weight": self.synonym_weight,
+                # senza i ponti, una interrogazione riletta da disco verrebbe
+                # espansa in modo diverso da come sono stati indicizzati i documenti
+                "thesaurus": {k: list(v) for k, v in (self.thesaurus or {}).items()}}
 
     def restore(self, state: dict) -> bool:
         try:
             self.vocabulary = {str(k): int(v) for k, v in state["vocabulary"].items()}
             self.idf = np.asarray(state["idf"], dtype=float)
             self.synonym_weight = float(state.get("synonym_weight", 0.55))
+            ponti = state.get("thesaurus")
+            self.thesaurus = ({str(k): tuple(v) for k, v in ponti.items()}
+                              if ponti else None)
         except Exception:
             return False
         return len(self.idf) == len(self.vocabulary)
@@ -220,42 +239,83 @@ class RemoteEmbedder(Embedder):
 
 
 # --------------------------------------------------------------------------- #
+# Corpus
+# --------------------------------------------------------------------------- #
+def _asset_document(record) -> str:
+    """Il testo che descrive un asset. Il nome pesa doppio: e' la scelta
+    dell'utente, non una classificazione automatica."""
+    return " ".join([record.name, record.name, record.prompt,
+                     record.root_ref.replace(":", " "), record.category,
+                     " ".join(record.tags)])
+
+
+def _asset_stamp(record) -> str:
+    return "%s:%s" % (record.id, record.created)
+
+
+@dataclass(frozen=True)
+class Corpus:
+    """Che cosa si indicizza, non che cosa significa.
+
+    Tre funzioni e un nome. `document` da' il testo da cercare, `stamp`
+    l'identita' **versionata** di un elemento — serve al fingerprint — e `key`
+    l'id con cui l'elemento verra' restituito da `search`.
+
+    Esiste perche' lo stesso motore indicizza corpora diversi: gli asset
+    salvati e i componenti installati. Senza, servirebbe un secondo indice, e
+    due indici che cercano nello stesso modo sono un indice scritto due volte.
+    """
+
+    name: str
+    document: Callable[[Any], str]
+    stamp: Callable[[Any], str]
+    key: Callable[[Any], str]
+
+
+ASSETS = Corpus(name="assets", document=_asset_document, stamp=_asset_stamp,
+                key=lambda record: record.id)
+
+
+# --------------------------------------------------------------------------- #
 # Indice
 # --------------------------------------------------------------------------- #
 @dataclass
 class SemanticIndex:
-    """Vettori degli asset, con persistenza e ricostruzione automatica."""
+    """Vettori di un corpus, con persistenza e ricostruzione automatica."""
 
     embedder: Embedder = field(default_factory=TfidfEmbedder)
     ids: list[str] = field(default_factory=list)
     vectors: np.ndarray = field(default_factory=lambda: np.zeros((0, 1)))
     fingerprint: str = ""
+    corpus: Corpus = ASSETS
 
     # ------------------------------------------------------------ costruzione #
     @staticmethod
     def document_for(record) -> str:
-        """Il testo che descrive un asset. Il nome pesa doppio: e' la scelta
-        dell'utente, non una classificazione automatica."""
-        return " ".join([record.name, record.name, record.prompt,
-                         record.root_ref.replace(":", " "), record.category,
-                         " ".join(record.tags)])
+        """Il documento di un asset. Resta qui, come metodo, perche' era gia'
+        l'interfaccia pubblica prima che esistessero i corpora."""
+        return _asset_document(record)
 
     @staticmethod
     def fingerprint_of(records: Sequence) -> str:
-        return "|".join(sorted("%s:%s" % (r.id, r.created) for r in records))
+        return "|".join(sorted(_asset_stamp(r) for r in records))
 
-    def build(self, records: Sequence) -> "SemanticIndex":
-        documents = [self.document_for(r) for r in records]
+    def _fingerprint(self, items: Sequence) -> str:
+        return "|".join(sorted(self.corpus.stamp(i) for i in items))
+
+    def build(self, items: Sequence) -> "SemanticIndex":
+        documents = [self.corpus.document(i) for i in items]
         self.embedder.fit(documents)
-        self.ids = [r.id for r in records]
+        self.ids = [self.corpus.key(i) for i in items]
         self.vectors = (self.embedder.embed(documents) if documents
                         else np.zeros((0, 1)))
-        self.fingerprint = self.fingerprint_of(records)
-        log.info("indice semantico: %d asset, %s", len(self.ids), self.embedder.signature)
+        self.fingerprint = self._fingerprint(items)
+        log.info("indice semantico: %d %s, %s", len(self.ids),
+                 self.corpus.name, self.embedder.signature)
         return self
 
-    def is_current(self, records: Sequence) -> bool:
-        return bool(self.ids) and self.fingerprint == self.fingerprint_of(records)
+    def is_current(self, items: Sequence) -> bool:
+        return bool(self.ids) and self.fingerprint == self._fingerprint(items)
 
     # ---------------------------------------------------------------- ricerca #
     def search(self, query: str, limit: int = 10,
@@ -278,6 +338,7 @@ class SemanticIndex:
         try:
             Path(path).write_text(json.dumps({
                 "embedder": self.embedder.name,
+                "corpus": self.corpus.name,
                 "signature": self.embedder.signature,
                 "fingerprint": self.fingerprint,
                 "ids": self.ids,
@@ -288,18 +349,23 @@ class SemanticIndex:
             log.warning("indice non salvato: %s", exc)
 
     @classmethod
-    def load(cls, path: Path, embedder: Embedder | None = None) -> "SemanticIndex | None":
+    def load(cls, path: Path, embedder: Embedder | None = None,
+             corpus: Corpus | None = None) -> "SemanticIndex | None":
         source = Path(path)
         if not source.is_file():
             return None
+        voluto = corpus or ASSETS
         try:
             data = json.loads(source.read_text(encoding="utf-8"))
             engine = embedder or TfidfEmbedder()
             if engine.name != data.get("embedder"):
                 return None            # indice di un altro motore: da rifare
+            # un indice senza corpus e' anteriore ai corpora: erano asset
+            if data.get("corpus", ASSETS.name) != voluto.name:
+                return None            # indice di un altro corpus: da rifare
             if not engine.restore(data.get("state") or {}):
                 return None
-            index = cls(embedder=engine)
+            index = cls(embedder=engine, corpus=voluto)
             index.ids = list(data["ids"])
             index.vectors = np.asarray(data["vectors"], dtype=float)
             index.fingerprint = data.get("fingerprint", "")

@@ -2,8 +2,8 @@
 
 Machine-oriented index of the repository. Written to let another AI understand
 the architecture, locate code, and make changes without re-exploring the tree.
-Generated 2026-10-14 from the working tree (many files are still uncommitted —
-see "Repository state" at the end).
+Generated 2026-10-14 from the working tree; updated after milestone V1
+(semantic retrieval). See "Repository state" at the end.
 
 Language note: code identifiers, docstrings and comments are mostly **Italian**
 (`grafo` = graph, `nodo` = node, `piano` = plan, `pezzo` = piece, `innesto` =
@@ -35,6 +35,8 @@ object == "house"` anywhere. Adding a plugin never requires a core change.
 ```
 prompt
  → Session.generate()                      app/core/session.py
+ → shortlist (semantic retrieval)          app/core/planner/retrieval.py   [V1]
+ → build_vocabulary(shortlist)             app/core/planner/vocabulary.py
  → ConceptResolver (optional)              app/core/archetypes.py
  → Planner (LLM or Mock)                   app/core/planner/planner.py
  → validate_plan → CompositionGraph        app/core/planner/plans.py, app/core/graph.py
@@ -71,16 +73,22 @@ and the better-scoring of the two plans wins (`plan_score`).
 
 `Session` public surface: `generate(prompt, options)`, `plan(prompt)`,
 `build(plan)`, `regenerate()`, `configure_ai(provider, model, chain)`,
-`export(path)`, `save_project(path)`, `catalog()`, `vocabulary(style)`,
-`undo()`/`redo()`/`goto(i)`, properties `current`, `current_plan`, `scene`,
-`result`.
+`export(path)`, `save_project(path)`, `catalog()`,
+`vocabulary(style, prompt="", shortlist=None)`, `component_index()`,
+`shortlist(prompt, style)`, `undo()`/`redo()`/`goto(i)`, properties `current`,
+`current_plan`, `scene`, `result`.
+
+`vocabulary()` with no prompt is the whole library (cached per style, the
+pre-V1 behaviour); with a prompt or a shortlist it is restricted to the
+retrieved components.
 
 `Options` is deliberately tiny: `style`, `detail_level`, `seed`, `budget`,
 `repair`, `check`. Everything else belongs in the plan, because the plan is the
 only place a decision stays readable.
 
 `GenerationResult` carries `ok`, `diagnostics`, `triangles`, `scene()`,
-`mesh()`, `explain()`, `changes()`, `skipped()`, `describe()`, `to_dict()`, and
+`mesh()`, `explain()`, `changes()`, `skipped()`, `describe()`, `to_dict()`,
+`shortlist` + `retrieval()` (what the planner was shown, and why), and
 provider provenance (`requested_provider/model`, `actual_provider/model`,
 `failover_count`).
 
@@ -118,9 +126,21 @@ provider provenance (`requested_provider/model`, `actual_provider/model`,
   `traits[]`, `structural_traits[]`.
 - `plans.py` (472) — `validate_plan()` → `CompositionGraph`. Hard limits
   `MAX_NODI = 200`, `MAX_PROFONDITA = 12`.
-- `vocabulary.py` (760) — what the LLM is shown: `ComponentEntry`,
+- `retrieval.py` (427) — **[V1]** the stage between prompt and planner.
+  `document_for(component)` (searchable text from declared metadata only),
+  `stamp_for` / `registry_signature` (invalidation), `ComponentIndex`,
+  `build_index`, `query_groups`, `shortlist`, `thesaurus_for`,
+  `estimate_tokens`. Reuses the engine in `app/assets/semantic.py` through its
+  `Corpus` hook — there is no second retrieval engine. Tunables: `SHORTLIST=28`,
+  `PER_GROUP=8`, `PER_PLUGIN=10`, `CLOSURE=10`, `THRESHOLD=0.02`,
+  `FALLBACK_MAX=120`.
+- `vocabulary.py` (847) — what the LLM is shown: `ComponentEntry`,
   `EffectEntry`, `TraitEntry`, `ArchetypeEntry`, `ProfileEntry`,
-  `BindingEntry`, `CapabilityEntry`. **`sanitize()` is a security boundary**:
+  `BindingEntry`, `CapabilityEntry`. `build_vocabulary(registry, *, style,
+  detail_level, components=None)` — passing `components` restricts capabilities,
+  effects, traits, structural traits, plugins and tags to that shortlist too, so
+  the payload scales with the shortlist and not with the library.
+  **`sanitize()` is a security boundary**:
   third-party descriptions are flattened to one quoted line, control chars
   stripped, `system:`/`assistant:`/`user:` markers removed, 160-char cap. A
   plugin must not be able to inject instructions into the planner.
@@ -204,7 +224,12 @@ share a parent surface, declared `LayoutRegion`s plus a `LayoutPolicy`
   guards Windows reserved names.
 - `app/anim/` — `skeleton.py`, `pose.py`, `clip.py`, `gltf.py` (skinned glTF).
 - `app/assets/` — `AssetLibrary` (saved plans + `auto_tags`), `semantic.py`
-  (`TfidfEmbedder`, `RemoteEmbedder`, `SemanticIndex`) powering `--find`.
+  (`Corpus`, `Embedder`, `TfidfEmbedder`, `RemoteEmbedder`, `SemanticIndex`).
+  One engine, two corpora: `ASSETS` powers `--find` over saved assets,
+  `COMPONENTS` (defined in `planner/retrieval.py`) powers the planner shortlist.
+  A persisted index records its corpus and is refused if read as the other.
+  `THESAURUS` is the default synonym bridge; `expand()` and `TfidfEmbedder`
+  accept an injected one.
 - `app/materials/` — material library and procedural textures.
 - `app/ui/` — `main_window.py`, `viewport.py`, `render_core.py`,
   `offscreen.py`, `workers.py` (threaded generation).
@@ -246,11 +271,17 @@ Discovery is by directory + `plugin.json` manifest. Manifest keys: `id`,
 `version`, `name`, `description`, `author`, `license`, `tags`, `components[]`,
 `effects[]`, `styles[]`, `materials[]`, `traits[]`, `archetypes[]`,
 `profiles[]`, `bindings[]`, `capabilities[]` (name + description + tags),
-`dependencies[]`, `metadata{}`. Component ids are `plugin:name`.
+`dependencies[]`, `metadata{}`, `synonyms{}`. Component ids are `plugin:name`.
+
+`synonyms` (**[V1]**, data only, no code) maps a word to equivalent words and
+feeds the retrieval thesaurus through `Registry.synonyms()`: it is how the
+library — not the core — knows that a jeep is a car. `vehicle_stylized`
+declares 9 such bridges.
 
 Current registry contents (measured, not from docs):
 **22 plugins, 97 components, 30 materials, 8 effects, 27 capabilities,
-9 archetypes, 1 profile, 3 bindings, 2 semantic traits, 4 structural traits.**
+9 archetypes, 1 profile, 3 bindings, 2 semantic traits, 4 structural traits,
+9 declared synonyms.**
 
 | Plugin | Provides |
 | --- | --- |
@@ -287,8 +318,8 @@ planner sees, automatically.
 
 ## 9. Tests, tools, benchmarks
 
-`1213 tests collected` (`python -m pytest -q`; `pytest.ini` + `conftest.py` at
-root). Tests target the **contracts between** modules, not just units:
+`1254 tests` (`python -m pytest -q`; `pytest.ini` + `conftest.py` at root).
+Tests target the **contracts between** modules, not just units:
 `test_core_contracts.py`, `test_core_registry.py`, `test_core_resolver.py`,
 `test_core_graph.py`, `test_core_effects.py`, `test_planner_core.py`,
 `test_planner_llm.py`, `test_api_freeze.py` (frozen public API),
@@ -297,8 +328,11 @@ root). Tests target the **contracts between** modules, not just units:
 `test_validation.py`, `test_visual.py`, `test_golden.py`, `test_performance.py`,
 `test_benchmark_reale.py`, `test_distribution.py`, `test_ui.py`,
 `test_fox_stylized.py`, `test_tree_stylized.py`, `test_vehicle_stylized.py`,
-`test_humanoid_anatomical.py`, `test_ai_providers.py`. Fixture plugins live in
-`tests/plugins/` (including intentionally malformed ones).
+`test_humanoid_anatomical.py`, `test_ai_providers.py`,
+`test_retrieval.py` (**[V1]**, 41 tests: component indexing, fingerprint
+invalidation, search, shortlist, plugin synonyms, restricted vocabulary,
+sanitize unchanged, and a 1 000-component synthetic library). Fixture plugins
+live in `tests/plugins/` (including intentionally malformed ones).
 
 `tools/`: `benchmark.py`, `render_benchmark.py`, `render_scenari.py`,
 `archetype_benchmark.py`, `archetype_validation.py`, `semantic_traits_benchmark.py`,
@@ -348,8 +382,10 @@ links are currently broken.
    stage.
 6. Interpenetration is measured with axis-aligned boxes, so crossed blades read
    as overlapping without touching.
-7. Vocabulary size grows with plugins (~16 KB / ~4100 tokens at 44 components);
-   at a few hundred it must be filtered by capability and tag before being sent.
+7. ~~Vocabulary size grows with plugins~~ — **fixed in V1**. The payload now
+   follows the retrieved shortlist: 9 991 → 1 469–3 788 tokens on the eight
+   audit prompts, and ~38 453 → 560–1 236 tokens on a 1 000-component library.
+   See `V1-RESULTS.md`.
 8. No validation against a real frontier model yet — single-repair, plan scoring
    and structured output are proven against fake providers.
 
@@ -360,23 +396,29 @@ database.
 
 ---
 
-## 12. Repository state (2026-10-14)
+## 12. Repository state (2026-10-14, after V1)
 
-Branch `main`, synced with `origin/main` at `0f8a0b2 Update README.md`.
+```text
+main                 3141e04  checkpoint pre-V1 (the whole extension layer committed)
+v1-semantic-index    V1: semantic retrieval before the planner
+```
 
-A large amount of work is **uncommitted**: the whole traits / structural /
-layout / archetype layer and the stylized benchmark plugins. Untracked:
-`app/core/{traits,structural,layout,archetypes}.py`, 9 plugin directories,
-10 test files, 7 tools, 5 design docs. Modified: `app/core/` (component,
-config, effect, graph, registry, resolved, session, planner/*), `app/ai/provider.py`,
-`app/ui/main_window.py`, `.env.example`, `README.md`, 4 test files.
+`3141e04` on `main` is the restore point: it captured everything that had been
+sitting uncommitted (traits / structural / layout / archetype layer, the
+stylized benchmark plugins, `humanoid_anatomical`, `archetype_metadata`, the
+design docs, `PRODUCT-AUDIT.md`, `VISION-GAP.md`). The history before it
+(`b124ee4`) predates all of that.
 
-Consequence for an agent reading the committed history: the last commit
-(`b124ee4`) predates the three extension layers. Trust the working tree and this
-index, not `git log`.
+V1 work lives on `v1-semantic-index`: `app/core/planner/retrieval.py` and
+`tests/test_retrieval.py` are new; `app/assets/semantic.py`,
+`app/core/planner/vocabulary.py`, `app/core/registry.py`, `app/core/session.py`,
+`app/plugins/vehicle_stylized/plugin.json` and `tests/test_api_freeze.py` are
+modified.
 
-Scratch/output dirs to ignore: `.tmp-tests/`, `output/`, `build/`, `dist/`,
-`library/`, `__pycache__/`, `.pytest_cache/`.
+Scratch/output dirs to ignore (all git-ignored): `.tmp-tests/`,
+`audit-images/`, `output/`, `build/`, `dist/`, `library/`, `__pycache__/`,
+`.pytest_cache/`. Measurement artefacts and audit images live in
+`audit-images/` and are deliberately not versioned.
 
 ---
 
@@ -399,3 +441,7 @@ Scratch/output dirs to ignore: `.tmp-tests/`, `output/`, `build/`, `dist/`,
    path.
 9. `tests/test_api_freeze.py` guards the public API — a signature change there
    is a deliberate decision, not a refactor side effect.
+10. One retrieval engine. Indexing something new means adding a `Corpus` in
+    `app/assets/semantic.py`, never a second index.
+11. Domain word bridges ("a jeep is a car") are plugin data in `plugin.json`
+    under `synonyms`, never code in the core.

@@ -38,5 +38,61 @@
   "metadata": {
     "benchmark": "stylized_compact_car",
     "shape_language": "chunky tapered rounded/faceted"
+  },
+  "synonyms": {
+    "jeep": [
+      "car",
+      "vehicle",
+      "auto",
+      "veicolo",
+      "fuoristrada",
+      "suv"
+    ],
+    "suv": [
+      "car",
+      "vehicle",
+      "auto",
+      "veicolo"
+    ],
+    "fuoristrada": [
+      "car",
+      "vehicle",
+      "auto",
+      "veicolo"
+    ],
+    "camion": [
+      "car",
+      "vehicle",
+      "auto",
+      "veicolo",
+      "truck"
+    ],
+    "truck": [
+      "car",
+      "vehicle",
+      "auto",
+      "veicolo"
+    ],
+    "macchina": [
+      "car",
+      "vehicle",
+      "auto",
+      "veicolo"
+    ],
+    "automobile": [
+      "car",
+      "vehicle",
+      "auto",
+      "veicolo"
+    ],
+    "ruote": [
+      "wheel",
+      "ruota",
+      "tire"
+    ],
+    "ruota": [
+      "wheel",
+      "tire"
+    ]
   }
 }

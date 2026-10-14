@@ -1,10 +1,18 @@
 # Che cosa manca
 
-Aggiornato il 10 settembre 2026, dopo la rimozione della pipeline storica.
+Aggiornato il 14 ottobre 2026, dopo la milestone V1 (indice semantico unico).
 
-Lo stato: **947 test verdi**, un solo percorso dal prompt al modello, 12
-plugin, API congelate. Quello che segue e' cio' che non c'e' — scritto per
-essere onesto, non per essere lungo.
+Lo stato: **1254 test verdi**, un solo percorso dal prompt al modello, 22
+plugin, 97 componenti, API congelate. Davanti al planner c'e' ora uno stadio di
+retrieval: il carico mandato al modello dipende dalla rosa di componenti
+rilevanti, non da quanti plugin sono installati.
+
+Misurato, non dichiarato: con un LLM reale le generazioni riuscite sugli otto
+prompt di `PRODUCT-AUDIT.md` passano da 3 su 8 a 6 su 8, e i `413
+payload_too_large` da 8 su 8 a zero. Vedi `V1-RESULTS.md`.
+
+Quello che segue e' cio' che non c'e' — scritto per essere onesto, non per
+essere lungo.
 
 ---
 
@@ -28,11 +36,27 @@ plugin che dimentica i tag e' invisibile a quel planner (non all'LLM vero), e il
 ripiego peggiora in silenzio. Un test lo verifica sui plugin nostri; per quelli
 di altri servirebbe un avviso al caricamento.
 
-**4. Un ginocchio non si piega.** Coscia, polpaccio e piede sono **fratelli**
-appesi ai socket della gamba, non una catena: l'arto si muove rigido. E' una
-conseguenza vera di come i segmenti sono composti, ed e' fissata da un test. Per
-piegare un ginocchio servirebbe che un segmento si attacchi al precedente, che
-e' una scelta di composizione da fare nel plugin `humanoid`.
+V1 ha reso il problema piu' netto invece di risolverlo: ora il planner locale
+sceglie dentro la rosa, quindi quando la rosa e' giusta migliora (il «pesce con
+corpo umanoide» compone davvero `humanoid_anatomical:body` + `fish:fish_body`
+invece di 40 nodi sovrapposti), e quando la libreria non ha il soggetto
+peggiora (il «robot con quattro braccia» da quattro pezzi di braccio sconnessi
+a una porta). La risposta e' la degradazione semantica, cioe' V2.
+
+**3-bis. Non c'e' degradazione semantica.** `jeep` non diventa mai `vehicle`:
+`Resolver._trova` fallisce e suggerisce alternative da `Registry.search`, che e'
+un conteggio di parole. Il ramo `concept` sa risalire la gerarchia ma e'
+alimentato da un catalogo scritto a mano (9 archetipi, 3 binding) ed e' fatale
+quando l'archetipo manca. E' la milestone V2 di `VISION-GAP.md`, e V1 le ha
+lasciato cio' che le serviva: candidati corretti su cui degradare.
+
+**4. Un ginocchio non si piega — ma solo nel plugin `humanoid` storico.** Li'
+coscia, polpaccio e piede sono **fratelli** appesi ai socket della gamba, non
+una catena, e l'arto si muove rigido. In `humanoid_anatomical` la catena e'
+vera (`hip → thigh → knee → calf → ankle → foot`, e `shoulder → upper_arm →
+elbow → forearm → wrist → hand`): verificato espandendo il grafo nel
+PRODUCT-AUDIT. Resta da decidere se il plugin storico va allineato o
+deprecato.
 
 **5. Nessuno appoggia il modello a terra, se non lo si chiede.**
 `Scene.ground_offset` esiste e `to_scene(ground=True)` lo fa, ma non c'e' un
@@ -54,12 +78,32 @@ ma resta un compromesso.
 - **Un plugin realistico.** Un test dimostra che il core lo reggerebbe: un
   componente con parametri, figli, vincoli e geometria completamente diversi che
   fornisce `head_mount`. Scriverlo per intero e' un'altra fase.
-- **Il vocabolario cresce con i plugin.** A 44 componenti sono 16 KB (~4.100
-  token). A qualche centinaio andra' filtrato prima di mandarlo a un modello:
-  probabilmente per capability e per tag, a partire dalla richiesta.
-- **Nessuna prova su un modello vero.** La correzione unica, il punteggio dei
-  piani e lo structured output sono provati con fornitori finti. Con un modello
-  vero si scoprira' quanto e' buono il riassunto delle diagnosi.
+- ~~**Il vocabolario cresce con i plugin.**~~ **Fatto in V1.** Il carico segue
+  la rosa: 9.991 token interi contro 1.469-3.788 sugli otto prompt, e 38.453
+  contro 560-1.236 su una libreria sintetica da mille componenti.
+- **Il thesaurus predefinito e' ancora nel codice.** `app/assets/semantic.py`
+  contiene ~25 voci italiane di dominio. Il meccanismo per portarle fuori esiste
+  ed e' gia' usato (`plugin.json` → `synonyms`, letto da `Registry.synonyms()`):
+  manca spostarle nei plugin che possiedono quelle parole e lasciare vuoto il
+  dizionario predefinito. Non e' stato fatto in V1 perche' cambierebbe anche la
+  ricerca nella libreria degli asset, che era fuori scope.
+- **La ricerca non fa stemming.** `persona` non trova `person`, `ruote` non
+  trova `wheel` se non attraverso un sinonimo dichiarato. Oggi si compensa con i
+  ponti nel manifest; con una libreria grande e bilingue servira' altro. Il
+  punto di innesto c'e' gia': `RemoteEmbedder` e' nell'interfaccia e non e' mai
+  stato provato.
+- **L'indice dei componenti non viene persistito.** La persistenza e'
+  implementata e testata (si attiva passando un `path`), ma `Session` la tiene
+  in memoria: con 96 componenti l'indice costa 15 ms e un file in piu' nella
+  home dell'utente non si ripaga. Con migliaia di componenti va acceso.
+- **Il ripiego quando non si trova niente e' un cerotto.** Sotto 120 componenti
+  si mostra tutta la libreria (il comportamento di prima di V1); sopra, si manda
+  una fetta in ordine di id e lo si dichiara. La risposta giusta e' V2.
+- **La correzione unica non e' ancora dimostrata su un modello vero.** Lo
+  structured output e la catena di failover ora funzionano davvero (V1 ha
+  misurato 6 generazioni su 8 con provider reali), ma la riparazione non ha mai
+  migliorato un piano in nessuna delle misurazioni: l'unico caso in cui e'
+  partita ha dato lo stesso punteggio prima e dopo.
 
 ---
 

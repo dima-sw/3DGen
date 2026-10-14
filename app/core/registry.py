@@ -93,6 +93,10 @@ class PluginInfo:
     capabilities: tuple[Capability, ...] = ()      # quelle che il plugin introduce
     notes: dict[str, str] = field(default_factory=dict)   # capability -> descrizione
     metadata: dict[str, Any] = field(default_factory=dict)
+    # Ponti fra parole, dichiarati dal plugin: "jeep" porta a "car". Sono dati,
+    # non codice, e stanno qui perche' sapere che una jeep e' un'automobile e'
+    # conoscenza del dominio — cioe' della libreria, mai del core.
+    synonyms: dict[str, tuple[str, ...]] = field(default_factory=dict)
     sources: tuple[str, ...] = ()
     path: Path | None = None
 
@@ -652,6 +656,30 @@ class Registry:
                 if voce.get("description"):
                     note[str(voce["name"])] = str(voce["description"])
 
+        sinonimi: dict[str, tuple[str, ...]] = {}
+        grezzi = dati.get("synonyms", {}) or {}
+        if not isinstance(grezzi, dict):
+            self.report.add("INVALID_MANIFEST",
+                            "'synonyms' deve essere un oggetto",
+                            where=str(manifesto),
+                            why="parola -> elenco di parole equivalenti")
+            return None
+        for parola, equivalenti in grezzi.items():
+            if isinstance(equivalenti, str):
+                equivalenti = [equivalenti]
+            if not isinstance(equivalenti, list) or \
+                    any(not isinstance(v, str) for v in equivalenti):
+                self.report.add("INVALID_MANIFEST",
+                                "sinonimi malformati per %r" % parola,
+                                where=str(manifesto),
+                                why="serve una lista di parole")
+                return None
+            chiave = str(parola).strip().lower()
+            valori = tuple(sorted({str(v).strip().lower() for v in equivalenti
+                                   if str(v).strip()}))
+            if chiave and valori:
+                sinonimi[chiave] = valori
+
         return PluginInfo(
             id=id, version=version,
             name=str(dati.get("name", "")), description=str(dati.get("description", "")),
@@ -660,6 +688,7 @@ class Registry:
             tags=frozenset(dati.get("tags", []) or []),
             dependencies=tuple(dipendenze), capabilities=tuple(capacita), notes=note,
             metadata=dict(dati.get("metadata", {}) or {}),
+            synonyms=sinonimi,
             sources=tuple(sorgenti), path=cartella)
 
     # ------------------------------------------------------------- verifiche #
@@ -1136,6 +1165,19 @@ class Registry:
         candidati = [table[k] for k in sorted(table)
                      if k.partition(SEPARATOR)[2] == key]
         return candidati[0] if len(candidati) == 1 else None
+
+    def synonyms(self) -> dict[str, tuple[str, ...]]:
+        """I ponti fra parole dichiarati dai plugin installati, uniti.
+
+        Due plugin che dichiarano la stessa parola non si escludono: le liste si
+        sommano. Chi installa un plugin di veicoli e uno di animali ottiene
+        entrambi i vocabolari, e nessuno dei due vince sull'altro.
+        """
+        fuori: dict[str, set[str]] = {}
+        for info in self.plugins():
+            for parola, equivalenti in info.synonyms.items():
+                fuori.setdefault(parola, set()).update(equivalenti)
+        return {k: tuple(sorted(v)) for k, v in sorted(fuori.items())}
 
     def named(self, name: str) -> list:
         """Tutti quelli che si chiamano cosi', in qualunque plugin."""

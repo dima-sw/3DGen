@@ -698,36 +698,121 @@ def _structural_trait(trait, registry) -> TraitEntry:
         purpose=sanitize(trait.purpose or trait.description))
 
 
+def _rilevante_trait(trait, registry, ruoli: set[str], tag: set[str],
+                     ids: set[str]) -> bool:
+    """Un trait serve se una delle sue regole puo' toccare la rosa.
+
+    Una regola senza bersaglio vale su tutto e resta sempre; una che nomina
+    ruoli, tag o componenti resta solo se quelli sono davanti al planner. Non e'
+    una semplificazione: proporre un trait che non ha dove applicarsi e' un modo
+    di invitare a usarlo.
+    """
+    regole = registry.trait_rules(trait.id)
+    if not regole:
+        return True
+    for regola in regole:
+        bersaglio = regola.match
+        voluti = (set(bersaglio.roles), set(bersaglio.tags),
+                  set(bersaglio.components))
+        if not any(voluti):
+            return True
+        if voluti[0] and voluti[0] & ruoli:
+            return True
+        if voluti[1] and voluti[1] <= tag:
+            return True
+        if voluti[2] and voluti[2] & ids:
+            return True
+    return False
+
+
+def _rilevante_structural(trait, registry, ruoli: set[str], tag: set[str],
+                          ids: set[str]) -> bool:
+    regole = registry.structural_trait_rules(trait.id)
+    if not regole:
+        return True
+    for regola in regole:
+        bersaglio = regola.target
+        ruolo = {bersaglio.role} if bersaglio.role else set()
+        voluti_tag = set(bersaglio.tags)
+        componenti = set(bersaglio.components) | ({regola.component}
+                                                  if regola.component else set())
+        if not (ruolo or voluti_tag or componenti):
+            return True
+        if ruolo & ruoli or (voluti_tag and voluti_tag & tag) or componenti & ids:
+            return True
+    return False
+
+
 def build_vocabulary(registry, *, style: str = "low_poly",
-                     detail_level: int = 2) -> Vocabulary:
+                     detail_level: int = 2, components=None) -> Vocabulary:
     """Dal registry al vocabolario. Deterministico, e senza codice dentro.
 
     Si elencano solo i componenti che lo **stile chiesto** ammette: proporre a
     un modello un pezzo che verra' poi rifiutato e' un giro di correzione
     sprecato, e la correzione e' una sola.
+
+    `components` e' la rosa scelta a monte (vedi `planner/retrieval.py`). Quando
+    c'e', tutto il resto si restringe con lei: capability, effetti, trait e
+    plugin elencati sono quelli che hanno a che fare con quei pezzi. Senza
+    questo, filtrare i componenti servirebbe a poco — le altre sezioni
+    continuerebbero a crescere con la libreria installata.
     """
-    componenti = [c for c in registry.components() if c.supports_style(style)]
+    tutti = [c for c in registry.components() if c.supports_style(style)]
+    if components is None:
+        componenti = list(tutti)
+        rosa = False
+    else:
+        ammessi = {c.id for c in tutti}
+        componenti = [c for c in components if c.id in ammessi]
+        rosa = True
     componenti.sort(key=lambda c: c.id)
+
+    ids = {c.id for c in componenti}
+    ruoli = {c.role for c in componenti if c.role}
+    tag = {t for c in componenti for t in c.tags}
+    capability_rosa = {p.name for c in componenti for p in c.provides}
+    capability_rosa |= {m.capability for c in componenti for m in c.mounts
+                        if m.capability}
 
     capacita = []
     for nome in registry.capabilities():
+        if rosa and nome not in capability_rosa:
+            continue
         info = registry.capability(nome)
+        # providers e mounts elencano id: senza filtrarli, una capability
+        # riporterebbe nel prompt tutta la libreria che la rosa ha appena escluso
+        fornitori = tuple(i for i in info.providers if not rosa or i in ids)
+        innesti = tuple(i for i in info.mounts if not rosa or i in ids)
         capacita.append(CapabilityEntry(
             name=nome, description=sanitize(info.description),
-            providers=tuple(info.providers), mounts=tuple(info.mounts)))
+            providers=fornitori, mounts=innesti))
+
+    effetti = []
+    for effetto in sorted(registry.effects(), key=lambda e: e.id):
+        if rosa and effetto.applies_to and not (set(effetto.applies_to)
+                                                & (capability_rosa | tag)):
+            continue
+        effetti.append(_effetto(effetto))
+
+    traits = [t for t in registry.traits()
+              if not rosa or _rilevante_trait(t, registry, ruoli, tag, ids)]
+    strutturali = [t for t in registry.structural_traits()
+                   if not rosa or _rilevante_structural(t, registry, ruoli,
+                                                        tag, ids)]
+    plugin = [p for p in sorted(registry.plugins(), key=lambda p: p.id)
+              if not rosa or any(c.plugin == p.id for c in componenti)]
 
     return Vocabulary(
         plugins=tuple(PluginEntry(id=p.id, version=p.version,
                                   name=sanitize(p.name, 48),
                                   description=sanitize(p.description))
-                      for p in sorted(registry.plugins(), key=lambda p: p.id)),
+                      for p in plugin),
         components=tuple(_componente(c) for c in componenti),
         capabilities=tuple(capacita),
-        effects=tuple(_effetto(e) for e in sorted(registry.effects(),
-                                                  key=lambda e: e.id)),
-        traits=tuple(_trait(t, registry) for t in registry.traits()),
+        effects=tuple(effetti),
+        traits=tuple(_trait(t, registry) for t in traits),
         structural_traits=tuple(_structural_trait(t, registry)
-                                for t in registry.structural_traits()),
+                                for t in strutturali),
         styles=tuple(StyleEntry(id=s.id, description=sanitize(s.description))
                      for s in sorted(registry.styles(), key=lambda s: s.id)),
         archetypes=tuple(ArchetypeEntry(
@@ -748,10 +833,12 @@ def build_vocabulary(registry, *, style: str = "low_poly",
             id=b.id, implementation=b.implementation,
             supported_archetypes=tuple(b.supported_archetypes))
             for b in registry.implementation_bindings()[:MAX_CONCEPT_SHORTLIST]),
-        tags=tuple(registry.tags()),
+        tags=tuple(sorted(tag)) if rosa else tuple(registry.tags()),
         style=style, detail_level=detail_level,
         metadata={"components": len(componenti),
-                  "plugins": len(registry.plugins()),
+                  "installed_components": len(tutti),
+                  "shortlisted": rosa,
+                  "plugins": len(plugin),
                    "archetypes": len(registry.archetypes()),
                   "concept_shortlist_limit": MAX_CONCEPT_SHORTLIST,
                   "concept_shortlist_entries": min(len(registry.archetypes()),

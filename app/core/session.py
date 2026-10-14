@@ -138,6 +138,7 @@ class GenerationResult:
     report: Any = None
     planner: str = ""
     repaired: bool = False
+    shortlist: Any = None            # la rosa di componenti mostrata al planner
     seconds: float = 0.0
     options: Any = None
     provenance: dict = field(default_factory=dict)
@@ -261,6 +262,10 @@ class GenerationResult:
             pezzi.append(self.report.describe())
         return "\n".join(pezzi)
 
+    def retrieval(self) -> dict:
+        """Che cosa il planner ha avuto davanti, e quanto e' costato sceglierlo."""
+        return self.shortlist.to_dict() if self.shortlist is not None else {}
+
     def to_dict(self) -> dict:
         return {"prompt": self.prompt, "planner": self.planner,
                 "repaired": self.repaired, "seconds": round(self.seconds, 3),
@@ -342,14 +347,48 @@ class Session:
             self.registry = registro.freeze()
         return self.registry
 
-    def vocabulary(self, style: str = ""):
-        """Cio' che il planner puo' nominare. Cambia se cambiano i plugin."""
+    def component_index(self):
+        """L'indice semantico dei componenti installati.
+
+        Si costruisce una volta per sessione e si ricostruisce da solo se il
+        registry non e' piu' quello di prima — che in pratica non succede, dato
+        che il registry e' congelato, ma un indice che non sa dire di essere
+        vecchio e' una cache che mente.
+        """
+        from app.core.planner.retrieval import build_index
+
+        indice = getattr(self, "_indice", None)
+        if indice is None or not indice.is_current(self.catalog()):
+            indice = build_index(self.catalog())
+            self._indice = indice
+        return indice
+
+    def shortlist(self, prompt: str, style: str = ""):
+        """La rosa di componenti per una richiesta. Vuota se non c'e' richiesta."""
+        from app.core.planner.retrieval import shortlist
+
+        return shortlist(self.catalog(), prompt, index=self.component_index(),
+                         style=style or "low_poly")
+
+    def vocabulary(self, style: str = "", prompt: str = "", shortlist=None):
+        """Cio' che il planner puo' nominare. Cambia se cambiano i plugin.
+
+        Senza `prompt` e' il vocabolario intero, ed e' quello che vede chi
+        chiede «che cosa e' installato». Con un prompt, e' ridotto alla rosa di
+        componenti che ha a che fare con la richiesta: il carico mandato al
+        modello dipende dalla rosa, non da quanti plugin sono installati.
+        """
         from app.core.planner.vocabulary import build_vocabulary
 
         stile = style or "low_poly"
-        if stile not in self._vocabolari:
-            self._vocabolari[stile] = build_vocabulary(self.catalog(), style=stile)
-        return self._vocabolari[stile]
+        if shortlist is None and not str(prompt or "").strip():
+            if stile not in self._vocabolari:
+                self._vocabolari[stile] = build_vocabulary(self.catalog(),
+                                                           style=stile)
+            return self._vocabolari[stile]
+        rosa = shortlist if shortlist is not None else self.shortlist(prompt, stile)
+        return build_vocabulary(self.catalog(), style=stile,
+                                components=rosa.components)
 
     def _planner(self):
         if self.planner is None:
@@ -435,7 +474,8 @@ class Session:
         from app.core.planner.repair import repair_brief
 
         inizio = time.perf_counter()
-        vocabolario = self.vocabulary(opzioni.style)
+        rosa = self.shortlist(prompt, opzioni.style)
+        vocabolario = self.vocabulary(opzioni.style, shortlist=rosa)
         planner = self._planner()
         richiesta = PlanRequest(prompt=prompt, vocabulary=vocabolario,
                                 seed=opzioni.seed, style=opzioni.style,
@@ -444,7 +484,8 @@ class Session:
         risposta = self._chiedi(planner, richiesta)
         risultato = GenerationResult(prompt=prompt, plan_json=risposta.plan,
                                      planner=risposta.source or planner.name,
-                                     report=Report(), options=opzioni)
+                                     report=Report(), options=opzioni,
+                                     shortlist=rosa)
         self._set_provenance(risultato, risposta.provenance)
         for nota in risposta.notes:
             risultato.report.note("PLANNER_NOTE", nota)
