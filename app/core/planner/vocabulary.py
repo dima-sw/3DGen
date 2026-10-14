@@ -765,7 +765,10 @@ def build_vocabulary(registry, *, style: str = "low_poly",
         ammessi = {c.id for c in tutti}
         componenti = [c for c in components if c.id in ammessi]
         rosa = True
-    componenti.sort(key=lambda c: c.id)
+    if not rosa:
+        # Senza rosa non c'e' una rilevanza da rispettare: l'alfabetico e'
+        # l'unico ordine stabile. Con la rosa l'ordine **e'** l'informazione.
+        componenti.sort(key=lambda c: c.id)
 
     ids = {c.id for c in componenti}
     ruoli = {c.role for c in componenti if c.role}

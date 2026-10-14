@@ -11,6 +11,41 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Iterable
 
+# I gradini della degradazione, dal piu' preciso al piu' approssimato. Sono
+# stringhe e non un enum perche' finiscono in un progetto salvato: un progetto
+# riaperto fra un anno deve poter dire "proxy di categoria" anche se nel
+# frattempo qualcuno ha aggiunto un gradino.
+# I primi quattro valori esistevano gia' prima di V2 e sono scritti nei
+# progetti salvati: restano identici, parola per parola. I tre nuovi seguono la
+# stessa lingua per non avere un campo mezzo in inglese e mezzo in italiano.
+MATCH_DIRECT = "direct implementation"
+MATCH_BINDING_EXACT = "exact"
+MATCH_ANCESTOR = "ancestor/body-plan proxy"
+MATCH_SPECIALIZATION = "descendant/specialization implementation"
+MATCH_NAME = "declared component name"
+MATCH_SUBJECT = "semantic subject proxy"
+MATCH_PROXY = "weak semantic proxy"
+MATCH_PLAN_ROOT = "root supplied by the plan"
+
+# Sotto questo punteggio semantico un candidato non e' una somiglianza, e'
+# un'omonimia. Meglio dire che non c'e' niente di adatto che costruire qualcosa
+# di scollegato: e' la regola che impedisce «jeep» -> «casco».
+MIN_CONFIDENCE = 0.08
+
+# Quanti candidati guardare prima di scegliere. Oltre, si sta solo rimestando
+# rumore: l'indice e' gia' ordinato per rilevanza.
+MAX_CANDIDATES = 24
+
+
+def _readable(value: Any) -> str:
+    """Un adattamento o una mancanza, in una riga."""
+    if isinstance(value, dict):
+        pezzi = [str(value[k]) for k in ("trait", "param", "param_role", "kind",
+                                         "description", "value")
+                 if value.get(k) not in (None, "")]
+        return " ".join(pezzi) or str(value)
+    return str(value)
+
 
 def _tuple(value: Any) -> tuple:
     if value is None:
@@ -203,11 +238,54 @@ class ConceptResolutionPlan:
     conflicts: list[dict[str, Any]] = field(default_factory=list)
     provenance: dict[str, Any] = field(default_factory=dict)
     diagnostics: list[dict[str, Any]] = field(default_factory=list)
+    # Come si e' arrivati al risultato. `match` dice **che tipo** di risposta e'
+    # questa — un'implementazione esatta o un'approssimazione, e di che genere —
+    # `strategy` elenca i gradini provati in ordine, e `confidence` e' il
+    # punteggio semantico del candidato scelto, non un giudizio di qualita'.
+    match: str = ""
+    confidence: float = 0.0
+    strategy: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
         return bool(self.selected_root_implementation) and not any(
             d.get("severity", "error") == "error" for d in self.diagnostics)
+
+    @property
+    def approximate(self) -> bool:
+        """Vero quando cio' che si e' costruito non e' cio' che era stato chiesto."""
+        return bool(self.selected_root_implementation) and self.match not in (
+            "", MATCH_DIRECT, MATCH_NAME, MATCH_BINDING_EXACT, MATCH_PLAN_ROOT)
+
+    def describe(self) -> str:
+        """La degradazione in righe leggibili. La stessa che finisce in
+        `GenerationResult.explain()`, perche' una spiegazione che esiste in due
+        versioni e' una che prima o poi diverge."""
+        if not self.requested_concept:
+            return ""
+        righe = ["richiesto: '%s'" % self.requested_concept]
+        if not self.selected_root_implementation:
+            righe.append("nessuna implementazione utilizzabile")
+            for voce in self.diagnostics:
+                righe.append("  %s: %s" % (voce.get("code", ""), voce.get("message", "")))
+            return "\n".join(righe)
+        if self.approximate:
+            righe.append("implementazione esatta: non installata")
+            righe.append("scelto per approssimazione: %s"
+                         % self.selected_root_implementation)
+        else:
+            righe.append("scelto: %s" % self.selected_root_implementation)
+        if self.match:
+            righe.append("tipo di corrispondenza: %s" % self.match)
+        if self.confidence:
+            righe.append("punteggio semantico: %.3f" % self.confidence)
+        if self.strategy:
+            righe.append("gradini provati: %s" % " -> ".join(self.strategy))
+        for voce in self.unsupported:
+            righe.append("non supportato: %s" % _readable(voce))
+        for voce in self.materialized_traits:
+            righe.append("adattamento: %s" % _readable(voce))
+        return "\n".join(righe)
 
     def to_dict(self) -> dict[str, Any]:
         return {"requested_concept": self.requested_concept,
@@ -226,7 +304,9 @@ class ConceptResolutionPlan:
                 "style_preferences": list(self.style_preferences),
                 "coverage": list(self.coverage), "unsupported": list(self.unsupported),
                 "conflicts": list(self.conflicts), "provenance": dict(self.provenance),
-                "diagnostics": list(self.diagnostics)}
+                "diagnostics": list(self.diagnostics),
+                "match": self.match, "confidence": self.confidence,
+                "strategy": list(self.strategy)}
 
     @classmethod
     def from_dict(cls, value: Any) -> "ConceptResolutionPlan | None":
@@ -238,18 +318,198 @@ class ConceptResolutionPlan:
                     "materialized_traits", "materialized_structural_traits",
                     "param_role_preferences", "component_preferences",
                     "style_preferences", "coverage",
-                    "unsupported", "conflicts", "diagnostics"):
+                    "unsupported", "conflicts", "diagnostics", "strategy"):
             data[key] = list(data.get(key) or [])
         data["provenance"] = dict(data.get("provenance") or {})
         data["materialized_params"] = dict(data.get("materialized_params") or {})
         return cls(**data)
 
 
+def subject_capabilities(registry) -> frozenset[str]:
+    """Le capability che descrivono un **soggetto intero**, ricavate dai dati.
+
+    Una capability fornita da qualcuno e accettata da nessuno non e' un innesto:
+    e' cio' che un componente **e'** quando sta da solo. `vehicle` e `animal` lo
+    sono, `head_mount` no — una testa si attacca a qualcosa.
+
+    Nessun nome e' scritto qui dentro: la regola e' strutturale, e un plugin che
+    domani porti `spacecraft` entra nell'elenco senza che nessuno lo aggiorni.
+    """
+    fornite: set[str] = set()
+    accettate: set[str] = set()
+    for componente in registry.components():
+        fornite |= {c.name for c in componente.provides}
+        accettate |= {m.capability for m in componente.mounts if m.capability}
+    return frozenset(fornite - accettate)
+
+
+def normalize_reference(raw: str, lookup, ambiguous=None) -> tuple[str, str]:
+    """Un id scritto male, ricondotto a uno vero — ma solo se e' sicuro.
+
+    Un modello linguistico incolla prefissi che non esistono
+    (`registered:archetype_metadata:felid`), cambia maiuscole, cita un alias.
+    Rifiutare tutto costa un'intera generazione; correggere a casaccio costa la
+    fiducia. La regola sta in mezzo: si tolgono i segmenti iniziali **uno alla
+    volta** e ci si ferma al primo resto che identifica una cosa sola.
+
+    Niente casi speciali per nessuna stringa: nessun prefisso e' nominato qui.
+    Restituisce `(id, nota)`; la nota e' vuota se non si e' corretto niente.
+    """
+    testo = str(raw or "").strip()
+    if not testo:
+        return "", ""
+    if lookup(testo) is not None:
+        return testo, ""
+
+    tentativi = [testo.lower()]
+    pezzi = testo.split(":")
+    for taglio in range(1, len(pezzi)):
+        coda = ":".join(pezzi[taglio:])
+        tentativi.append(coda)
+        tentativi.append(coda.lower())
+    for candidato in tentativi:
+        if candidato == testo:
+            continue
+        if ambiguous is not None and ambiguous(candidato):
+            continue              # un alias che indica due cose non si indovina
+        trovato = lookup(candidato)
+        if trovato is not None:
+            vero = getattr(trovato, "id", candidato)
+            return vero, "'%s' normalizzato in '%s'" % (testo, vero)
+    return "", ""
+
+
 class ConceptResolver:
     """Select a validated concrete root from semantic planner output."""
 
-    def __init__(self, registry) -> None:
+    def __init__(self, registry, index=None) -> None:
         self.registry = registry
+        self._index = index
+
+    # ------------------------------------------------------- degradazione #
+    def index(self):
+        """L'indice semantico dei componenti. Quello di V1, non un altro."""
+        if self._index is None:
+            from app.core.planner.retrieval import build_index
+
+            self._index = build_index(self.registry)
+        return self._index
+
+    def _words(self, requested: str) -> list[str]:
+        """Le parole della richiesta piu' i ponti dichiarati dai plugin."""
+        from app.assets.semantic import tokenize
+        from app.core.planner.retrieval import thesaurus_for
+
+        ponti = thesaurus_for(self.registry)
+        fuori: list[str] = []
+        for parola in tokenize(requested):
+            if parola not in fuori:
+                fuori.append(parola)
+            for sinonimo in ponti.get(parola, ()):
+                if sinonimo not in fuori:
+                    fuori.append(sinonimo)
+        return fuori
+
+    def by_name(self, requested: str):
+        """Un componente che si chiama cosi'.
+
+        E' il gradino fra «id esatto» e «approssimazione»: chi chiede `fox` e ha
+        installato `fox_stylized:fox` non sta approssimando niente.
+        """
+        testo = str(requested or "").strip().lower()
+        if not testo:
+            return None
+        esatti = [c for c in self.registry.components()
+                  if c.id.partition(":")[2].lower() == testo]
+        if not esatti:
+            return None
+        return sorted(esatti, key=lambda c: c.id)[0]
+
+    def candidates(self, requested: str, *, style: str = "",
+                   limit: int = MAX_CANDIDATES) -> list[tuple[Any, float, bool]]:
+        """I candidati all'approssimazione, in ordine deterministico.
+
+        Si interroga l'indice con la richiesta intera e con ogni parola
+        ampliata dai sinonimi dichiarati: una richiesta che nomina una famiglia
+        che la libreria chiama in un altro modo deve comunque arrivarci.
+
+        L'ordine non e' il punteggio puro. Un componente che fornisce una
+        capability **soggetto** viene prima di uno che somiglia di piu' ma e' un
+        pezzo: per «jeep» la ruota somiglia piu' dell'auto, e l'auto e' la
+        risposta giusta.
+        """
+        indice = self.index()
+        ammessi = {c.id: c for c in self.registry.components()
+                   if c.supports_style(style)}
+        soggetti = subject_capabilities(self.registry)
+
+        punteggi: dict[str, float] = {}
+        for query in [requested] + self._words(requested):
+            if not str(query).strip():
+                continue
+            for cid, score in indice.search(query, limit=limit):
+                if cid in ammessi and score > punteggi.get(cid, 0.0):
+                    punteggi[cid] = float(score)
+
+        fuori = []
+        for cid, score in punteggi.items():
+            componente = ammessi[cid]
+            soggetto = any(c.name in soggetti for c in componente.provides)
+            fuori.append((componente, score, soggetto))
+        # chiave: prima i soggetti, poi chi puo' ospitare figli, poi il
+        # punteggio, poi l'id. Tutto deterministico, nessuna somma pesata.
+        fuori.sort(key=lambda voce: (not voce[2], not voce[0].mounts,
+                                     -round(voce[1], 6), voce[0].id))
+        return fuori[:limit]
+
+    def _approximate(self, requested: str, plan, style: str) -> bool:
+        """L'ultimo gradino prima del fallimento: il meglio che c'e'.
+
+        Vero se ha scelto qualcosa. Il candidato scelto viene sempre dichiarato
+        come approssimazione, con il suo punteggio: un'approssimazione taciuta
+        e' una bugia, non un ripiego.
+        """
+        candidati = self.candidates(requested, style=style)
+        plan.strategy.append("approssimazione semantica")
+        if not candidati:
+            self._diagnostic(plan, "CONCEPT_NO_CANDIDATE",
+                             "nessun componente semanticamente vicino a '%s'"
+                             % requested, requested)
+            return False
+
+        componente, score, soggetto = candidati[0]
+        if score < MIN_CONFIDENCE:
+            self._diagnostic(
+                plan, "CONCEPT_TOO_FAR",
+                "nessun componente abbastanza vicino a '%s': il migliore e' "
+                "'%s' con punteggio %.3f" % (requested, componente.id, score),
+                requested)
+            return False
+
+        plan.selected_root_implementation = componente.id
+        plan.match = MATCH_SUBJECT if soggetto else MATCH_PROXY
+        plan.confidence = round(float(score), 6)
+        plan.coverage.append(ConceptCoverage(
+            candidate=componente.id, hard_compatible=True, match=plan.match,
+            reasons=["richiesto '%s', non installato" % requested,
+                     "scelto per somiglianza semantica (%.3f)" % score]).to_dict())
+        plan.candidate_bindings.extend(
+            {"candidate": c.id, "score": round(float(s), 6), "subject": bool(j)}
+            for c, s, j in candidati[:6])
+        plan.provenance.update({
+            "requested_concept": requested,
+            "semantic_source": plan.semantic_source,
+            "selected_root_implementation": componente.id,
+            "match": plan.match,
+            "confidence": plan.confidence,
+            "registry_plugins": {p.id: p.version for p in self.registry.plugins()},
+        })
+        plan.diagnostics.append({
+            "code": "CONCEPT_APPROXIMATED",
+            "message": "'%s' non esiste: uso '%s' (%s, punteggio %.3f)"
+                       % (requested, componente.id, plan.match, score),
+            "severity": "warning", "where": requested})
+        return True
 
     def resolve(self, requested_concept: str, *, archetypes: Iterable[str] = (),
                 profiles: Iterable[str] = (), adaptations: Iterable[Any] = (),
@@ -258,14 +518,32 @@ class ConceptResolver:
         requested = str(requested_concept or "").strip()
         plan = ConceptResolutionPlan(requested_concept=requested,
                                      semantic_source=semantic_source or "local")
+
+        # Gradino 1: l'id esatto. Chi lo nomina non sta approssimando niente.
+        plan.strategy.append("id esatto")
         direct = self.registry.component(requested)
         if direct is not None:
             plan.selected_root_implementation = direct.id
+            plan.match = MATCH_DIRECT
             plan.provenance.update({"requested_concept": requested,
                                     "semantic_source": "local_direct",
                                     "selected_root_implementation": direct.id,
-                                    "match": "direct implementation"})
+                                    "match": MATCH_DIRECT})
             return plan
+
+        # Gradino 2: il nome, senza il plugin davanti. `fox` -> `fox_stylized:fox`.
+        plan.strategy.append("nome del componente")
+        per_nome = self.by_name(requested)
+        if per_nome is not None:
+            plan.selected_root_implementation = per_nome.id
+            plan.match = MATCH_NAME
+            plan.provenance.update({"requested_concept": requested,
+                                    "semantic_source": plan.semantic_source,
+                                    "selected_root_implementation": per_nome.id,
+                                    "match": MATCH_NAME})
+            return plan
+
+        plan.strategy.append("archetipi e binding")
         arch_ids = self._resolve_archetype_ids(archetypes, plan)
         profile_ids = self._resolve_profile_ids(profiles, plan)
 
@@ -286,9 +564,15 @@ class ConceptResolver:
         plan.archetypes = self._expand_archetypes(arch_ids, plan)
         plan.profiles = profile_ids
         if not plan.archetypes and not plan.profiles:
-            self._diagnostic(plan, "CONCEPT_UNKNOWN",
-                             "concept non registrato: '%s'" % requested,
-                             requested)
+            # Nessun archetipo: non e' un fallimento, e' la condizione normale
+            # di una libreria che non tiene un catalogo parallelo. Si scende al
+            # gradino semantico, che lavora su cio' che i componenti dichiarano.
+            plan.diagnostics.append({
+                "code": "CONCEPT_UNKNOWN",
+                "message": "'%s' non e' un concetto registrato: provo per "
+                           "somiglianza semantica" % requested,
+                "severity": "warning", "where": requested})
+            self._approximate(requested, plan, style)
             return plan
 
         for pid in profile_ids:
@@ -321,15 +605,26 @@ class ConceptResolver:
         valid.sort(key=lambda item: (tuple(-x for x in item.get("score", ())),
                                      item.get("candidate", "")))
         if not valid:
-            self._diagnostic(plan, "IMPLEMENTATION_NOT_FOUND",
-                             "nessuna implementation compatibile per '%s'"
-                             % requested, requested)
+            # Nessun binding regge: non e' la fine della strada, e' la fine di
+            # **questo** gradino. Il catalogo degli archetipi copre una parte
+            # della libreria; cio' che i componenti dichiarano la copre tutta.
+            plan.diagnostics.append({
+                "code": "IMPLEMENTATION_NOT_FOUND",
+                "message": "nessuna implementation dichiarata per '%s': provo "
+                           "per somiglianza semantica" % requested,
+                "severity": "warning", "where": requested})
             plan.provenance["implementation_hint"] = implementation_hint or ""
             plan.unsupported.extend({**item, "reason": "no compatible implementation"}
                                     for item in plan.adaptations)
+            self._approximate(requested, plan, style)
             return plan
 
         selected = valid[0]
+        plan.match = {"exact": MATCH_BINDING_EXACT,
+                      "ancestor/body-plan proxy": MATCH_ANCESTOR,
+                      "descendant/specialization implementation":
+                          MATCH_SPECIALIZATION}.get(selected.get("match", ""),
+                                                    MATCH_ANCESTOR)
         plan.selected_binding = selected["candidate"]
         binding = self.registry.implementation_binding(plan.selected_binding)
         plan.selected_root_implementation = binding.implementation
@@ -354,30 +649,40 @@ class ConceptResolver:
         return plan
 
     def _resolve_archetype_ids(self, values, plan) -> list[str]:
-        result = []
-        for value in values or ():
-            spec = self.registry.archetype(str(value))
-            if spec is None:
-                code = ("ARCHETYPE_ALIAS_AMBIGUOUS"
-                        if self.registry.archetype_ambiguous(str(value))
-                        else "ARCHETYPE_NOT_FOUND")
-                self._diagnostic(plan, code,
-                                 "Archetype non disponibile: '%s'" % value, str(value))
-                continue
-            if spec.id not in result:
-                result.append(spec.id)
-        return result
+        return self._resolve_ids(values, plan, self.registry.archetype,
+                                 self.registry.archetype_ambiguous, "Archetype",
+                                 "ARCHETYPE_NOT_FOUND", "ARCHETYPE_ALIAS_AMBIGUOUS")
 
     def _resolve_profile_ids(self, values, plan) -> list[str]:
-        result = []
+        return self._resolve_ids(values, plan, self.registry.profile,
+                                 self.registry.profile_ambiguous, "Profile",
+                                 "PROFILE_NOT_FOUND", "PROFILE_ALIAS_AMBIGUOUS")
+
+    def _resolve_ids(self, values, plan, lookup, ambiguous, what,
+                     missing_code, ambiguous_code) -> list[str]:
+        """Gli id citati, ricondotti a quelli veri quando si puo'.
+
+        Un id che non esiste **non** e' piu' un errore fatale: la diagnosi resta
+        — chi legge deve sapere che il modello ha citato qualcosa di inventato —
+        ma e' un avviso, e la risoluzione prosegue sui gradini successivi.
+        """
+        result: list[str] = []
         for value in values or ():
-            spec = self.registry.profile(str(value))
+            grezzo = str(value)
+            spec = lookup(grezzo)
             if spec is None:
-                code = ("PROFILE_ALIAS_AMBIGUOUS"
-                        if self.registry.profile_ambiguous(str(value))
-                        else "PROFILE_NOT_FOUND")
-                self._diagnostic(plan, code,
-                                 "Profile non disponibile: '%s'" % value, str(value))
+                vero, nota = normalize_reference(grezzo, lookup, ambiguous)
+                if vero:
+                    spec = lookup(vero)
+                    plan.diagnostics.append({
+                        "code": "CONCEPT_ID_NORMALIZED", "message": nota,
+                        "severity": "warning", "where": grezzo})
+            if spec is None:
+                code = ambiguous_code if ambiguous(grezzo) else missing_code
+                plan.diagnostics.append({
+                    "code": code,
+                    "message": "%s non disponibile: '%s'" % (what, grezzo),
+                    "severity": "warning", "where": grezzo})
                 continue
             if spec.id not in result:
                 result.append(spec.id)

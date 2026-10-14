@@ -184,8 +184,13 @@ class MockPlanner(Planner):
             }
         punteggi = {c.id: self._punteggio(c, parole, request.seed)
                     for c in vocabolario.components}
+        # A pari punteggio decide l'**ordine del vocabolario**, che e' l'ordine
+        # di rilevanza della rosa, non l'alfabetico. Senza questo, una richiesta
+        # che non contiene nessuna parola del vocabolario sceglieva il primo id
+        # in ordine alfabetico: e' cosi' che «una jeep» diventava un casco.
+        posizione = {c.id: i for i, c in enumerate(vocabolario.components)}
         ordinati = sorted(vocabolario.components,
-                          key=lambda c: (-punteggi[c.id], c.id))
+                          key=lambda c: (-punteggi[c.id], posizione[c.id]))
         if not ordinati:
             return {}
 

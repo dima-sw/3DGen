@@ -140,8 +140,9 @@ CONGELATE = {
     "GenerationResult": (["build", "concept_resolution", "effects", "layout", "options", "plan", "plan_json",
                           "planner", "prompt", "provenance", "repaired", "report", "resolved",
                           "seconds", "shortlist", "structural", "traits"],
-                         ["changes", "describe", "explain", "mesh", "retrieval",
-                          "scene", "skipped", "to_dict", "trimesh_scene"]),
+                         ["changes", "degradation", "describe", "explain",
+                          "mesh", "retrieval", "scene", "skipped", "to_dict",
+                          "trimesh_scene"]),
     "Options": (["budget", "check", "detail_level", "repair", "seed", "style"],
                 ["to_dict"]),
     "Planner": ([], ["plan"]),
@@ -195,16 +196,24 @@ CONGELATE = {
     "ConceptCoverage": (["candidate", "conflicting", "hard_compatible", "match",
                           "preferred_hits", "reasons", "score", "supported",
                           "unsupported"], ["to_dict"]),
+    # V2: `match`, `confidence` e `strategy` dicono **come** si e' arrivati al
+    # risultato, e `describe()` lo racconta. Senza, un'approssimazione sarebbe
+    # indistinguibile da una scelta esatta nel progetto salvato.
     "ConceptResolutionPlan": (["adaptations", "archetypes", "candidate_bindings",
-                                "component_preferences", "conflicts", "coverage",
-                                "diagnostics", "materialized_params",
+                                "component_preferences", "confidence", "conflicts",
+                                "coverage", "diagnostics", "match",
+                                "materialized_params",
                                 "materialized_structural_traits",
                                 "materialized_traits", "param_role_preferences",
                                 "profiles", "provenance",
                                 "requested_concept", "selected_binding",
                                 "selected_root_implementation", "semantic_source",
-                                "style_preferences", "unsupported"], ["to_dict"]),
-    "ConceptResolver": ([], ["resolve"]),
+                                "strategy",
+                                "style_preferences", "unsupported"],
+                               ["describe", "to_dict"]),
+    # V2: la degradazione lavora sui componenti installati, quindi il resolver
+    # espone l'indice semantico, i candidati e il nome esatto.
+    "ConceptResolver": ([], ["by_name", "candidates", "index", "resolve"]),
 }
 
 CLASSI = {c.__name__: c for c in (

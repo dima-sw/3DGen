@@ -207,9 +207,9 @@ class GenerationResult:
         posto di qualcos'altro. Serve a chi guarda un modello e non capisce da
         dove venga un pezzo — e servira' con migliaia di plugin installati.
         """
+        righe = self.degradation()
         if self.resolved is None:
-            return []
-        righe = []
+            return righe
         for nodo in self.resolved.walk():
             collegamento = nodo.link
             if collegamento is None:
@@ -261,6 +261,22 @@ class GenerationResult:
         if self.report is not None and len(self.report):
             pezzi.append(self.report.describe())
         return "\n".join(pezzi)
+
+    def degradation(self) -> list[str]:
+        """Perche' il modello non e' esattamente cio' che era stato chiesto.
+
+        Vuota quando non c'e' niente da dire: un'implementazione esatta non e'
+        un'approssimazione e non merita una riga. Il testo viene dal piano di
+        risoluzione, non da una seconda struttura che direbbe le stesse cose
+        con parole diverse.
+        """
+        risoluzione = self.concept_resolution
+        if risoluzione is None or not getattr(risoluzione, "requested_concept", ""):
+            return []
+        if not risoluzione.approximate and risoluzione.selected_root_implementation:
+            return []
+        testo = risoluzione.describe()
+        return testo.split("\n") if testo else []
 
     def retrieval(self) -> dict:
         """Che cosa il planner ha avuto davanti, e quanto e' costato sceglierlo."""
@@ -489,23 +505,20 @@ class Session:
         self._set_provenance(risultato, risposta.provenance)
         for nota in risposta.notes:
             risultato.report.note("PLANNER_NOTE", nota)
-        piano = self._risolvi_concept(risposta.plan, risultato, opzioni,
-                                       semantic_source=("llm"
-                                                        if risposta.source == "llm"
-                                                        else "mock"))
-        risultato.plan_json = piano
-        concept_failed = (risultato.concept_resolution is not None and
-                          not risultato.concept_resolution.selected_root_implementation)
-        grafo = None if concept_failed else self._verifica(piano, risultato, opzioni)
+        # La materializzazione del concept non sta piu' qui: sta in `_verifica`,
+        # dove passano anche `build()` e un piano scritto a mano. Un piano che
+        # nomina un concetto dev'essere risolto allo stesso modo da qualunque
+        # porta arrivi, altrimenti esistono due pipeline con due capacita'.
+        risultato.plan_json = risposta.plan
+        grafo = self._verifica(risposta.plan, risultato, opzioni,
+                               semantic_source=("llm" if risposta.source == "llm"
+                                                else "mock"))
 
         # La correzione, e una sola. Si tenta solo se c'e' qualcosa che una
         # riscrittura del piano puo' davvero cambiare: un budget esaurito non
         # si corregge cambiando dei nomi.
         rimedio = repair_brief(risultato.report)
-        concept_unrepresentable = (risultato.concept_resolution is not None and
-                                   not risultato.concept_resolution.selected_root_implementation)
-        if (opzioni.repair and not risultato.report.ok and rimedio.worth_retrying
-                and not concept_unrepresentable):
+        if (opzioni.repair and not risultato.report.ok and rimedio.worth_retrying):
             risultato = self._correggi(planner, richiesta, risposta, rimedio,
                                        risultato, opzioni)
             grafo = risultato.plan
@@ -610,8 +623,13 @@ class Session:
         }
 
     def _verifica(self, piano: dict, risultato: GenerationResult,
-                  opzioni: Options):
+                  opzioni: Options, *, semantic_source: str = "local"):
         """Schema, grafo, registry, parametri; poi la risoluzione vera.
+
+        E' la **fase comune**: ci passa `generate()`, ci passa `build()`, ci
+        passa un piano scritto a mano. Qui dentro un concetto viene
+        materializzato e, se non si puo', degradato — una volta sola, per
+        tutti, perche' due porte con due capacita' diverse sono due pipeline.
 
         La risoluzione **fa parte** della verifica: un piano puo' essere
         perfettamente formato e nominare due pezzi che non si incastrano, e
@@ -630,6 +648,10 @@ class Session:
             risultato.concept_resolution = saved_resolution
             if not self._validate_saved_concept(saved_resolution, risultato.report):
                 return None
+
+        piano = self._risolvi_concept(piano, risultato, opzioni,
+                                      semantic_source=semantic_source)
+        risultato.plan_json = piano
 
         grafo, _ = validate_plan(piano, self.catalog(), style=opzioni.style,
                                  report=risultato.report)
@@ -761,11 +783,12 @@ class Session:
         if not isinstance(piano, dict) or not isinstance(piano.get("concept"), dict):
             return piano
         from copy import deepcopy
-        from app.core.archetypes import ConceptResolver
+        from app.core.archetypes import MATCH_PLAN_ROOT, ConceptResolver
 
         concept = piano["concept"]
         requested = str(concept.get("requested") or risultato.prompt or "").strip()
-        resolution = ConceptResolver(self.catalog()).resolve(
+        resolution = ConceptResolver(self.catalog(),
+                                     index=self.component_index()).resolve(
             requested,
             archetypes=concept.get("archetypes") or (),
             profiles=concept.get("profiles") or (),
@@ -773,14 +796,44 @@ class Session:
             semantic_source=semantic_source,
             style=opzioni.style)
         risultato.concept_resolution = resolution
+
+        ha_radice = isinstance(piano.get("root"), dict) and piano["root"].get("ref")
         for diagnostic in resolution.diagnostics:
             severity = diagnostic.get("severity", "error")
-            if severity == "warning":
+            # Un concetto sbagliato non deve uccidere una radice valida: se il
+            # piano ne porta una, la diagnosi resta ma scende ad avviso. Il
+            # modello ha sbagliato una cosa, non tutto.
+            if severity == "warning" or ha_radice:
                 risultato.report.warn(diagnostic["code"], diagnostic["message"],
                                       where=diagnostic.get("where", ""))
             else:
                 risultato.report.add(diagnostic["code"], diagnostic["message"],
                                      where=diagnostic.get("where", ""))
+
+        # Due casi in cui la radice scritta nel piano vince sul concetto:
+        # quando il concetto non si e' risolto, e quando si e' risolto **per
+        # approssimazione**. Nel secondo il planner ha nominato un pezzo
+        # preciso e il risolutore ha tirato a indovinare: fra una scelta e una
+        # supposizione si tiene la scelta. Un concetto esatto invece comanda,
+        # perche' li' non si sta indovinando niente.
+        cede_alla_radice = ha_radice and (not resolution.selected_root_implementation
+                                          or resolution.approximate)
+        if cede_alla_radice:
+            log.info("concept '%s' (%s): uso la radice del piano '%s'",
+                     requested, resolution.match or "non risolto",
+                     piano["root"].get("ref"))
+            resolution.strategy.append("radice fornita dal piano")
+            resolution.provenance["fallback"] = "plan_root"
+            resolution.provenance["superseded_root_implementation"] = \
+                resolution.selected_root_implementation
+            resolution.selected_root_implementation = str(piano["root"]["ref"])
+            resolution.match = MATCH_PLAN_ROOT
+            # Nessun binding regge piu' questa scelta: tenerlo farebbe dire a
+            # `_validate_saved_concept` che il binding «non indica piu' lo
+            # stesso root», che e' vero e irrilevante — non e' stato un binding
+            # a decidere.
+            resolution.selected_binding = ""
+            return {k: v for k, v in piano.items() if k != "concept"}
         if not resolution.selected_root_implementation:
             return piano
 

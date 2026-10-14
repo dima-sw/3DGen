@@ -1,15 +1,19 @@
 # Che cosa manca
 
-Aggiornato il 14 ottobre 2026, dopo la milestone V1 (indice semantico unico).
+Aggiornato il 14 ottobre 2026, dopo le milestone V1 (indice semantico unico) e
+V2 (degradazione semantica spiegabile).
 
-Lo stato: **1254 test verdi**, un solo percorso dal prompt al modello, 22
-plugin, 97 componenti, API congelate. Davanti al planner c'e' ora uno stadio di
-retrieval: il carico mandato al modello dipende dalla rosa di componenti
-rilevanti, non da quanti plugin sono installati.
+Lo stato: **1287 test verdi**, un solo percorso dal prompt al modello, 22
+plugin, 97 componenti, API congelate. Davanti al planner c'e' uno stadio di
+retrieval — il carico mandato al modello dipende dalla rosa di componenti
+rilevanti, non da quanti plugin sono installati — e dietro c'e' una scala di
+degradazione: quando il concetto chiesto non esiste si usa il piu' vicino che
+c'e', e lo si dice.
 
 Misurato, non dichiarato: con un LLM reale le generazioni riuscite sugli otto
-prompt di `PRODUCT-AUDIT.md` passano da 3 su 8 a 6 su 8, e i `413
-payload_too_large` da 8 su 8 a zero. Vedi `V1-RESULTS.md`.
+prompt di `PRODUCT-AUDIT.md` passano da 3 su 8 a 6 su 8 con V1 e a 7 su 8 con
+V2; i `413 payload_too_large` da 8 su 8 a zero; `jeep` da «casco» a
+«vehicle_stylized:car». Vedi `V1-RESULTS.md` e `V2-RESULTS.md`.
 
 Quello che segue e' cio' che non c'e' — scritto per essere onesto, non per
 essere lungo.
@@ -36,19 +40,19 @@ plugin che dimentica i tag e' invisibile a quel planner (non all'LLM vero), e il
 ripiego peggiora in silenzio. Un test lo verifica sui plugin nostri; per quelli
 di altri servirebbe un avviso al caricamento.
 
-V1 ha reso il problema piu' netto invece di risolverlo: ora il planner locale
-sceglie dentro la rosa, quindi quando la rosa e' giusta migliora (il «pesce con
-corpo umanoide» compone davvero `humanoid_anatomical:body` + `fish:fish_body`
-invece di 40 nodi sovrapposti), e quando la libreria non ha il soggetto
-peggiora (il «robot con quattro braccia» da quattro pezzi di braccio sconnessi
-a una porta). La risposta e' la degradazione semantica, cioe' V2.
+V1 ha reso il problema piu' netto, V2 ne ha tolto meta'. Il planner locale
+sceglie dentro la rosa e a pari punteggio segue la rilevanza invece
+dell'alfabeto, quindi «una jeep» non e' piu' un casco. Resta vero che senza rete
+la scelta e' una corrispondenza di parole: «un albero fantasy» prende
+`fantasy:wing` perche' «fantasy» colpisce il nome del plugin prima dei tag
+dell'albero.
 
-**3-bis. Non c'e' degradazione semantica.** `jeep` non diventa mai `vehicle`:
-`Resolver._trova` fallisce e suggerisce alternative da `Registry.search`, che e'
-un conteggio di parole. Il ramo `concept` sa risalire la gerarchia ma e'
-alimentato da un catalogo scritto a mano (9 archetipi, 3 binding) ed e' fatale
-quando l'archetipo manca. E' la milestone V2 di `VISION-GAP.md`, e V1 le ha
-lasciato cio' che le serviva: candidati corretti su cui degradare.
+**3-bis. ~~Non c'e' degradazione semantica.~~ Fatto in V2.** `jeep`, `suv` e
+`camion` arrivano a `vehicle_stylized:car` con la spiegazione
+dell'approssimazione; `robot` e `sottomarino` dichiarano che non c'e' niente di
+adatto invece di costruire un'omonimia. La gerarchia si ricava dai dati
+installati (`subject_capabilities`), non dal catalogo: installare un componente
+basta a renderlo candidato, senza scrivere un binding.
 
 **4. Un ginocchio non si piega — ma solo nel plugin `humanoid` storico.** Li'
 coscia, polpaccio e piede sono **fratelli** appesi ai socket della gamba, non
@@ -96,9 +100,24 @@ ma resta un compromesso.
   implementata e testata (si attiva passando un `path`), ma `Session` la tiene
   in memoria: con 96 componenti l'indice costa 15 ms e un file in piu' nella
   home dell'utente non si ripaga. Con migliaia di componenti va acceso.
-- **Il ripiego quando non si trova niente e' un cerotto.** Sotto 120 componenti
-  si mostra tutta la libreria (il comportamento di prima di V1); sopra, si manda
-  una fetta in ordine di id e lo si dichiara. La risposta giusta e' V2.
+- **Il ripiego del retrieval quando non si trova niente e' un cerotto.** Sotto
+  120 componenti si mostra tutta la libreria (il comportamento di prima di V1);
+  sopra, si manda una fetta in ordine di id e lo si dichiara. La degradazione di
+  V2 lavora sul **concetto**, non sulla rosa: quando e' il retrieval a non
+  trovare niente, il ripiego resta quello.
+
+- **Un trait inventato uccide ancora un piano valido.** E' l'ultimo dei due
+  fallimenti con LLM reale: il modello scrive
+  `adaptations: [{"trait": "instance_count"}]`, `validate_plan` lo rifiuta come
+  errore fatale e il piano muore anche quando la radice e' buona. E' la stessa
+  forma del difetto che V2 ha tolto al ramo `concept`, ma e' una decisione
+  diversa: `tests/test_traits.py:299` pretende oggi `graph is None` per un trait
+  sconosciuto. Cambiarlo vuol dire cambiare quel test apposta, non di sfuggita.
+  Vale uguale per uno `structural_trait` o un `effect` inventato.
+
+- **La soglia `MIN_CONFIDENCE = 0.08` e' tarata su 97 componenti.** Con migliaia
+  va riverificata: troppo bassa produce omonimie, troppo alta rifiuta
+  approssimazioni legittime.
 - **La correzione unica non e' ancora dimostrata su un modello vero.** Lo
   structured output e la catena di failover ora funzionano davvero (V1 ha
   misurato 6 generazioni su 8 con provider reali), ma la riparazione non ha mai

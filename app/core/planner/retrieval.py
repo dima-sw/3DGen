@@ -409,7 +409,11 @@ def shortlist(registry, prompt: str, *, index: ComponentIndex | None = None,
         scelti.append(componente)
         hits.append(hit)
 
-    ordinati = sorted(scelti, key=lambda c: c.id)
+    # L'ordine e' quello della scelta — prima i piu' rilevanti, poi la
+    # chiusura — e non l'alfabetico. Un planner che a pari merito prende il
+    # primo deve trovarsi davanti l'auto, non il casco: ordinare per id
+    # trasformava la rosa in una lotteria sul nome del componente.
+    ordinati = scelti
     secondi = time.perf_counter() - inizio
     log.info("rosa: %d/%d componenti in %.1f ms per '%s'",
              len(ordinati), totale, secondi * 1000, prompt[:60])

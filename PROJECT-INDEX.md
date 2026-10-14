@@ -2,8 +2,9 @@
 
 Machine-oriented index of the repository. Written to let another AI understand
 the architecture, locate code, and make changes without re-exploring the tree.
-Generated 2026-10-14 from the working tree; updated after milestone V1
-(semantic retrieval). See "Repository state" at the end.
+Generated 2026-10-14 from the working tree; updated after milestones V1
+(semantic retrieval) and V2 (explainable semantic degradation). See
+"Repository state" at the end.
 
 Language note: code identifiers, docstrings and comments are mostly **Italian**
 (`grafo` = graph, `nodo` = node, `piano` = plan, `pezzo` = piece, `innesto` =
@@ -37,8 +38,8 @@ prompt
  → Session.generate()                      app/core/session.py
  → shortlist (semantic retrieval)          app/core/planner/retrieval.py   [V1]
  → build_vocabulary(shortlist)             app/core/planner/vocabulary.py
- → ConceptResolver (optional)              app/core/archetypes.py
  → Planner (LLM or Mock)                   app/core/planner/planner.py
+ → ConceptResolver (degradation ladder)    app/core/archetypes.py          [V2]
  → validate_plan → CompositionGraph        app/core/planner/plans.py, app/core/graph.py
  → StructuralTraitResolver (graph rewrite)  app/core/structural.py
  → Resolver → ResolvedComposition          app/core/resolver.py, app/core/resolved.py
@@ -88,8 +89,9 @@ only place a decision stays readable.
 
 `GenerationResult` carries `ok`, `diagnostics`, `triangles`, `scene()`,
 `mesh()`, `explain()`, `changes()`, `skipped()`, `describe()`, `to_dict()`,
-`shortlist` + `retrieval()` (what the planner was shown, and why), and
-provider provenance (`requested_provider/model`, `actual_provider/model`,
+`shortlist` + `retrieval()` (what the planner was shown, and why),
+`concept_resolution` + `degradation()` (**[V2]**, why the model is not exactly
+what was asked for — empty when it is), and provider provenance (`requested_provider/model`, `actual_provider/model`,
 `failover_count`).
 
 ---
@@ -101,7 +103,7 @@ provider provenance (`requested_provider/model`, `actual_provider/model`,
 | `session.py` | 951 | `Session`, `Options`, `GenerationResult`, `Version` history |
 | `registry.py` | 1216 | `Registry`, `PluginInfo`, `CapabilityInfo`, plugin discovery/manifest reading, `freeze()`, `verify()` |
 | `resolver.py` | 873 | `Resolver` — candidate scoring and socket matching (weights: capability 16, side 8, style 4, tag 1) |
-| `archetypes.py` | 883 | `ArchetypeSpec`, `ProfileSpec`, `ImplementationBinding`, `ConceptResolver`, `ConceptResolutionPlan`, coverage/diagnostics |
+| `archetypes.py` | 1188 | `ArchetypeSpec`, `ProfileSpec`, `ImplementationBinding`, `ConceptResolver`, `ConceptResolutionPlan`, coverage/diagnostics; **[V2]** `subject_capabilities`, `normalize_reference`, `MATCH_*`, the degradation ladder |
 | `graph.py` | 644 | `CompositionGraph`, `CompositionNode`, `EffectRequest`, `Operation`; param provenance (`FROM_DEFAULT/DERIVED/OVERRIDE/EFFECT/TRAIT`); `to_dict`/`from_dict` |
 | `effect.py` | 568 | `Scope`, `PlannedEffect`, `EffectContext`, `EffectPipeline`, `apply_effects` |
 | `structural.py` | 473 | structural traits: `StructuralTarget`, `EnsureCountOperation`, `GraphRewritePlan`, `StructuralTraitResolver` (cap `MAX_STRUCTURAL_COUNT = 64`) |
@@ -134,7 +136,7 @@ provider provenance (`requested_provider/model`, `actual_provider/model`,
   `Corpus` hook — there is no second retrieval engine. Tunables: `SHORTLIST=28`,
   `PER_GROUP=8`, `PER_PLUGIN=10`, `CLOSURE=10`, `THRESHOLD=0.02`,
   `FALLBACK_MAX=120`.
-- `vocabulary.py` (847) — what the LLM is shown: `ComponentEntry`,
+- `vocabulary.py` (850) — what the LLM is shown: `ComponentEntry`,
   `EffectEntry`, `TraitEntry`, `ArchetypeEntry`, `ProfileEntry`,
   `BindingEntry`, `CapabilityEntry`. `build_vocabulary(registry, *, style,
   detail_level, components=None)` — passing `components` restricts capabilities,
@@ -189,13 +191,25 @@ These are the newest and least documented parts of the system.
    Reference plugins: `multi_arm_extension`, `multi_wheel_extension`,
    `multi_tail_extension`.
 
-3. **Archetypes / profiles / bindings** (`app/core/archetypes.py`) — concept
-   resolution. A plan may say `{"concept": {"requested": "fox"}}` instead of a
-   component tree; `ConceptResolver` maps the concept to archetypes (semantic
-   families, inheritable), profiles (reusable default trait bundles) and
-   `ImplementationBinding`s (concept → installed component), then reports
-   `ConceptCoverage` per requested adaptation: supported, unsupported or
-   ignored. Registered by the `archetype_metadata` plugin.
+3. **Concept resolution and degradation** (`app/core/archetypes.py`) — a plan
+   may say `{"concept": {"requested": "jeep"}}` instead of a component tree.
+   **[V2]** `ConceptResolver` walks a ladder and always says which rung it
+   stopped on (`ConceptResolutionPlan.match`, `.confidence`, `.strategy`,
+   `.approximate`, `.describe()`):
+
+   ```text
+   1 exact id          2 component name      3 archetypes/bindings
+   4 semantic proxy    5 root from the plan  6 explicit failure
+   ```
+
+   Rungs 1–3 are the pre-V2 path (`ArchetypeSpec` hierarchies with cycle
+   detection, `ImplementationBinding`, `ConceptCoverage`, `_preflight`) and are
+   now **optional enrichment**: when the catalog does not cover a concept, rung
+   4 ranks installed components from the V1 index. `subject_capabilities()`
+   derives "this component is a whole subject" structurally — a capability
+   provided by someone and accepted by nobody — so a new plugin participates
+   with no binding written by hand. `normalize_reference()` repairs invented id
+   prefixes only when the remainder is unambiguous, and reports every repair.
 
 `LayoutEngine` (`app/core/layout.py`) sits alongside: when many siblings must
 share a parent surface, declared `LayoutRegion`s plus a `LayoutPolicy`
@@ -318,7 +332,7 @@ planner sees, automatically.
 
 ## 9. Tests, tools, benchmarks
 
-`1254 tests` (`python -m pytest -q`; `pytest.ini` + `conftest.py` at root).
+`1287 tests` (`python -m pytest -q`; `pytest.ini` + `conftest.py` at root).
 Tests target the **contracts between** modules, not just units:
 `test_core_contracts.py`, `test_core_registry.py`, `test_core_resolver.py`,
 `test_core_graph.py`, `test_core_effects.py`, `test_planner_core.py`,
@@ -331,8 +345,11 @@ Tests target the **contracts between** modules, not just units:
 `test_humanoid_anatomical.py`, `test_ai_providers.py`,
 `test_retrieval.py` (**[V1]**, 41 tests: component indexing, fingerprint
 invalidation, search, shortlist, plugin synonyms, restricted vocabulary,
-sanitize unchanged, and a 1 000-component synthetic library). Fixture plugins
-live in `tests/plugins/` (including intentionally malformed ones).
+sanitize unchanged, and a 1 000-component synthetic library),
+`test_degradation.py` (**[V2]**, 33 tests: the ladder, id normalization,
+concept-vs-root precedence, explanation, `.my3d` persistence, and a library that
+grows through metadata alone). Fixture plugins live in `tests/plugins/`
+(including intentionally malformed ones).
 
 `tools/`: `benchmark.py`, `render_benchmark.py`, `render_scenari.py`,
 `archetype_benchmark.py`, `archetype_validation.py`, `semantic_traits_benchmark.py`,
@@ -400,7 +417,8 @@ database.
 
 ```text
 main                 3141e04  checkpoint pre-V1 (the whole extension layer committed)
-v1-semantic-index    V1: semantic retrieval before the planner
+v1-semantic-index    a05c0d4  V1: semantic retrieval before the planner
+                     + V2: explainable semantic degradation
 ```
 
 `3141e04` on `main` is the restore point: it captured everything that had been
@@ -409,11 +427,14 @@ stylized benchmark plugins, `humanoid_anatomical`, `archetype_metadata`, the
 design docs, `PRODUCT-AUDIT.md`, `VISION-GAP.md`). The history before it
 (`b124ee4`) predates all of that.
 
-V1 work lives on `v1-semantic-index`: `app/core/planner/retrieval.py` and
-`tests/test_retrieval.py` are new; `app/assets/semantic.py`,
-`app/core/planner/vocabulary.py`, `app/core/registry.py`, `app/core/session.py`,
-`app/plugins/vehicle_stylized/plugin.json` and `tests/test_api_freeze.py` are
-modified.
+V1 and V2 both live on `v1-semantic-index`. V1 added
+`app/core/planner/retrieval.py` and `tests/test_retrieval.py` and modified
+`app/assets/semantic.py`, `app/core/planner/vocabulary.py`,
+`app/core/registry.py`, `app/core/session.py`,
+`app/plugins/vehicle_stylized/plugin.json`, `tests/test_api_freeze.py`.
+V2 added `tests/test_degradation.py` and modified `app/core/archetypes.py`,
+`app/core/session.py`, `app/core/planner/{retrieval,vocabulary,planner}.py`,
+`tests/test_api_freeze.py`. Results in `V1-RESULTS.md` and `V2-RESULTS.md`.
 
 Scratch/output dirs to ignore (all git-ignored): `.tmp-tests/`,
 `audit-images/`, `output/`, `build/`, `dist/`, `library/`, `__pycache__/`,
@@ -437,11 +458,17 @@ Scratch/output dirs to ignore (all git-ignored): `.tmp-tests/`,
    `app/core/planner/vocabulary.py:sanitize()`.
 7. The plan, not the mesh, is the artifact. `.my3d` and the asset library store
    plans plus plugin versions so a divergent regeneration can be explained.
-8. UI, CLI and tests all go through `Session`. Never add a second generation
-   path.
+8. UI, CLI and tests all go through `Session`, and concept resolution happens
+   in `Session._verifica` — the one phase `generate()`, `build()` and a
+   hand-written plan all reach. Never add a second generation path.
 9. `tests/test_api_freeze.py` guards the public API — a signature change there
    is a deliberate decision, not a refactor side effect.
 10. One retrieval engine. Indexing something new means adding a `Corpus` in
     `app/assets/semantic.py`, never a second index.
 11. Domain word bridges ("a jeep is a car") are plugin data in `plugin.json`
     under `synonyms`, never code in the core.
+12. An approximation is always declared. If the engine did not build what was
+    asked for, `ConceptResolutionPlan.match` says so, `degradation()` explains
+    it and the `.my3d` keeps it.
+13. A hallucinated optional field (a concept, an archetype id) must not destroy
+    an otherwise valid plan. Degrade, diagnose, continue.
