@@ -1,0 +1,19 @@
+{
+  "id": "dragon_body",
+  "version": "1.0.0",
+  "name": "Dragon Body",
+  "description": "A procedural cartoon low-poly main torso and central mass for a dragon.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["dragon", "body", "torso", "creature", "fantasy", "reptile", "cartoon", "low_poly"],
+  "components": ["components/body.py"],
+  "effects": [],
+  "styles": [],
+  "materials": [],
+  "traits": [],
+  "archetypes": [],
+  "profiles": [],
+  "bindings": [],
+  "dependencies": [],
+  "metadata": {}
+}

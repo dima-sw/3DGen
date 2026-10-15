@@ -115,10 +115,80 @@ class MainWindow(QMainWindow):
         act_grid.setCheckable(True)
         act_grid.setChecked(True)
         act_grid.triggered.connect(self._toggle_grid)
+        # [V6] Le due porte dell'authoring. Condividono la `Session` di questa
+        # finestra, cosi' un plugin installato dall'authoring e' subito
+        # generabile da qui — senza riavviare, che e' il punto.
+        act_authoring = QAction("Authoring", self)
+        act_authoring.triggered.connect(self.on_open_authoring)
+        act_lab = QAction("Component Lab", self)
+        act_lab.triggered.connect(self.on_open_component_lab)
+        # [V7] La terza porta: insegnare un concetto. Condivide la stessa
+        # `Session`, cosi' un componente imparato e' subito generabile da qui.
+        act_teach = QAction("Teach", self)
+        act_teach.triggered.connect(self.on_open_teach)
         for a in (act_open_prj, act_save_prj, self.act_undo, self.act_redo,
-                  act_save_lib, act_export, act_view, act_tex, act_grid):
+                  act_save_lib, act_export, act_view, act_tex, act_grid,
+                  act_authoring, act_lab, act_teach):
             tb.addAction(a)
+        self._authoring_window = None
+        self._teach_window = None
         self._sync_actions()
+
+    # ------------------------------------------------------------ authoring #
+    def on_open_authoring(self):
+        """Apre la finestra di authoring sulla stessa sessione."""
+        from app.ui.authoring_window import AuthoringWindow
+
+        if self._authoring_window is None:
+            self._authoring_window = AuthoringWindow(session=self.session,
+                                                     parent=self)
+        self._authoring_window.show()
+        self._authoring_window.raise_()
+        return self._authoring_window
+
+    def on_open_teach(self):
+        """Apre Teach 3DGen sulla stessa sessione.
+
+        La stessa, non una nuova: un concetto imparato installa componenti, e
+        chi li ha imparati deve poterli generare subito dalla finestra
+        principale senza riavviare. E' la ragione per cui
+        `Session.reload_plugins` sta su `Session` e non nei livelli sopra.
+        """
+        from app.ui.teach_window import TeachWindow
+
+        if self._teach_window is None:
+            self._teach_window = TeachWindow(session=self.session, parent=self)
+        self._teach_window.show()
+        self._teach_window.raise_()
+        return self._teach_window
+
+    def on_open_component_lab(self, component_id: str = ""):
+        """Il Component Lab su un componente installato, scelto da un elenco.
+
+        L'elenco e' il registry: la scheda «Libreria» mostra gli asset salvati
+        e non cio' che i plugin forniscono, che era il divario annotato in
+        `VISION-GAP` §6. Qui si sfoglia il vocabolario installato.
+        """
+        from app.authoring import ComponentLab
+        from app.ui.authoring_window import ComponentLabDialog
+
+        if not component_id:
+            ids = [c.id for c in self.session.catalog().components()]
+            if not ids:
+                return None
+            component_id, ok = QInputDialog.getItem(self, "Component Lab",
+                                                    "componente installato",
+                                                    ids, 0, False)
+            if not ok or not component_id:
+                return None
+        try:
+            lab = ComponentLab(self.session, component_id)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Component Lab", str(exc))
+            return None
+        dialog = ComponentLabDialog(lab, parent=self)
+        dialog.show()
+        return dialog
 
     # ------------------------------------------------- qualita e recupero #
     def _announce_quality(self) -> None:

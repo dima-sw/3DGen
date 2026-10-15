@@ -1,14 +1,14 @@
 # Che cosa manca
 
-Aggiornato il 14 ottobre 2026, dopo le milestone V1 (indice semantico unico),
+Aggiornato il 15 ottobre 2026, dopo le milestone V1 (indice semantico unico),
 V2 (degradazione semantica spiegabile), V3 (selettori strutturali e identita'
 stabile dei nodi), V3.5 (robustezza del contratto del planner), V4 (componenti
-mesh-backed dichiarati in dati) e V5 (variabilita' semantica e convenzione
-d'asse come contratto).
+mesh-backed dichiarati in dati), V5 (variabilita' semantica e convenzione
+d'asse come contratto), V6 (authoring dei componenti) e V7 (Teach 3DGen).
 
-Lo stato: **1598 test verdi**, un solo percorso dal prompt al modello, 23
-plugin di codice piu' i plugin dati che chiunque installi, 97 componenti, API
-congelate. Davanti al planner c'e' uno stadio di
+Lo stato: **2070 test verdi**, un solo percorso dal prompt al modello, 23
+plugin di codice piu' i plugin dati che chiunque installi o impari, 97
+componenti, API congelate. Davanti al planner c'e' uno stadio di
 retrieval — il carico mandato al modello dipende dalla rosa di componenti
 rilevanti, non da quanti plugin sono installati — dietro c'e' una scala di
 degradazione, i trait strutturali non dipendono piu' dai nomi che il planner
@@ -33,7 +33,26 @@ stesso `semantic_role`, un parametro dati puo' pilotare un effetto installato
 (`curvature` → `fx:bend`), squash/elongate/taper/twist esistono come effetti
 normali, e la convenzione d'asse e' diventata una dichiarazione che il resolver
 confronta: la chimera pesce + drago + ali non passa piu' in silenzio. Vedi
-`V5-RESULTS.md`.
+`V5-RESULTS.md`. Con V6 **un GLB diventa un plugin dati senza scrivere JSON a
+mano**: si importa, si selezionano gli oggetti, si creano componenti e
+composite gerarchici, si disegnano socket e capability, si dichiarano parametri
+con una strategia installata, si valida con i validatori veri, si salva e si
+installa — senza riavviare, e con il `SemanticIndex` che lo trova subito. E le
+operazioni esistono **prima** come chiamate: `app/authoring/` non importa Qt in
+nessun file, e un test costruisce un plugin intero senza aprire una finestra,
+perche' e' la strada che Teach 3DGen dovra' usare. Vedi `V6-RESULTS.md`.
+Con V7 **3DGen impara un concetto invece di rigenerarlo**: si decompone
+«dragon» in un'ontologia con due passi di prompt, si confronta la gerarchia con
+la libreria installata e ne escono i quattro stati da **evidenze nominate** (non
+da una soglia su un punteggio), un giallo diventa verde con una `VariantRecipe`
+senza duplicare geometria, un rosso produce una specifica tecnica che 3DGen
+decide e un prompt che e' un contratto, la risposta di un modello entra in
+staging — e se e' Python **non viene eseguita** finche' qualcuno non lo decide —
+e cio' che si accetta si installa, reindicizza e ricalcola la copertura. Quando
+ogni mandatory e' verde si emette il composite della radice e il concetto e'
+`LEARNED`. La prova finale: una `Session` **normale**, con il planner locale e
+nessuna rete, fa `shortlist("dragon")` e trova `dragon_pack:dragon` al primo
+posto, e `generate("a cartoon dragon")` lo costruisce. Vedi `V7-RESULTS.md`.
 
 Quello che segue e' cio' che non c'e' — scritto per essere onesto, non per
 essere lungo.
@@ -300,6 +319,101 @@ benchmark di V4, non corretto.
   `where` giusto, ma il testo reso puo' mostrare la mossa di un nodo accanto al
   messaggio di un altro. Riguarda tutti i codici allo stesso modo ed e' presente
   da V3.5.
+- ~~**[V4] Un solo `mesh` per componente, e un composite dati non si puo'
+  dichiarare.**~~ **Mezzo fatto in V6.** `mesh` e' diventato **facoltativo**: un
+  componente dati senza mesh e' un contenitore, `Piece.mesh = None`, e la
+  geometria la portano i figli — che e' la forma normale di un concetto
+  complesso e quella che Teach 3DGen usera'. Due regole lo rendono non ambiguo:
+  senza mesh **servono** children, e senza mesh **niente** `transform` (scalare
+  i soli socket sposterebbe i figli senza rimpicciolirli). Restano senza LOD
+  dichiarati e senza varianti di mesh: quella meta' del debito e' aperta.
+
+- **[V6] Il gizmo dei socket si legge e non si trascina.** Nel viewport non c'e'
+  picking, quindi un innesto si sposta con gli snap e con i campi numerici.
+  Aggiungerlo vuol dire un ray cast contro la scena e una nozione di «maniglia
+  afferrata»: codice nuovo nel viewport, non nel contratto. Dichiarato invece
+  che finto con un gizmo che non si puo' prendere.
+- **[V6] La selezione e' per nodo della scena, non per facce.** Un GLB che
+  arriva in un pezzo unico non si puo' dividere dentro 3DGen, ed e' il caso in
+  cui l'authoring non aiuta. La selezione di facce richiederebbe un editor mesh
+  completo; l'auto-segmentation e' un'altra milestone.
+- **[V6] Riaprire un plugin dati non recupera la selezione degli oggetti.** La
+  mesh per componente si copia byte per byte, quindi non si perde niente — ma
+  chi vuole ritagliare diversamente reimporta il GLB originale. Il campo
+  editor-only che lo eviterebbe non e' stato aggiunto per scelta: il plugin e'
+  una libreria, non uno stato di lavoro.
+- **[V6] Una variant con trait o effetti non si incorpora in un composite.** Un
+  `Attachment` porta `params`; trait ed effetti sono cose del **piano**.
+  `embeddable` dice quale delle due si ha davanti e
+  `AUTHORING_VARIANT_NOT_EMBEDDABLE` lo segnala invece di perderlo in silenzio.
+  La via dichiarata e' un parametro `effect`-backed sul componente base.
+- **[V6] Lo staging a freddo costa 131 ms** — emettere il plugin piu' caricare
+  24 plugin — e si paga a ogni cambiamento strutturale. E' il prezzo dichiarato
+  di far passare la preview dalla pipeline vera invece di simularla, e muovere
+  uno slider costa 1.2 ms perche' i parametri viaggiano nel piano. Con un
+  progetto da cinquanta componenti servira' riemettere solo i file cambiati,
+  cioe' un'impronta **per componente** invece che per progetto — e rende piu'
+  caro il debito dell'impronta di contenuto ricalcolata a ogni caricamento.
+- ~~**[V6] La copertura esiste e non e' collegata a niente.**~~ **Decisa in
+  V7.** `app/teach/coverage.py` confronta la gerarchia di un concetto con la
+  libreria installata e produce i quattro stati da **evidenze nominate**:
+  `CANDIDATE` vuole identita' **e** contesto, `PROXY` identita' senza contesto
+  oppure contesto con somiglianza, `MISSING` nessuna delle due, e `VALIDATED`
+  **mai** da un'evidenza — lo scrivono quattro metodi che un utente chiama. Gli
+  stati restano quelli di V6, importati da `app/authoring/model.py`: due elenchi
+  di quattro stringhe che devono restare uguali sono un elenco di troppo.
+- **[V6] Nessun plugin autorato o imparato e' entrato nella libreria
+  installata.** I plugin dati di V4, V5, V6 e V7 vivono nei test e in cartelle
+  temporanee: la libreria resta 23 plugin e 97 componenti, tutti di codice. Il
+  giorno in cui uno entra in `app/plugins/` sara' una milestone di contenuto con
+  la sua misura — ed e' anche il modo di scoprire quale parte dello strumento e'
+  davvero fastidiosa.
+
+- **[V7] Uno schema di risposta ricorsivo non passa da tutti i backend di
+  structured output.** Groq risponde `400 json_validate_failed` sullo schema di
+  decomposizione, che usa `$ref: "#/$defs/node"`; Gemini ha risposto `503` e poi
+  e' andato in timeout, Mistral `429`, e la catena di failover ha trovato chi
+  rispondesse. La modalita' esterna funziona identica, quindi non blocca niente:
+  la via dichiarata e' una **variante** dello schema appiattita a profondita'
+  fissa per quei provider, non la sostituzione di quello vero, perche'
+  un'ontologia non ha una profondita' nota. Misurato in `V7-RESULTS.md` §22.
+- **[V7] Un record di validazione non sa quando e' scaduto.** Registra il
+  plugin ma non la sua impronta, quindi un componente cambiato dopo resta un
+  `prior_validation` valido. `TeachService.changed_components()` lo rileva
+  **dentro** un progetto; lo store di conoscenza no, e dovrebbe.
+- **[V7] Un componente generato si valida da solo, non sul padre.** Si carica,
+  si costruisce, si misura e si cerca; la compatibilita' con il padre e con i
+  figli la esercita il composite quando viene emesso, cioe' piu' tardi.
+  Costruire un piano `padre + figlio` dentro la validazione e' il prossimo
+  passo evidente.
+- **[V7] La disposizione degli innesti di un composite e' una convenzione.** Si
+  distribuiscono su una circonferenza guardando verso l'esterno: strutturalmente
+  corretto, visivamente mediocre — ed e' la stessa distinzione del punto 4-bis
+  fra correttezza strutturale e qualita' di layout. La via e' dichiarare
+  `LayoutRegion` sul composite, che `AuthoringService` sa gia' fare e che
+  nessuno gli chiede da qui.
+- **[V7] Lo store di conoscenza e' lineare.** Sei record si cercano in niente;
+  migliaia andranno indicizzati per (ruolo, nome), e la domanda vera e' se lo
+  store debba diventare un `Corpus` dell'indice semantico — la risposta coerente
+  con la regola 10 — invece di una tabella.
+- **[V7] Il sottoprocesso di validazione costa 2.9 secondi**, contro 5.4 ms in
+  processo: e' l'avvio di un interprete piu' `trimesh`. Un processo di servizio
+  riusato lo ammortizzerebbe, e il motivo per cui non c'e' e' che un processo
+  che resta vivo e che ha importato codice generato e' esattamente la cosa che
+  §30 della milestone chiede di non avere per sbaglio.
+- **[V7] `emit_composite` paga lo staging dell'authoring due volte per
+  concetto** (debito di V6, ora piu' visibile): 185 ms per il composite
+  intermedio, 467 per la radice. La via resta riemettere solo i file cambiati.
+- **[V7] Alzare il `detail_target` dopo l'analisi non avvisa.** Funziona, e i
+  nodi che diventano rilevanti partono da zero senza che nessuna diagnostica lo
+  dica. E' la stessa famiglia di `TEACH_DECISION_LOST`, dal lato opposto.
+- **[V7] Il `MockPlanner` trova un composite imparato per il nome, non per il
+  significato.** «a cartoon dragon» arriva a `dragon_pack:dragon` perche' la
+  parola combacia; «a winged fire-breathing reptile» dipende dai sinonimi che il
+  manifest dichiara, e `emit_composite` ne dichiara uno solo — il nome del
+  concetto. Dichiararne di piu' vuol dire chiedere all'utente quali, ed e' una
+  domanda ragionevole che non e' stata fatta.
+
 - **[V5] Il banco dei sei prompt non e' stato fatto con un modello di
   frontiera.** Quello che e' misurato e' che il trait giusto sia nel **testo
   reso** del vocabolario per ciascuno dei sei prompt e che la richiesta sia
@@ -323,6 +437,18 @@ benchmark di V4, non corretto.
   modello non poteva sceglierlo. Risolto come in V3.5, con 25 ponti fra le parole
   nel manifest di `variability_extension` (la libreria passa da 16 a 39
   sinonimi): dati, non codice. La domanda sbagliata resta la stessa.
+
+  **[V6] Il Component Lab la fa giusta, e il vocabolario no.**
+  `ComponentLab.traits()` guarda il **sottoalbero risolto** del componente,
+  quindi su `humanoid_anatomical:body` offre `std:head_scale`, `std:hand_scale`
+  e `std:limb_length` — i tre che il filtro del vocabolario nasconde. Si puo'
+  fare li' perche' il laboratorio ha il componente in mano e puo' costruirlo,
+  mentre il retrieval ha solo la rosa e nessun grafo. Scoperto misurando:
+  leggere gli `Attachment` dichiarati non basta, perche' `Component.children` e'
+  una callable e quella di `humanoid_anatomical:torso` legge valori che il
+  resolver deriva dal padre — chiamata con i soli predefiniti alza `KeyError`.
+  **Il debito nel vocabolario resta aperto**, e ora si sa che la correzione vera
+  costa una risoluzione, non una lettura.
 
 - **Il retrieval mette le parti davanti agli interi.** «un robot con quattro
   braccia» da' una rosa di pezzi di braccio e nessun corpo, ed e' il motivo per
@@ -358,17 +484,38 @@ plugin, generazione automatica di plugin, cicli di correzione infiniti, giudizio
 visivo affidato a un modello, IK completo, motore di collisione completo,
 risolutore CAD, build distribuita, database.
 
-Nemmeno l'authoring visuale: UI di importazione, selezione di facce o parti,
-creazione visuale dei socket, auto-segmentation, riconoscimento delle parti con
-un modello, rig automatico, proceduralizzazione di una mesh, FBX/USD/Blend.
-V4 ha portato il **contratto** di un componente mesh-backed, non gli strumenti
-per autorarlo; V5 ha portato quello della sua **variabilita'**. Oggi un artista
-scrive il JSON a mano, e va bene cosi' finche' non si sa quale parte del JSON e'
-davvero fastidiosa.
+~~Nemmeno l'authoring visuale.~~ **Fatto in V6**, nella forma che la milestone
+chiedeva: non un editor 3D general purpose, ma uno strumento per autorare il
+**contratto che 3DGen ha gia'**. Import GLB/glTF, selezione per nodo della
+scena, componenti e composite, socket con gizmo leggibili e snap deterministici,
+capability da un elenco, parametri con una strategia installata, frame, detail
+level, validazione con i validatori veri, salvataggio nel formato V4/V5 e
+installazione senza riavviare. Con tre cose **non** fatte per scelta e scritte
+fra i debiti: il gizmo non si trascina, la selezione di facce non c'e', e
+nessuna inferenza automatica di parti.
 
-E nemmeno `Session.modify`, Teach 3DGen, la generazione di codice o di gerarchie
-con un modello, le shape key, la generazione neurale di mesh: V5 si e' fermata
-dove doveva.
+Restano fuori: auto-segmentation, riconoscimento delle parti con un modello, rig
+automatico, proceduralizzazione di una mesh, FBX/USD/Blend, editor UV, sculpting.
+
+~~E nemmeno Teach 3DGen, la decomposizione di un concetto con un modello, il
+giudizio AI di idoneita' o visivo, la generazione di codice Python.~~ **Fatto in
+V7**, nella forma che la milestone chiedeva: due passi di prompt per
+l'ontologia, una copertura che decide da evidenze e non da una soglia, un
+dossier economico per validare un candidato, una `VariantRecipe` che porta un
+giallo al verde senza nuova geometria, una specifica tecnica che 3DGen decide,
+un prompt che e' un contratto, uno staging da cui il Python **non esce senza
+fiducia esplicita**, e un composite della radice che una `Session` normale
+costruisce senza AI. Con tre cose **non** fatte per scelta e scritte fra i
+debiti: nessuna sandbox Python (e nessun messaggio che finga di averne una),
+nessun ciclo autonomo, e nessun componente artistico generato per riempire il
+drago.
+
+Restano fuori: marketplace, plugin store, esecuzione in cloud, job in
+background, cicli autonomi infiniti, fiducia automatica del Python generato,
+una sandbox vera, generazione neurale di mesh, generazione automatica di GLB da
+testo, auto-segmentation, rig, animation authoring, agent swarm permanente.
+
+E nemmeno `Session.modify` e le shape key.
 
 Ognuna di queste, oggi, aggiungerebbe infrastruttura per un problema che non
 abbiamo.

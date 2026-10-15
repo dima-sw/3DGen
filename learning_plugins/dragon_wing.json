@@ -1,0 +1,15 @@
+{
+  "base": "dragon_wing:wing",
+  "coverage": "CANDIDATE",
+  "detail_level": 2,
+  "format": 1,
+  "name": "dragon_wing",
+  "params": {
+    "girth": 0.02412,
+    "height": 0.48124999999999996,
+    "length": 1.6764000000000001,
+    "scale": 0.9775000000000001,
+    "width": 0.8785000000000001
+  },
+  "style": "low_poly"
+}

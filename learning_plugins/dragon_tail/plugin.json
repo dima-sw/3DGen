@@ -1,0 +1,19 @@
+{
+  "id": "dragon_tail",
+  "version": "1.0.0",
+  "name": "Dragon Tail",
+  "description": "A procedural cartoon low-poly long tapering dragon tail.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["dragon", "tail", "reptile", "creature", "fantasy", "silhouette", "cartoon", "low_poly"],
+  "components": ["components/tail.py"],
+  "effects": [],
+  "styles": [],
+  "materials": [],
+  "traits": [],
+  "archetypes": [],
+  "profiles": [],
+  "bindings": [],
+  "dependencies": [],
+  "metadata": {}
+}

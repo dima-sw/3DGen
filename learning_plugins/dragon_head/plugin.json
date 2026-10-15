@@ -1,0 +1,27 @@
+{
+  "id": "dragon_head",
+  "version": "1.0.0",
+  "name": "Dragon Head",
+  "description": "A procedural cartoon low-poly dragon head that hosts the principal facial parts.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": [
+    "dragon",
+    "head",
+    "creature",
+    "fantasy",
+    "reptile",
+    "cartoon",
+    "low_poly"
+  ],
+  "components": [
+    "components/head.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "capabilities": [],
+  "dependencies": [
+    "creature"
+  ],
+  "metadata": {}
+}

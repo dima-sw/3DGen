@@ -2,11 +2,12 @@
 
 Machine-oriented index of the repository. Written to let another AI understand
 the architecture, locate code, and make changes without re-exploring the tree.
-Generated 2026-10-14 from the working tree; updated after milestones V1
+Generated 2026-10-15 from the working tree; updated after milestones V1
 (semantic retrieval), V2 (explainable semantic degradation), V3 (structural
 selectors + stable node identity), V3.5 (planner contract robustness), V4
-(mesh-backed components declared in data) and V5 (semantic variability + the
-geometric frame contract). See "Repository state" at the end.
+(mesh-backed components declared in data), V5 (semantic variability + the
+geometric frame contract), V6 (component authoring) and V7 (Teach 3DGen). See
+"Repository state" at the end.
 
 Language note: code identifiers, docstrings and comments are mostly **Italian**
 (`grafo` = graph, `nodo` = node, `piano` = plan, `pezzo` = piece, `innesto` =
@@ -72,6 +73,25 @@ strings** added where the resolver already links a child to a parent; it never
 rotates anything, and `grep -rn "mesh_backed" app/build/ app/core/` outside the
 loader and the registry still returns nothing.
 
+**[V6] The pipeline above is unchanged by authoring.** `app/authoring/` is a
+layer *above* `Session`, not inside it: it writes a data plugin and installs it,
+and from that moment the preview is an ordinary generation. One grep is the
+measurement — `grep -rn "app.authoring\|app\.ui" app/core/ app/build/
+app/geometry/` returns nothing — and the only core change the milestone needed
+is that a **data** component may now omit `mesh` (`app/core/data_plugin.py`),
+which `Piece.mesh = None` had always allowed.
+
+**[V7] The pipeline above is unchanged by Teach 3DGen, and that is the point.**
+`app/teach/` is a layer above `app/authoring/`, which is a layer above
+`Session`: it decides *which components a concept needs*, it writes prompts,
+it stages what a model answers, and when a component is accepted it installs an
+ordinary data or code plugin. From that moment a learned concept is an ordinary
+generation — `Session.generate("a cartoon dragon")` builds `dragon_pack:dragon`
+with the local planner and no network. The grep is the measurement:
+`grep -rn "app.teach" app/core/ app/build/ app/geometry/ app/authoring/`
+returns nothing, and the only core change the milestone needed is a **removal
+of duplication** (the data-format key lists became module constants).
+
 Effect stages, in fixed order (`app/core/vocabulary.py:56-62`):
 `structural` → `proportion` → `local` → `global` → `style` → `final`.
 `proportion` changes **parameters before build**; `local`/`global`/`style`
@@ -91,7 +111,11 @@ and the better-scoring of the two plans wins (`plan_score`).
 | `main.py` | launches the PySide desktop UI |
 | `cli.py` | CLI; same `Session` API as the UI (~30 flags: `--plan`, `--explain`, `--detail`, `--style`, `--out`, `--png`, `--save`, `--find`, `--load`, `--project`, `--game-ready`, `--animate`, `--providers`, `--hardware`, `--recover`) |
 | `app/core/session.py` | **the single entry point** — `Session`, `Options`, `GenerationResult`, undo/redo history |
-| `app/ui/main_window.py` | UI shell; also provider/failover selection |
+| `app/ui/main_window.py` | UI shell; also provider/failover selection, and **[V6]** the two doors to authoring |
+| `app/authoring/service.py` | **[V6]** `AuthoringService` — the programmatic authoring API, with no Qt anywhere |
+| `app/ui/authoring_window.py` | **[V6]** `AuthoringWindow` (7 pages) and `ComponentLabDialog`; a thin client of the service |
+| `app/teach/service.py` | **[V7]** `TeachService` — the programmatic Teach API: decompose, cover, validate, generate, install, complete. No Qt anywhere |
+| `app/ui/teach_window.py` | **[V7]** `TeachWindow` (5 pages); a thin client of the service, read by token to prove it |
 
 **[V3] Two identities per node, and they are not the same thing.** The
 `planner node id` (`CompositionNode.id`) is a free name written by the model and
@@ -108,8 +132,16 @@ The full reasoning is at the top of `app/core/graph.py`.
 `build(plan)`, `regenerate()`, `configure_ai(provider, model, chain)`,
 `export(path)`, `save_project(path)`, `catalog()`,
 `vocabulary(style, prompt="", shortlist=None)`, `component_index()`,
-`shortlist(prompt, style)`, `undo()`/`redo()`/`goto(i)`, properties `current`,
-`current_plan`, `scene`, `result`.
+`shortlist(prompt, style)`, `undo()`/`redo()`/`goto(i)`, **[V6]**
+`reload_plugins(*paths)`, properties `current`, `current_plan`, `scene`,
+`result`.
+
+**[V6]** `reload_plugins()` is how the vocabulary changes without restarting: it
+never writes into a frozen registry, it builds another one from the same
+directories plus the new ones, and it drops the per-style vocabulary cache and
+the semantic index. New paths are *added*, because installing a plugin must not
+lose the library you had. It exists on `Session` and not in the authoring layer
+for rule 8: UI, CLI and tests all go through `Session`.
 
 `vocabulary()` with no prompt is the whole library (cached per style, the
 pre-V1 behaviour); with a prompt or a shortlist it is restricted to the
@@ -393,6 +425,154 @@ share a parent surface, declared `LayoutRegion`s plus a `LayoutPolicy`
 
 ---
 
+## 5-bis. [V6] The authoring layer (`app/authoring/`)
+
+A layer **above** `Session`, not inside it. It turns an existing 3D model into
+reusable 3DGen knowledge: a data plugin in the V4/V5 format. No new permanent
+model of a `Component`, no second deformation engine, no Python generated.
+
+| File | Lines | Contents |
+| --- | --- | --- |
+| `service.py` | 1816 | `AuthoringService` — the programmatic API, `CapabilityView`, `ValidationReport`, `InstallResult` |
+| `model.py` | 718 | `AuthoringProject`, `SourceModel`, `SceneObject`, `DraftComponent`, `DraftSocket`, `DraftParam`, `DraftChild`, the coverage states, `.3dgenproj` serialization |
+| `lab.py` | 415 | `ComponentLab`, `ParamKnob`, `LabResult` — any installed component, procedural or mesh-backed |
+| `gizmo.py` | 240 | readable socket/frame gizmos as ordinary `SceneNode`s, plus deterministic snap helpers |
+| `emit.py` | 239 | project → `plugin.json` + `components/*.json` + `meshes/*.glb` + `materials/*.json` |
+| `variant.py` | 182 | `VariantRecipe` — base + params + traits + effects, never a mesh |
+| `inspect.py` | 175 | `load_model` / `LoadedModel.extract` / `export_glb`; reuses `data_plugin`'s confined glTF reader |
+| `errors.py` | 42 | `AuthoringError` with stable `AUTHORING_*` codes |
+
+Five decisions worth knowing before changing this layer:
+
+1. **The service is the contract, the window is a client.** Nothing in
+   `app/authoring/` imports Qt, and a test builds a whole plugin without
+   opening a window. `tests/test_authoring_ui.py` reads
+   `app/ui/authoring_window.py` **by token** and asserts it contains no
+   `trimesh`, `json`, `emit_plugin`, `load_component`, `Registry`, `np`,
+   `load_model` or `export_glb`. V7 will call the service, not widgets.
+2. **The preview does not simulate: it emits and installs.** `_stage()` writes
+   the plugin into a scratch directory and installs it in a throwaway
+   `Session`, so a preview is an ordinary generation and what you see is what
+   you will save — the same JSON read by the same loader. Re-emission happens
+   only when `AuthoringProject.fingerprint()` changes, and that digest
+   *excludes* editor state (selection, visibility, current component,
+   destination, coverage, notes). A parameter travels in the **plan**, so
+   moving a slider costs 1.2 ms instead of 131.
+3. **Coverage lives in the project, never in `Component`.**
+   `VALIDATED`/`CANDIDATE`/`MISSING`/`PROXY` is the judgement of whoever is
+   assembling a concept, not a property of a piece: an installed component is
+   either in the library or absent. It never reaches the emitted JSON, and a
+   parameterized test checks all four values.
+4. **A draft reference names three things with one field.** `draft:<key>` a
+   component of this project, `variant:<name>` a recipe declared here, anything
+   else an **installed** component. That is what makes a mixed hierarchy
+   (imported body + `creature:eye` + `fantasy:wing`) an ordinary case instead
+   of a separate feature.
+5. **A gizmo is geometry, not an overlay.** The viewport draws a `Scene`, so a
+   gizmo is an extra mesh tagged `gizmo` (disc, direction arrow, up bar). Those
+   nodes never count as triangles, never export, never reach the plugin — a
+   test sums them and compares. The gizmo is **not draggable** in V6: there is
+   no picking in the viewport, and sockets move through snaps and numeric
+   fields.
+
+`ComponentLab.subtree()` is the one place that **resolves** instead of reading
+declared `Attachment`s, and the reason is measured: `Component.children` is a
+callable, and `humanoid_anatomical:torso`'s reads values the resolver derives
+from its parent (`height`, `hip_width`), so calling it with plain defaults
+raises `KeyError`. It is the fix debt 12 asks for — follow the declared
+composition — applied where it is possible; the retrieval relevance filter still
+has only the shortlist, so **that debt stays open**.
+
+---
+
+## 5-ter. [V7] The Teach layer (`app/teach/`)
+
+A layer **above** `app/authoring/`, which is above `Session`. It does not
+generate geometry and it does not know what a dragon is: it decides **which
+components a concept needs**, measures what the installed library already
+covers, compiles the prompts that ask a model for the rest, stages what comes
+back, and installs what is accepted. Once a concept is `LEARNED`, an ordinary
+`Session` builds it with no AI at all — that is the milestone's own final test.
+
+| File | Lines | Contents |
+| --- | --- | --- |
+| `service.py` | 1622 | `TeachService` — every operation as a method; `PromptBundle`, `TeachReport`, `CompletionReport` |
+| `model.py` | 1079 | `TeachProject`, `TeachNode`, `NodeState`, `Candidate`, `Evidence`, `Solution`, `SuitabilityRecord`, `Attempt`, `ArtifactRecord`, `Exchange`, `Progress`, `.teach3d` |
+| `staging.py` | 732 | the envelope, path confinement, `inspect_python` (AST), trust, `validate_artifact`, `install` |
+| `prompts.py` | 730 | the seven prompts and the candidate dossier |
+| `coverage.py` | 649 | the thirteen named evidences, the four states, the recompute |
+| `spec.py` | 517 | `ComponentSpec`, the backend recommendation, the dependency-aware queue |
+| `contracts.py` | 245 | 3DGen's own API, **generated** by reading 3DGen |
+| `knowledge.py` | 240 | `TeachKnowledge` — validation memory, outside `Component` |
+| `schema.py` | 192 | the four strict response schemas |
+| `_runner.py` | 103 | loading a staged plugin in a subprocess (robustness, **not** a sandbox) |
+| `errors.py` | 59 | `TeachError` with stable `TEACH_*` codes |
+
+Eight decisions worth knowing before changing this layer:
+
+1. **The ontology and the state are separate.** `TeachNode` is what the object
+   *is* (parts, count, mandatory, importance, detail level, role);
+   `NodeState` is what we know about *covering* it (coverage, candidates with
+   their evidence, the chosen solution, AI recommendations, generation
+   attempts). Keeping them apart is why a refinement pass can rewrite the
+   hierarchy without losing a validated decision, and why coverage can be
+   recomputed after **every** install without touching the ontology.
+   `TeachProject.tree()` merges them for whoever only reads.
+2. **A node's identity is a path, and a model cannot write it.**
+   `dragon.head.eye` is derived from the names (`parent.slug(name)`, with `_2`
+   for same-named siblings) and the response schema has no `id` field at all.
+   It is rule 15 applied to the ontology. Its declared limit: states survive
+   **by id**, so a node the refinement renames is a new node and its decision
+   is dropped — with `TEACH_DECISION_LOST`, never in silence.
+3. **Coverage is evidence, not a threshold.** Every candidate carries *named*
+   evidence and the state is read from the names, never from their sum:
+   `CANDIDATE` = identity **and** context, `PROXY` = identity without context
+   or context with similarity, `MISSING` = neither, `VALIDATED` = **never**
+   from evidence. A retrieval score of 1.0 alone is not even a proxy. The
+   weights only order candidates, and they live in one constant.
+4. **One retrieval engine.** Candidates come from `ComponentIndex.search` — the
+   V1 index the `Session` already uses — plus the providers of a capability
+   read from the `Registry`. Similarity is measured only on the *part's* own
+   queries (`part_queries`): the measured reason is that «dragon horn» scores
+   0.40 against `creature:dragon_head`, so a concept-wide query would make the
+   concept's head a proxy for every part and nothing would ever read `MISSING`.
+5. **A concept's root accepts only whole subjects**, via V2's
+   `subject_capabilities()` — a capability provided by someone and accepted by
+   nobody. Without it the best candidate for a dragon is a dragon *head*, and
+   the damage does not stop there, because a child reads its `capability`
+   evidence from what the parent accepts. This closes debt 13 **here**; in the
+   planner's vocabulary it stays open.
+6. **The technical spec belongs to 3DGen, not to the model.** When a node is
+   `MISSING` what is missing is geometry, not a contract: the capability, the
+   sockets, the children, the frame, the triangle budget and the parameter
+   roles are decisions the system already made, and the prompt hands them over
+   as a contract. The backend recommendation is structural — `composite` when
+   every mandatory child is satisfied, `data_mesh` when a GLB was supplied,
+   `procedural_python` otherwise, because **3DGen cannot generate a GLB from
+   text** — and the user can override it.
+7. **Generated Python is code, and it is never trusted by default.**
+   `import_implementation` writes files and inspects them with the AST; it
+   imports nothing. `validate_artifact`, `accept_artifact` and `artifact_lab`
+   all **raise** `TEACH_TRUST_REQUIRED` on a code artifact until somebody calls
+   `trust_artifact`. The static checks are warnings and the report says so in
+   words; `isolate=True` runs the load in a subprocess with a timeout and is
+   documented as robustness, **not** confinement. Nothing here is called a
+   sandbox, and a test reads the files to prove it.
+8. **Validation memory is not a field on `Component`.** A component does not
+   *have* a validation any more than it has a coverage: that is the judgement
+   of whoever built a concept. It lives in `teach_knowledge.json` next to the
+   library, keyed on **(role, name)** so a second concept finds it, and it
+   stays an **evidence** (`prior_validation`) — a judgement given about a
+   dragon is not a judgement given about a wyvern. See `V7-RESULTS.md` §17.
+
+`TeachService.emit_composite()` writes the root (and any intermediate)
+composite itself, with `AuthoringService` of V6 and not a second emitter: when
+every child is validated there is nothing to decide, so no model and no trust
+are involved. A child with `count: N` becomes **N attachments** on the same
+component, each with its own socket.
+
+---
+
 ## 6. Geometry, build, output
 
 - `app/geometry/kernel.py` — the only *procedural* low-level mesh maker: `ring`, `sweep`,
@@ -421,8 +601,10 @@ share a parent surface, declared `LayoutRegion`s plus a `LayoutPolicy`
   `THESAURUS` is the default synonym bridge; `expand()` and `TfidfEmbedder`
   accept an injected one.
 - `app/materials/` — material library and procedural textures.
-- `app/ui/` — `main_window.py`, `viewport.py`, `render_core.py`,
-  `offscreen.py`, `workers.py` (threaded generation).
+- `app/ui/` — `main_window.py` (three doors in the toolbar: Authoring,
+  Component Lab, **[V7]** Teach, all on the same `Session`), `viewport.py`,
+  `render_core.py`, `offscreen.py`, `workers.py` (threaded generation),
+  `authoring_window.py`, **[V7]** `teach_window.py`.
 
 ---
 
@@ -496,6 +678,29 @@ The data component format is the existing models in JSON — `id`, `name`,
 additions: `mesh` (the GLB path, relative to the component file) and a declared
 parameter **strategy**. A parameter without one is refused rather than assumed:
 see `V4-RESULTS.md` §6.
+
+**[V7] Those key lists are module constants now**, in
+`app/core/data_plugin.py`: `SOCKET_KEYS`, `PARAM_KEYS`, `EFFECT_KEYS`,
+`CHILD_KEYS`, `COMPONENT_KEYS`, `DATA_MANIFEST_KEYS`. They were literals inside
+the functions that enforce them *and* copied into `Registry._read_manifest` and
+`app/authoring/emit.py`; V7 had to **state** them to a model
+(`app/teach/contracts.py`), which would have been a fourth copy. Now there is
+one tuple, and a prompt test compares the generated text against it. Behaviour
+is identical and `tests/test_data_plugin.py` passed unmodified.
+
+**[V6] `mesh` is optional, and that is a composite.** A data component with no
+`mesh` is a container: `Piece.mesh = None`, and the geometry comes from its
+children. It had always been legal for a *code* component (`humanoid:body` is
+the historical one) and the loader demanded it anyway, so a knight made of
+body, head, sword and shield had to be declared as one monolithic mesh or not at
+all. Two rules keep the case unambiguous, both V4's policy applied to a new
+case: **without `mesh` children are required** (a component with neither
+geometry nor children is nothing, `DATA_SCHEMA_INVALID`) and **without `mesh` no
+`transform` is accepted** (`scale_x` multiplies a mesh; scaling only the sockets
+would move the children without shrinking them, `DATA_PARAM_UNSUPPORTED`). An
+`effect` parameter stays allowed, because an effect scoped `subtree` deforms the
+children. This is the only non-additive contract change of V6; see
+`V6-RESULTS.md` §3 and §22.
 
 **[V5] A parameter declares `transform` *or* `effect`, never both and never
 neither** (`DATA_PARAM_UNSUPPORTED` either way, because there is no non-arbitrary
@@ -580,7 +785,9 @@ planner sees, automatically.
 
 ## 9. Tests, tools, benchmarks
 
-`1598 tests` (`python -m pytest -q`; `pytest.ini` + `conftest.py` at root).
+`2070 tests` (`python -m pytest -q`; `pytest.ini` + `conftest.py` at root,
+and **[V7]** `tests/conftest.py` with the two shared Teach fixtures — an
+offline `Session` and a `TeachService` whose staging lives under `tmp_path`).
 Tests target the **contracts between** modules, not just units:
 `test_core_contracts.py`, `test_core_registry.py`, `test_core_resolver.py`,
 `test_core_graph.py`, `test_core_effects.py`, `test_planner_core.py`,
@@ -654,12 +861,128 @@ component), the comparison during resolution (a coherent composition says
 nothing, an undeclared frame says nothing, the outcome recorded on every edge),
 the dragon chimera, the two policies and their project round-trip, and
 `ambiguous` kept distinct from `convertible`).
+`tests/test_authoring.py` (**[V6]**, 112 tests: import and inspection with no
+inference, stable object keys, refused formats, the source file never modified,
+selection and one-object-per-component, six component names that could become a
+path, the meshless composite and the two loader rules, hierarchy as ordinary
+attachments with a cycle refused before it exists, sockets as ordinary
+`Socket`s with the gizmo data round-tripping through the production loader, the
+five snap helpers and mirror as its own inverse, capabilities with providers and
+acceptors plus a new one declared as new, metadata reaching the installed
+component and an unknown field refused, coverage in all four values never
+reaching the plugin and surviving in the project, the real semantic index and
+«will my component be found?», the production rendering of what the planner
+sees, a transform parameter measured ×4 and an effect-backed one with its
+neutral, seven hostile effect bindings, only installed strategies offered, the
+frame declared on plugin and component with the convertible move named and never
+applied, the three material rows, detail level that is not LOD, validation with
+three severities from the real validators, the V4 layout of the saved plugin
+with only the needed geometry and the node transforms kept, installing without a
+restart with the index and the vocabulary invalidated, a hierarchy mixing
+imported geometry with installed components, variant recipes, the authoring
+project round trip, an existing data plugin reopened and rebuilt identically, no
+Python ever executed, path confinement for component names and glTF `uri`s, and
+two end-to-end runs),
+`tests/test_component_lab.py` (**[V6]**, 26 tests: the same six asserts
+parameterized over a procedural **and** a mesh-backed component, the file read
+by token to prove there is no backend branch, compatible traits following the
+resolved composition, structural traits by selector, an offered trait that
+really applies, compatible effects and one applied, detail levels measured with
+real builds, variability kept separate from detail, and the variant recipes —
+only what changed, the same geometry rebuilt, a file under 700 bytes, a refused
+name, yellow→green with no provider, and no variant of a variant),
+`tests/test_authoring_ui.py` (**[V6]**, 25 tests: the declared flow in seven
+pages, the context bar answering the four questions, every table mirroring the
+service, a refused operation becoming a status line instead of a traceback, only
+installed strategies offered with `axis` absent, the rendered planner text, the
+real search, the frame table with its move, the validation table, a build from
+the window, gizmo nodes that are not the model, save and install, the lab dialog
+with its sliders and labels, `Save as defaults` writing on the draft and not on
+the library, and **the window holding no authoring logic**, read by token).
+`tests/test_teach_model.py` (**[V7]**, 58 tests: node ids as paths derived from
+names and never component ids, same-named siblings kept distinct, the twelve
+malformed decompositions plus depth and size, the cycle that **cannot** be
+expressed and the reference that is refused, an import that executes nothing,
+the two passes and decisions that survive or are declared lost, the four states
+through a round trip, the two progress formulas and the detail target, the
+project round trip with prompts, responses, attempts, artifacts and recipes, an
+unknown format refused, no geometry at any depth, validation memory that is not
+a field on `Component`, the `(role, name)` reuse key, and a concept's three
+plugins),
+`tests/test_teach_coverage.py` (**[V7]**, 44 tests: the state read from the
+*names* of the evidence in six cases, no amount of evidence producing a green,
+a perfect retrieval score that is not even a candidate, identity-without-context
+and context-with-similarity, the context words and the component's declared
+words, the singular variants, part queries kept apart from concept-wide ones,
+the root filter through `subject_capabilities()`, the part that must be
+mountable, the dragon benchmark with all four states and the real candidates,
+the capped list ordered by evidence, a recompute that touches neither a solution
+nor a decision, a vanished solution that decays, prior validation as evidence
+and not as a promotion, and the domain-word grep over the **code** of ten
+modules, comments and docstrings stripped),
+`tests/test_teach_prompts.py` (**[V7]**, 48 tests: the four schemas refusing
+unknown keys and valid as JSON Schema, pass 1 forbidding geometry and the engine
+API, the granularity rules, pass 2 without ids and without state, the prompt and
+the schema as one object, the dossier that is metadata and never source, a
+hostile description through `sanitize()`, suitability with its four states and
+its ban on validating, deep validation with a declared cap, visual validation
+with no vision API, the **generated** API contract compared against
+`dataclasses.fields`, the kernel signatures, the absence of the core, the data
+keys read from the loader, an ASCII contract, the implementation prompt as a
+contract, the bounded envelope, one contract per backend, reference components
+rendered with the production function, and repair carrying real diagnostics),
+`tests/test_teach_staging.py` (**[V7]**, 81 tests: the envelope as object, text
+and markdown block, seventeen malformed shapes, eleven hostile paths, ten
+refused extensions, the three size caps, staging under the declared plugin
+folder, a manifest that cannot rename the plugin, an asset copied byte for byte,
+the kind read from the files, the AST inspection in seven cases with a
+configurable flag list, no message calling itself a sandbox, **nothing executed
+without trust** at four call sites and measured from the effect, trust surviving
+in the project, a data plugin needing none and its `.py` never opened, the
+subprocess reporting the same thing and surviving a plugin that explodes,
+validation with the real validators, an attempt recorded with its codes, repair
+as a new attempt, installation registering the library and not the staging, the
+index invalidated, and rejection keeping the history),
+`tests/test_teach_endtoend.py` (**[V7]**, 43 tests: the dragon benchmark with
+its **measured** coverage, plurals turned into counts, the queue from the fine
+parts up, yellow→green through a variant with no duplicated geometry, an AI
+recommendation that cannot write green even at confidence 1.0, an invented
+parameter dropped, the visual verdict, rendered variants inside declared ranges,
+blue→red by decision, the technical specification, the three backend
+recommendations and the override, a newly declared capability, a data-only
+response validated with nothing executed, Python staged and not run until
+trusted, an install recomputing coverage, **the whole cycle to `LEARNED`**, the
+counts satisfied in the composite, a root with no mesh of its own, **a normal
+`Session` finding and building the learned concept**, the export, an early
+finish that stays `LEARNING`, persistence halfway with the artifact recovered
+from disk, a plugin that changed after the Teach, knowledge reuse on a second
+concept, no background work, no Qt, and a whole concept taught with no user
+interface),
+`tests/test_teach_ui.py` (**[V7]**, 35 tests: the five declared pages, the two
+modes, a response refused into a status line, every table mirroring the service,
+the tree with its four colours and **no green after an analysis**, the node form,
+a forced state and a green refused without a solution, the candidate table and
+the real dossier, the four prompts, yellow→green from the window, the Component
+Lab on the chosen candidate, the queue and the spec panel, only the installed
+backends, **the whole generation flow from the window** with the source visible
+before trust and the refusal without it, the question that trust asks, the
+repair prompt, the completion table, save and reopen, a provider that does not
+answer, **the window holding no Teach logic** read by token, and the third door
+on the same `Session`).
 Fixture plugins live in `tests/plugins/` (including intentionally malformed
 ones, and **[V5]** `variabilita/procedural_probe`, a code plugin that declares
 the V5 parameter roles plus one `ParamEffect`, so the semantic layer can be
 measured on procedural and mesh-backed geometry with the same assert); the
 data-only fixtures are written to a tmp dir by
-`tests/data_plugin_fixtures.py`.
+`tests/data_plugin_fixtures.py`, **[V6]** `tests/authoring_fixtures.py`
+exports a real five-part GLB (`Body`, `Head`, `Eye_L`, `Eye_R`, `Sword`) — the
+ideal case the milestone describes, a model that already arrives split into
+parts — and **[V7]** `tests/teach_fixtures.py` holds the deterministic AI
+responses (a realistic dragon decomposition with the defects a pass 1 really
+has, its refinement, the four suitability verdicts, procedural / data /
+composite implementation envelopes, a real one-object GLB to supply as an
+asset, and the seventeen malformed envelopes and twelve malformed
+decompositions).
 
 `tools/`: `benchmark.py`, `render_benchmark.py`, `render_scenari.py`,
 `archetype_benchmark.py`, `archetype_validation.py`, `semantic_traits_benchmark.py`,
@@ -671,7 +994,21 @@ a mixed composition), `variability_benchmark.py` (**[V5]**: the cost of a
 transform parameter, an effect-backed parameter, a semantic trait on mesh /
 procedural / mixed trees and frame validation, plus the six milestone prompts
 split into *intent recognized* / *trait applied* / *geometry changed* / *visual
-result*, the last one measured with the existing `app/build/visual.py:analyse`).
+result*, the last one measured with the existing `app/build/visual.py:analyse`),
+`authoring_benchmark.py` (**[V6]**: GLB import, cold staging, preview rebuild,
+slider update, Component Lab, detail preview, semantic search, validation, save,
+install, reindex and the authoring project round trip, with an explicit
+*interactive* verdict at a declared 100 ms threshold),
+`teach_benchmark.py` (**[V7]**: the two ontology passes, the coverage analysis,
+a node's candidates, the dossier, the four prompts, the lab, the variant, the
+technical spec, the implementation prompt, staging, validation in process and in
+a subprocess, accept, both composites, the completion report, save and reopen,
+`Session.shortlist` and `Session.generate` **outside** Teach, and the coverage
+of a second concept — same 100 ms threshold, and it prints the learned tree),
+`teach_provider_audit.py` (**[V7]**: pass 1 and pass 2 against a **real**
+provider with `jsonschema` checking both responses, then the coverage and the
+next prompt. It is evidence and not the Definition of Done: with no provider
+configured it says so and exits 0).
 
 Local pipeline performance (no network): total 6–13 ms median — plugin load
 16 ms, vocabulary 3 ms, local planner 1 ms, resolver 0.2 ms, effects 0.1 ms,
@@ -688,6 +1025,32 @@ the 37 nodes of `humanoid_anatomical:body` (102.4 ms against 97.3 ms without).
 **Frame validation does not register**: `compare()` is 0.0034 ms, and the
 chimera's two policies (20.9 ms `diagnose`, 20.5 ms `strict`) differ by less
 than the noise.
+
+**[V6]** Authoring cost, same machine, median of 7
+(`python tools/authoring_benchmark.py 7`). The target is not «fast», it is
+**interactive**, and the row that matters is **a slider update at 1.17 ms**:
+parameters travel in the plan, so moving one neither rewrites the plugin nor
+reloads the registry. Importing a 5-object GLB is 3.4 ms, a preview rebuild
+2.7 ms (3.7 with the quality gate), full validation 13.8 ms, saving the plugin
+10.3 ms, reloading the registry 56.9 ms, reindexing 100 components 17.0 ms, and
+«install and test» end to end 92.4 ms. The one expensive row is **cold staging
+at 131 ms** — emitting the plugin plus loading 24 plugins — and it is the
+declared price of letting the preview go through the real pipeline instead of
+simulating it; it is paid once per structural change, not per keystroke.
+
+**[V7]** Teach cost, same machine, median of 7
+(`python tools/teach_benchmark.py 7`). The row that matters is the **coverage
+analysis at 29.5 ms** for 10 nodes over 97 components — ~3 ms per node — because
+it is recomputed after *every* install. The technical spec is 0.75 ms, the
+implementation prompt 1.4 ms, staging a response (AST inspection included)
+6.6 ms, the dossier 5.4 ms, a lab build 2.5 ms: everything the user waits on is
+interactive. What is not: validating in process 5.4 ms but **in a subprocess
+2887 ms** (an interpreter plus `trimesh`, ~530×, which is why it is off by
+default), `accept` 91 ms (install + reindex + recompute), the intermediate
+composite 185 ms, the **root composite 467 ms**, the completion report 128 ms,
+reopening a project 60 ms, and `Session.generate` outside Teach 153 ms. A second
+concept costs the same as the first (32 vs 29 ms), because the knowledge store
+is read once.
 
 **[V4]** Mesh-backed cost, same machine, median of 7
 (`python tools/data_plugin_benchmark.py 7`): building a GLB-backed piece is
@@ -714,7 +1077,7 @@ because documents are built from declared metadata, not from geometry.
 | `ARCHETYPES-AND-PROFILES.md` (56 KB) | concept resolution layer |
 | `LOW-POLY-DESIGN.md` (49 KB) | the visual language |
 | `TODO.md` | honest list of what is missing |
-| `V1-RESULTS.md` … `V5-RESULTS.md` | what each milestone changed, measured |
+| `V1-RESULTS.md` … `V7-RESULTS.md` | what each milestone changed, measured |
 | `V3-PLAN.md` | the V3 design note, written before the code |
 
 README links `PLUGIN-AUTHORS.md`, `ARCHITECTURE-CORE.md`,
@@ -845,21 +1208,90 @@ links are currently broken.
     second colour; the first declaration wins. It is a warning, so
     `report.ok` stays true, but it is in every registry report.
 
-Explicitly out of scope for now: marketplace, remote registry, plugin sandbox,
-cloud execution, auto-generated plugins, unbounded repair loops, LLM visual
-judgement, full IK, full collision engine, CAD solver, distributed build,
-database.
+28. **[V6] The socket gizmo is readable but not draggable.** There is no
+    picking in the viewport, so a socket moves through the snap helpers and the
+    numeric fields. Adding it means a ray cast against the scene and a notion of
+    «grabbed handle» — new code in the viewport, not in the contract. Declared
+    rather than faked with a gizmo that cannot be grabbed.
+29. **[V6] Selection is per scene node, never per face.** A GLB that arrives as
+    one piece cannot be split inside 3DGen. Face selection needs a full mesh
+    editor and auto-segmentation is another milestone, so this is the case where
+    authoring does not help.
+30. **[V6] Reopening a data plugin does not recover the object selection.** The
+    per-component GLB is copied byte for byte, so nothing is lost; but whoever
+    wants a different cut re-imports the original file. The editor-only field
+    that would avoid it was deliberately not added — see `V6-RESULTS.md` §18.
+31. **[V6] A variant recipe carrying traits or effects cannot be embedded in a
+    composite.** An `Attachment` carries `params`; traits and effects are things
+    of the *plan*. `embeddable` says which of the two you have and
+    `AUTHORING_VARIANT_NOT_EMBEDDABLE` reports it instead of losing it quietly.
+    The declared way out is an `effect`-backed parameter on the base component.
+32. **[V6] Cold staging costs 131 ms**, and it grows with the number of GLBs a
+    project rewrites. The way out is re-emitting only the changed files, which
+    means a fingerprint **per component** instead of per project — and it makes
+    debt 20 more expensive, because the registry recomputes its content
+    fingerprint on every staging.
+33. ~~**[V6] Coverage exists and is wired to nothing**~~ — **decided in V7.**
+    `app/teach/coverage.py` reads the installed library against a concept's
+    hierarchy and produces the four states from *named evidence*, never from a
+    score threshold. The states themselves are still V6's, imported from
+    `app/authoring/model.py`: two lists of four strings that must stay equal
+    are one list too many.
+34. **[V6] No authored or learned plugin was added to the installed library.**
+    The data plugins of V4, V5, V6 and V7 all live in tests and temporary
+    folders: the library is still 23 plugins and 97 components, all code. The
+    day one lands in `app/plugins/`, that is a content milestone with its own
+    measurement — and it is also how one finds out which part of the tool is
+    actually annoying.
+35. **[V7] A recursive response schema is not accepted by every structured
+    output backend.** Groq answers `400 json_validate_failed` on the
+    decomposition schema, which uses `$ref: "#/$defs/node"`. The external mode
+    works identically, so nothing is blocked; the declared way out is a
+    depth-flattened **variant** of the schema for those providers, not a
+    replacement — an ontology has no known depth. Measured in
+    `V7-RESULTS.md` §22.
+36. **[V7] A validation record does not know when it went stale.** It records
+    the plugin but not its fingerprint, so a component that changed afterwards
+    still reads as a valid `prior_validation`. `TeachService.changed_components()`
+    detects it **inside** a project; the knowledge store does not.
+37. **[V7] A generated component is validated on its own, not on its parent.**
+    It is loaded, built, measured and searched standalone; compatibility with
+    the parent and the children is exercised later, when the composite is
+    emitted. Building a `parent + child` plan inside the validation is the
+    obvious next step.
+38. **[V7] A composite's sockets are a declared convention.** They spread
+    around a circle facing outwards: structurally correct, visually mediocre —
+    the same distinction `TODO` draws at point 4-bis between structural
+    correctness and layout quality. The way out is declaring `LayoutRegion`s on
+    the composite, which `AuthoringService` already knows how to do.
+39. **[V7] The knowledge store is linear.** Six records cost nothing; thousands
+    will need an index on `(role, name)`, and the real question is whether the
+    store should become a `Corpus` of the semantic index — the answer coherent
+    with rule 10 — instead of a table.
+40. **[V7] Raising `detail_target` after an analysis does not warn.** It works,
+    and the nodes that become relevant start from zero with no diagnostic
+    saying so. Same family as `TEACH_DECISION_LOST`, from the opposite side.
+
+Explicitly out of scope for now: marketplace, remote registry, a real plugin
+sandbox, cloud execution, background jobs, autonomous infinite loops, automatic
+trust of generated Python, auto-generated GLB from text, unbounded repair loops,
+full IK, full collision engine, CAD solver, distributed build, database. And,
+still not started: `Session.modify`, image-to-model, arbitrary face editing,
+sculpting, a UV editor, rigging, auto-segmentation, animation authoring, an
+agent swarm.
 
 ---
 
-## 12. Repository state (2026-10-14, after V5)
+## 12. Repository state (2026-10-15, after V7)
 
 ```text
 main                      3141e04  checkpoint pre-V1 (the whole extension layer)
 v1-semantic-index         a05c0d4  V1: semantic retrieval before the planner
                           193734b  V2: explainable semantic degradation
                           f5f0d8b  checkpoint V4: V3 + V3.5 + V4, plus app/build/
-v5-semantic-variability  (working) V5: semantic variability + frame contract
+v5-semantic-variability   34f4791  V5: semantic variability + frame contract
+                         (working) V6: component authoring
+                         (working) V7: Teach 3DGen
 ```
 
 **`f5f0d8b` is the V4 checkpoint, and it is the first commit whose file list is
@@ -927,8 +1359,37 @@ probe exposed, `V5-RESULTS.md` §12), `cli.py` (`--frame-policy`), five plugin
 manifests (one `frame` line each), `tests/data_plugin_fixtures.py` and
 `tests/test_api_freeze.py` (additive). Four declared contract changes, all
 additive, in `V5-RESULTS.md` §16.
+V6 added `app/authoring/` (nine modules, 3869 lines: `service.py`, `model.py`,
+`lab.py`, `gizmo.py`, `emit.py`, `variant.py`, `inspect.py`, `errors.py`,
+`__init__.py`), `app/ui/authoring_window.py` (1627 lines),
+`tests/authoring_fixtures.py`, `tests/test_authoring.py` (112 tests),
+`tests/test_component_lab.py` (26 tests), `tests/test_authoring_ui.py`
+(25 tests), `tools/authoring_benchmark.py` and `V6-RESULTS.md`, and modified
+`app/core/data_plugin.py` (optional `mesh`, the two composite rules),
+`app/core/session.py` (`reload_plugins`), `app/ui/main_window.py` (two toolbar
+actions on the same `Session`) and `tests/test_api_freeze.py` (additive). Two
+declared contract changes in `V6-RESULTS.md` §22, one of them — optional `mesh`
+— the only **non-additive** change of the milestone, and a widening: every
+definition that was valid before still is, and `tests/test_data_plugin.py`
+passed unmodified.
+V7 added `app/teach/` (eleven modules plus `__init__`, 5504 lines:
+`service.py`, `model.py`, `staging.py`, `prompts.py`, `coverage.py`, `spec.py`,
+`contracts.py`, `knowledge.py`, `schema.py`, `_runner.py`, `errors.py`),
+`app/ui/teach_window.py` (995 lines), `tests/conftest.py`,
+`tests/teach_fixtures.py`, `tests/test_teach_model.py` (58 tests),
+`tests/test_teach_coverage.py` (44), `tests/test_teach_prompts.py` (48),
+`tests/test_teach_staging.py` (81), `tests/test_teach_endtoend.py` (43),
+`tests/test_teach_ui.py` (35), `tools/teach_benchmark.py`,
+`tools/teach_provider_audit.py` and `V7-RESULTS.md`, and modified
+`app/core/data_plugin.py` (the six key tuples promoted to module constants),
+`app/core/registry.py` and `app/authoring/emit.py` (both read
+`DATA_MANIFEST_KEYS` instead of keeping a copy) and `app/ui/main_window.py` (a
+third toolbar action on the same `Session`). **`tests/test_api_freeze.py` was
+not touched**: V7 adds nothing to the frozen surface. The one declared change
+is a *removal* of duplication, documented in `V7-RESULTS.md` §25.
 Results in `V1-RESULTS.md`, `V2-RESULTS.md`, `V3-RESULTS.md`,
-`V3.5-RESULTS.md`, `V4-RESULTS.md` and `V5-RESULTS.md`.
+`V3.5-RESULTS.md`, `V4-RESULTS.md`, `V5-RESULTS.md`, `V6-RESULTS.md` and
+`V7-RESULTS.md`.
 
 Scratch/output dirs to ignore (all git-ignored): `.tmp-tests/`,
 `audit-images/`, `output/`, `build/`, `dist/`, `library/`, `__pycache__/`,
@@ -1041,3 +1502,49 @@ Scratch/output dirs to ignore (all git-ignored): `.tmp-tests/`,
     a convention for it would turn 18 plugins into noise, and a false frame is
     worse than no frame — for a planet or a cube, "where is the front" has no
     answer.
+28. **[V6] Authoring is a layer above `Session`, and the UI is never the only
+    way.** Every authoring operation exists as a method on `AuthoringService`,
+    nothing in `app/authoring/` imports Qt, and
+    `tests/test_authoring_ui.py::test_the_window_holds_no_authoring_logic`
+    exists to make that regression fail. A panel that starts deciding something
+    by itself means two ways of building a plugin, and the second one is the one
+    V7 cannot call.
+29. **[V6] A preview is a build, not a simulation.** The authoring layer emits
+    a real data plugin and installs it in a throwaway `Session`; it never calls
+    `trimesh` to approximate what the pipeline would produce. The moment a
+    preview stops being an ordinary generation it starts lying, and it will lie
+    in exactly the way the next pipeline change introduces.
+30. **[V6] Editor state does not belong in the library.** Selection,
+    visibility, the current component, the destination and the coverage of a
+    part are properties of the work in progress, and the emitted plugin carries
+    none of them. `AuthoringProject.fingerprint()` excludes them too, which is
+    both the correctness argument and the reason a slider is responsive.
+31. **[V7] A coverage state is read from named evidence, never from a score.**
+    `CANDIDATE` needs identity *and* context; `VALIDATED` comes only from a
+    confirmed solution, and no amount of evidence produces it.
+    `tests/test_teach_coverage.py::test_no_amount_of_evidence_produces_validated`
+    exists to make that regression fail. A model **recommends**: every
+    `import_*` method writes a record, never a coverage.
+32. **[V7] Generated Python is not trusted until somebody says so.** Staging
+    writes files and inspects them; it imports nothing. Validating, installing
+    or opening a code artifact in the lab all raise `TEACH_TRUST_REQUIRED`
+    first. The static checks are warnings and are described as warnings, a
+    subprocess is robustness and is described as robustness, and the word
+    «sandbox» never appears in a message — because there is no sandbox. Adding
+    one is a milestone, not a paragraph.
+33. **[V7] The technical contract of a missing component belongs to 3DGen.**
+    The capability, the sockets, the children, the frame, the budget and the
+    parameter roles are derived from declared data and handed to the model as
+    decisions. A prompt that asks a model to *choose* one of those is the
+    regression, and a backend recommendation that names a part («a tail is
+    procedural») is the other one: the rule is structural and
+    `tests/test_teach_coverage.py` greps the code for domain words.
+34. **[V7] The ontology of a concept is not the state of its coverage.**
+    `TeachNode` is what the object is, `NodeState` is what we know about
+    covering it, and merging them would mean losing a validated decision every
+    time a refinement pass rewrites the hierarchy.
+35. **[V7] A concept's root is a whole subject.** Candidates for it must
+    provide a capability nobody accepts (`subject_capabilities()`), and parts
+    must provide at least one capability or nothing can mount them. Without the
+    first rule a dragon's best candidate is a dragon head, and because children
+    read their context from the parent, one wrong root moves every child.

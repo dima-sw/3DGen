@@ -1,0 +1,14 @@
+{
+  "id": "dragon_snout",
+  "version": "1.0.0",
+  "name": "Dragon Snout",
+  "description": "A procedural cartoon low-poly elongated reptilian muzzle for a dragon head.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["dragon", "snout", "muzzle", "reptile", "fantasy", "cartoon", "low_poly"],
+  "components": ["components/snout.py"],
+  "effects": [],
+  "styles": [],
+  "dependencies": [],
+  "metadata": {}
+}

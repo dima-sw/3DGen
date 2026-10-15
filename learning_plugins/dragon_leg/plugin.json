@@ -1,0 +1,19 @@
+{
+  "id": "dragon_leg",
+  "version": "1.0.0",
+  "name": "Dragon Leg",
+  "description": "A procedural cartoon low-poly weight-bearing reptilian dragon limb.",
+  "author": "3DGen",
+  "license": "MIT",
+  "tags": ["dragon", "leg", "limb", "reptile", "creature", "fantasy", "cartoon", "low_poly"],
+  "components": ["components/leg.py"],
+  "effects": [],
+  "styles": [],
+  "materials": [],
+  "traits": [],
+  "archetypes": [],
+  "profiles": [],
+  "bindings": [],
+  "dependencies": [],
+  "metadata": {}
+}

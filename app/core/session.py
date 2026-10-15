@@ -441,6 +441,45 @@ class Session:
             self.registry = registro.freeze()
         return self.registry
 
+    def reload_plugins(self, *paths):
+        """Reinstalla il vocabolario senza riavviare. **[V6]**
+
+        Un registry congelato e' giusto durante una generazione e sbagliato
+        dopo: chi ha appena salvato un plugin dati deve poterlo usare subito, e
+        «chiudi e riapri 3DGen» non e' una risposta. Questo metodo e' il modo
+        dichiarato di cambiare idea — non si scrive dentro un registry
+        congelato, se ne costruisce un altro.
+
+        Cio' che invalida, e perche' lo fa qui e non altrove:
+
+            registry        il vocabolario, ricaricato dalle stesse cartelle
+                            piu' quelle passate
+            _vocabolari     la cache per stile di `vocabulary()`: un
+                            vocabolario calcolato sul registry di prima
+                            nasconderebbe il componente appena installato
+            _indice         l'indice semantico. `component_index()` sa gia'
+                            accorgersene (`is_current`), ma lasciarlo vivo
+                            vorrebbe dire pagare un confronto di firme per
+                            scoprire cio' che qui si sa con certezza
+
+        Restituisce il `Report` del caricamento: un plugin scartato si legge,
+        non si indovina. Le percorse nuove si **aggiungono**, perche' chi
+        installa un plugin non vuole perdere la libreria che aveva.
+        """
+        nuove = [Path(p) for p in paths]
+        correnti = [Path(p) for p in (self.plugin_paths or (PLUGIN,))]
+        risolti = {str(Path(p).resolve()) for p in correnti}
+        for percorso in nuove:
+            if str(percorso.resolve()) not in risolti:
+                correnti.append(percorso)
+                risolti.add(str(percorso.resolve()))
+        self.plugin_paths = tuple(correnti)
+        self.registry = None
+        self._vocabolari = {}
+        self._indice = None
+        registro = self.catalog()
+        return registro.report
+
     def component_index(self):
         """L'indice semantico dei componenti installati.
 

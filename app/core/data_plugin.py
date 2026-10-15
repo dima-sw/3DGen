@@ -6,6 +6,30 @@ scaling. Meshes are loaded once, with node transforms baked, and copied for
 each build. External glTF resources are preloaded through a confined reader;
 trimesh receives only bytes and a dictionary, never a filesystem/network
 resolver. Geometry quality remains the responsibility of build.validate.
+
+## [V6] `mesh` e' facoltativo, e questo non e' un formato nuovo
+
+`Piece.mesh` puo' essere `None` da sempre: un componente che esiste solo per
+contenerne altri — `humanoid:body` e' quello storico — ha figli e non
+geometria. Fino a V5 un **componente dati** non poteva esprimerlo, perche' il
+loader pretendeva `mesh`: un cavaliere composto da corpo, testa, spada e scudo
+andava dichiarato come una mesh monolitica, oppure non si poteva dichiarare.
+
+Da V6 un componente dati senza `mesh` e' un contenitore, e le due regole che
+lo rendono non ambiguo sono:
+
+    senza mesh **servono** children   un componente che non ha ne' geometria
+                                      ne' figli non e' niente, e un niente
+                                      dichiarato e' un errore di chi scrive
+    senza mesh **niente** transform   `scale_x` moltiplica una mesh; qui non
+                                      ce n'e' una, e scalare i soli socket
+                                      sposterebbe i figli senza rimpicciolirli
+
+La seconda e' la politica di V4 applicata a un caso nuovo (`V4-RESULTS.md` §6):
+una dichiarazione che non ha un significato deterministico si **rifiuta**, non
+si assorbe. Un parametro `effect` resta ammesso, perche' un effetto con ambito
+`subtree` deforma i figli e questo e' esattamente cio' che chiede chi scrive un
+composite variabile.
 """
 from __future__ import annotations
 
@@ -186,9 +210,34 @@ def _contract(value, kind, where):
     return kind(**data)
 
 
+# Le chiavi di ciascuna forma del formato dati, promosse a costanti.
+#
+# Erano letterali dentro le funzioni che le fanno valere, e il loro elenco era
+# gia' ricopiato altrove (`app/authoring/emit.py`, `app/core/registry.py`): una
+# terza copia — V7 deve **dire** a un modello quali chiavi esistono — avrebbe
+# significato tre elenchi da tenere uguali a mano. Sono qui, e chi le fa
+# valere, chi le emette e chi le documenta leggono le stesse tuple.
+SOCKET_KEYS = ("name", "position", "direction", "up", "radius", "capabilities",
+               "side", "tags")
+PARAM_KEYS = ("default", "type", "min", "max", "unit", "description",
+              "semantic_role", "required", "transform", "effect")
+EFFECT_KEYS = ("type", "parameter", "scope", "neutral")
+CHILD_KEYS = ("id", "component", "requirement", "own_socket", "level", "optional",
+              "on_request", "replaces", "replaces_parent", "on", "scale_mode",
+              "insert", "roll", "params", "material", "tags")
+COMPONENT_KEYS = ("id", "name", "description", "mesh", "role", "tags", "provides",
+                  "mounts", "sockets", "params", "material", "children", "requires",
+                  "styles", "frame", "layout_regions")
+# Le chiavi che un manifest **dati** ammette. Quelle che in un plugin di codice
+# nominano file Python non ci sono, ed e' il contratto di V4 §2.
+DATA_MANIFEST_KEYS = ("id", "version", "type", "name", "description", "author",
+                      "license", "homepage", "tags", "dependencies",
+                      "capabilities", "metadata", "synonyms", "components",
+                      "materials", "frame")
+
+
 def _socket(value):
-    data = _object(value, ("name", "position", "direction", "up", "radius",
-                           "capabilities", "side", "tags"), "socket")
+    data = _object(value, SOCKET_KEYS, "socket")
     name = _string(data.get("name"), "socket.name", nonempty=True)
     position = _vector(data.get("position"), name + ".position")
     direction = _vector(data.get("direction"), name + ".direction")
@@ -218,8 +267,7 @@ def _binding(name, value):
     `Registry` a caricamento finito (`_verify_param_effects`), perche' il
     plugin dell'effetto puo' arrivare dopo in ordine alfabetico.
     """
-    data = _object(value, ("type", "parameter", "scope", "neutral"),
-                   "params." + name + ".effect")
+    data = _object(value, EFFECT_KEYS, "params." + name + ".effect")
     effect = _string(data.get("type"), name + ".effect.type", nonempty=True)
     parameter = _string(data.get("parameter", "amount"), name + ".effect.parameter",
                         nonempty=True)
@@ -235,7 +283,7 @@ def _binding(name, value):
                        neutral=neutral)
 
 
-def _params(value):
+def _params(value, *, has_mesh: bool = True):
     """I parametri di un componente dati, con la loro strategia dichiarata.
 
     Due strategie, e un parametro deve dichiarare **esattamente una**:
@@ -254,14 +302,16 @@ def _params(value):
     un fattore negativo specchierebbe la mesh; il valore che pilota un effetto
     **puo'** essere negativo, perche' il verso di una piega e' un segno. Il
     contratto del valore e' quello dell'effetto, non quello di una scala.
+
+    **[V6]** Su un componente senza `mesh` un `transform` non e' ammesso: non
+    c'e' niente da moltiplicare, e scalare i soli socket sposterebbe i figli
+    senza rimpicciolirli. Vedi la testata del file.
     """
     if not isinstance(value, dict):
         _error("params deve essere un oggetto")
     specs, transforms, bindings = {}, {}, []
     for name, item in value.items():
-        data = _object(item, ("default", "type", "min", "max", "unit", "description",
-                              "semantic_role", "required", "transform", "effect"),
-                       "params." + name)
+        data = _object(item, PARAM_KEYS, "params." + name)
         transform = data.pop("transform", None)
         effect = data.pop("effect", None)
         if (transform is None) == (effect is None):
@@ -271,6 +321,10 @@ def _params(value):
         if transform is not None and transform not in TRANSFORMS:
             _error("Parametro %s: dichiarare transform %s"
                    % (name, "/".join(TRANSFORMS)), "DATA_PARAM_UNSUPPORTED")
+        if transform is not None and not has_mesh:
+            _error("Parametro %s: transform su un componente senza mesh non ha "
+                   "niente da scalare; dichiara un effect oppure una mesh" % name,
+                   "DATA_PARAM_UNSUPPORTED")
         if data.get("type", "float") not in ("float", "ratio", "int"):
             _error("Parametro %s: serve float, ratio o int" % name,
                    "DATA_PARAM_UNSUPPORTED")
@@ -299,9 +353,7 @@ def _params(value):
 
 
 def _attachment(value):
-    data = _object(value, ("id", "component", "requirement", "own_socket", "level", "optional",
-                           "on_request", "replaces", "replaces_parent", "on", "scale_mode",
-                           "insert", "roll", "params", "material", "tags"), "child")
+    data = _object(value, CHILD_KEYS, "child")
     for key in ("id", "component"):
         _string(data.get(key), "child." + key, nonempty=True)
     for key in ("own_socket", "replaces", "on", "scale_mode", "material"):
@@ -522,23 +574,29 @@ def load_material(path: Path, plugin_root: Path) -> MaterialSpec:
 def load_component(path: Path, plugin_root: Path) -> Component:
     """Read a component definition and return the existing Component model."""
     path = _inside_file(path, plugin_root)
-    data = _object(_json(path.read_bytes(), str(path)),
-                   ("id", "name", "description", "mesh", "role", "tags", "provides", "mounts",
-                    "sockets", "params", "material", "children", "requires", "styles",
-                    "frame", "layout_regions"),
-                   "component")
+    data = _object(_json(path.read_bytes(), str(path)), COMPONENT_KEYS, "component")
     component_id = _string(data.get("id"), "component.id", nonempty=True)
     if ":" not in component_id or not all(component_id.split(":")):
         _error("component.id deve essere qualificato plugin:nome")
-    mesh_path = safe_path(plugin_root, _string(data.get("mesh"), "mesh", nonempty=True), base=path.parent)
-    mesh, usable_colors, files = _load_mesh(mesh_path, plugin_root)
+    # [V6] Senza `mesh` il componente e' un contenitore: la geometria la
+    # portano i figli. La riga che segue e' l'unico posto che cambia, perche'
+    # `Piece.mesh = None` era legittimo da prima.
+    if data.get("mesh") is None:
+        mesh, usable_colors, files = None, False, ()
+    else:
+        mesh_path = safe_path(plugin_root, _string(data.get("mesh"), "mesh", nonempty=True),
+                              base=path.parent)
+        mesh, usable_colors, files = _load_mesh(mesh_path, plugin_root)
     sockets = [_socket(item) for item in _list(data.get("sockets", []), "sockets")]
     if len({s.name for s in sockets}) != len(sockets):
         _error("Nomi socket duplicati")
-    specs, transforms, bindings = _params(data.get("params", {}))
+    specs, transforms, bindings = _params(data.get("params", {}), has_mesh=mesh is not None)
     children = [_attachment(item) for item in _list(data.get("children", []), "children")]
     if len({c.id for c in children}) != len(children):
         _error("Id child duplicati")
+    if mesh is None and not children:
+        _error("Il componente %s non dichiara ne' una mesh ne' dei children: "
+               "senza geometria propria serve almeno un figlio" % component_id)
     regions = tuple(_region(item) for item in
                     _list(data.get("layout_regions", []), "layout_regions"))
     if len({r.id for r in regions}) != len(regions):
@@ -559,8 +617,10 @@ def load_component(path: Path, plugin_root: Path) -> Component:
                 scale *= factor
             else:
                 scale["xyz".index(transform[-1])] *= factor
-        result_mesh = mesh.copy()
-        result_mesh.vertices = np.asarray(result_mesh.vertices) * scale
+        result_mesh = None
+        if mesh is not None:
+            result_mesh = mesh.copy()
+            result_mesh.vertices = np.asarray(result_mesh.vertices) * scale
         result_sockets = {}
         for source in sockets:
             # A scalar radius represents the area of the deformed socket disc:

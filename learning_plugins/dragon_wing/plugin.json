@@ -1,0 +1,40 @@
+{
+  "id": "dragon_wing",
+  "version": "1.0.0",
+  "name": "Dragon Wing",
+  "description": "Reusable procedural cartoon low-poly membranous dragon wing.",
+  "author": "3DGen Teach",
+  "license": "MIT",
+  "tags": [
+    "dragon",
+    "wing",
+    "fantasy",
+    "flight",
+    "cartoon",
+    "low_poly"
+  ],
+  "components": [
+    "components/wing.py"
+  ],
+  "effects": [],
+  "styles": [],
+  "materials": [],
+  "traits": [],
+  "archetypes": [],
+  "profiles": [],
+  "bindings": [],
+  "capabilities": [
+    {
+      "name": "wing_mount",
+      "description": "A reusable wing component that can be mounted on a composite creature.",
+      "tags": [
+        "wing",
+        "flight"
+      ]
+    }
+  ],
+  "dependencies": [],
+  "metadata": {
+    "generated_by": "Teach 3DGen"
+  }
+}

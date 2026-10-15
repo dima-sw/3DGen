@@ -693,11 +693,12 @@ class Registry:
         data_components: list[str] = []
         data_materials: list[str] = []
         if kind == "data":
-            from app.core.data_plugin import DataPluginError, safe_path
+            from app.core.data_plugin import (DATA_MANIFEST_KEYS, DataPluginError,
+                                              safe_path)
 
-            allowed = {"id", "version", "type", "name", "description", "author",
-                       "license", "homepage", "tags", "dependencies", "capabilities",
-                       "metadata", "synonyms", "components", "materials", "frame"}
+            # L'elenco vive dove vive il formato (`app/core/data_plugin.py`):
+            # una copia qui era un secondo elenco da tenere uguale a mano.
+            allowed = set(DATA_MANIFEST_KEYS)
             if set(dati) - allowed:
                 self.report.add("INVALID_MANIFEST",
                                 "chiavi non supportate dal plugin dati: %s"
