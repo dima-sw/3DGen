@@ -1,0 +1,499 @@
+{
+  "fox": {
+    "1": {
+      "ok": true,
+      "tris": 256,
+      "nodes": 9,
+      "refs": [
+        "fox->fox_stylized:fox",
+        "fox/body->fox_stylized:body",
+        "fox/body/head->fox_stylized:head",
+        "fox/body/head/ears->fox_stylized:ears",
+        "fox/body/front_l->fox_stylized:leg",
+        "fox/body/front_r->fox_stylized:leg",
+        "fox/body/rear_l->fox_stylized:leg",
+        "fox/body/rear_r->fox_stylized:leg",
+        "fox/body/tail->fox_stylized:tail"
+      ],
+      "diag": []
+    },
+    "2": {
+      "ok": true,
+      "tris": 412,
+      "nodes": 9,
+      "refs": [
+        "fox->fox_stylized:fox",
+        "fox/body->fox_stylized:body",
+        "fox/body/head->fox_stylized:head",
+        "fox/body/head/ears->fox_stylized:ears",
+        "fox/body/front_l->fox_stylized:leg",
+        "fox/body/front_r->fox_stylized:leg",
+        "fox/body/rear_l->fox_stylized:leg",
+        "fox/body/rear_r->fox_stylized:leg",
+        "fox/body/tail->fox_stylized:tail"
+      ],
+      "diag": []
+    },
+    "3": {
+      "ok": true,
+      "tris": 476,
+      "nodes": 15,
+      "refs": [
+        "fox->fox_stylized:fox",
+        "fox/body->fox_stylized:body",
+        "fox/body/head->fox_stylized:head",
+        "fox/body/head/ears->fox_stylized:ears",
+        "fox/body/head/ears/inner_l->fox_stylized:inner_ear",
+        "fox/body/head/ears/inner_r->fox_stylized:inner_ear",
+        "fox/body/head/eye_l->fox_stylized:face_accents",
+        "fox/body/head/eye_r->fox_stylized:face_accents",
+        "fox/body/head/nose->fox_stylized:face_accents",
+        "fox/body/front_l->fox_stylized:leg",
+        "fox/body/front_r->fox_stylized:leg",
+        "fox/body/rear_l->fox_stylized:leg",
+        "fox/body/rear_r->fox_stylized:leg",
+        "fox/body/tail->fox_stylized:tail",
+        "fox/body/tail/tail_tip->fox_stylized:tail_tip"
+      ],
+      "diag": []
+    },
+    "4": {
+      "ok": true,
+      "tris": 476,
+      "nodes": 15,
+      "refs": [
+        "fox->fox_stylized:fox",
+        "fox/body->fox_stylized:body",
+        "fox/body/head->fox_stylized:head",
+        "fox/body/head/ears->fox_stylized:ears",
+        "fox/body/head/ears/inner_l->fox_stylized:inner_ear",
+        "fox/body/head/ears/inner_r->fox_stylized:inner_ear",
+        "fox/body/head/eye_l->fox_stylized:face_accents",
+        "fox/body/head/eye_r->fox_stylized:face_accents",
+        "fox/body/head/nose->fox_stylized:face_accents",
+        "fox/body/front_l->fox_stylized:leg",
+        "fox/body/front_r->fox_stylized:leg",
+        "fox/body/rear_l->fox_stylized:leg",
+        "fox/body/rear_r->fox_stylized:leg",
+        "fox/body/tail->fox_stylized:tail",
+        "fox/body/tail/tail_tip->fox_stylized:tail_tip"
+      ],
+      "diag": []
+    }
+  },
+  "house": {
+    "1": {
+      "ok": true,
+      "tris": 20,
+      "nodes": 2,
+      "refs": [
+        "house->architecture:house",
+        "house/tetto->architecture:roof"
+      ],
+      "diag": []
+    },
+    "2": {
+      "ok": true,
+      "tris": 32,
+      "nodes": 3,
+      "refs": [
+        "house->architecture:house",
+        "house/tetto->architecture:roof",
+        "house/porta->architecture:door"
+      ],
+      "diag": []
+    },
+    "3": {
+      "ok": true,
+      "tris": 80,
+      "nodes": 5,
+      "refs": [
+        "house->architecture:house",
+        "house/tetto->architecture:roof",
+        "house/porta->architecture:door",
+        "house/finestra_l->architecture:window",
+        "house/finestra_r->architecture:window"
+      ],
+      "diag": []
+    },
+    "4": {
+      "ok": true,
+      "tris": 80,
+      "nodes": 5,
+      "refs": [
+        "house->architecture:house",
+        "house/tetto->architecture:roof",
+        "house/porta->architecture:door",
+        "house/finestra_l->architecture:window",
+        "house/finestra_r->architecture:window"
+      ],
+      "diag": []
+    }
+  },
+  "humanoid": {
+    "1": {
+      "ok": true,
+      "tris": 564,
+      "nodes": 7,
+      "refs": [
+        "body->humanoid_anatomical:body",
+        "body/torso->humanoid_anatomical:torso",
+        "body/torso/head->humanoid_anatomical:head",
+        "body/torso/arm_l->humanoid_anatomical:arm",
+        "body/torso/leg_l->humanoid_anatomical:leg",
+        "body/torso/arm_r->humanoid_anatomical:arm",
+        "body/torso/leg_r->humanoid_anatomical:leg"
+      ],
+      "diag": []
+    },
+    "2": {
+      "ok": true,
+      "tris": 1142,
+      "nodes": 37,
+      "refs": [
+        "body->humanoid_anatomical:body",
+        "body/torso->humanoid_anatomical:torso",
+        "body/torso/pelvis->humanoid_anatomical:pelvis",
+        "body/torso/abdomen->humanoid_anatomical:abdomen",
+        "body/torso/ribcage->humanoid_anatomical:ribcage",
+        "body/torso/neck->humanoid_anatomical:neck",
+        "body/torso/neck/head->humanoid_anatomical:head",
+        "body/torso/neck/head/nose->humanoid_anatomical:nose",
+        "body/torso/neck/head/mouth->humanoid_anatomical:mouth",
+        "body/torso/neck/head/eye_l->humanoid_anatomical:eye",
+        "body/torso/neck/head/ear_l->humanoid_anatomical:ear",
+        "body/torso/neck/head/eye_r->humanoid_anatomical:eye",
+        "body/torso/neck/head/ear_r->humanoid_anatomical:ear",
+        "body/torso/shoulder_l->humanoid_anatomical:shoulder",
+        "body/torso/shoulder_l/upper_arm->humanoid_anatomical:upper_arm",
+        "body/torso/shoulder_l/upper_arm/elbow->humanoid_anatomical:elbow",
+        "body/torso/shoulder_l/upper_arm/elbow/forearm->humanoid_anatomical:forearm",
+        "body/torso/shoulder_l/upper_arm/elbow/forearm/wrist->humanoid_anatomical:wrist",
+        "body/torso/shoulder_l/upper_arm/elbow/forearm/wrist/hand->humanoid_anatomical:hand",
+        "body/torso/hip_l->humanoid_anatomical:hip",
+        "body/torso/hip_l/thigh->humanoid_anatomical:thigh",
+        "body/torso/hip_l/thigh/knee->humanoid_anatomical:knee",
+        "body/torso/hip_l/thigh/knee/calf->humanoid_anatomical:calf",
+        "body/torso/hip_l/thigh/knee/calf/ankle->humanoid_anatomical:ankle",
+        "body/torso/hip_l/thigh/knee/calf/ankle/foot->humanoid_anatomical:foot",
+        "body/torso/shoulder_r->humanoid_anatomical:shoulder",
+        "body/torso/shoulder_r/upper_arm->humanoid_anatomical:upper_arm",
+        "body/torso/shoulder_r/upper_arm/elbow->humanoid_anatomical:elbow",
+        "body/torso/shoulder_r/upper_arm/elbow/forearm->humanoid_anatomical:forearm",
+        "body/torso/shoulder_r/upper_arm/elbow/forearm/wrist->humanoid_anatomical:wrist",
+        "body/torso/shoulder_r/upper_arm/elbow/forearm/wrist/hand->humanoid_anatomical:hand",
+        "body/torso/hip_r->humanoid_anatomical:hip",
+        "body/torso/hip_r/thigh->humanoid_anatomical:thigh",
+        "body/torso/hip_r/thigh/knee->humanoid_anatomical:knee",
+        "body/torso/hip_r/thigh/knee/calf->humanoid_anatomical:calf",
+        "body/torso/hip_r/thigh/knee/calf/ankle->humanoid_anatomical:ankle",
+        "body/torso/hip_r/thigh/knee/calf/ankle/foot->humanoid_anatomical:foot"
+      ],
+      "diag": []
+    },
+    "3": {
+      "ok": true,
+      "tris": 1938,
+      "nodes": 38,
+      "refs": [
+        "body->humanoid_anatomical:body",
+        "body/torso->humanoid_anatomical:torso",
+        "body/torso/pelvis->humanoid_anatomical:pelvis",
+        "body/torso/abdomen->humanoid_anatomical:abdomen",
+        "body/torso/ribcage->humanoid_anatomical:ribcage",
+        "body/torso/neck->humanoid_anatomical:neck",
+        "body/torso/neck/head->humanoid_anatomical:head",
+        "body/torso/neck/head/nose->humanoid_anatomical:nose",
+        "body/torso/neck/head/mouth->humanoid_anatomical:mouth",
+        "body/torso/neck/head/eye_l->humanoid_anatomical:eye",
+        "body/torso/neck/head/ear_l->humanoid_anatomical:ear",
+        "body/torso/neck/head/eye_r->humanoid_anatomical:eye",
+        "body/torso/neck/head/ear_r->humanoid_anatomical:ear",
+        "body/torso/neck/head/hair->humanoid_anatomical:hair",
+        "body/torso/shoulder_l->humanoid_anatomical:shoulder",
+        "body/torso/shoulder_l/upper_arm->humanoid_anatomical:upper_arm",
+        "body/torso/shoulder_l/upper_arm/elbow->humanoid_anatomical:elbow",
+        "body/torso/shoulder_l/upper_arm/elbow/forearm->humanoid_anatomical:forearm",
+        "body/torso/shoulder_l/upper_arm/elbow/forearm/wrist->humanoid_anatomical:wrist",
+        "body/torso/shoulder_l/upper_arm/elbow/forearm/wrist/hand->humanoid_anatomical:hand",
+        "body/torso/hip_l->humanoid_anatomical:hip",
+        "body/torso/hip_l/thigh->humanoid_anatomical:thigh",
+        "body/torso/hip_l/thigh/knee->humanoid_anatomical:knee",
+        "body/torso/hip_l/thigh/knee/calf->humanoid_anatomical:calf",
+        "body/torso/hip_l/thigh/knee/calf/ankle->humanoid_anatomical:ankle",
+        "body/torso/hip_l/thigh/knee/calf/ankle/foot->humanoid_anatomical:foot",
+        "body/torso/shoulder_r->humanoid_anatomical:shoulder",
+        "body/torso/shoulder_r/upper_arm->humanoid_anatomical:upper_arm",
+        "body/torso/shoulder_r/upper_arm/elbow->humanoid_anatomical:elbow",
+        "body/torso/shoulder_r/upper_arm/elbow/forearm->humanoid_anatomical:forearm",
+        "body/torso/shoulder_r/upper_arm/elbow/forearm/wrist->humanoid_anatomical:wrist",
+        "body/torso/shoulder_r/upper_arm/elbow/forearm/wrist/hand->humanoid_anatomical:hand",
+        "body/torso/hip_r->humanoid_anatomical:hip",
+        "body/torso/hip_r/thigh->humanoid_anatomical:thigh",
+        "body/torso/hip_r/thigh/knee->humanoid_anatomical:knee",
+        "body/torso/hip_r/thigh/knee/calf->humanoid_anatomical:calf",
+        "body/torso/hip_r/thigh/knee/calf/ankle->humanoid_anatomical:ankle",
+        "body/torso/hip_r/thigh/knee/calf/ankle/foot->humanoid_anatomical:foot"
+      ],
+      "diag": []
+    },
+    "4": {
+      "ok": true,
+      "tris": 1938,
+      "nodes": 38,
+      "refs": [
+        "body->humanoid_anatomical:body",
+        "body/torso->humanoid_anatomical:torso",
+        "body/torso/pelvis->humanoid_anatomical:pelvis",
+        "body/torso/abdomen->humanoid_anatomical:abdomen",
+        "body/torso/ribcage->humanoid_anatomical:ribcage",
+        "body/torso/neck->humanoid_anatomical:neck",
+        "body/torso/neck/head->humanoid_anatomical:head",
+        "body/torso/neck/head/nose->humanoid_anatomical:nose",
+        "body/torso/neck/head/mouth->humanoid_anatomical:mouth",
+        "body/torso/neck/head/eye_l->humanoid_anatomical:eye",
+        "body/torso/neck/head/ear_l->humanoid_anatomical:ear",
+        "body/torso/neck/head/eye_r->humanoid_anatomical:eye",
+        "body/torso/neck/head/ear_r->humanoid_anatomical:ear",
+        "body/torso/neck/head/hair->humanoid_anatomical:hair",
+        "body/torso/shoulder_l->humanoid_anatomical:shoulder",
+        "body/torso/shoulder_l/upper_arm->humanoid_anatomical:upper_arm",
+        "body/torso/shoulder_l/upper_arm/elbow->humanoid_anatomical:elbow",
+        "body/torso/shoulder_l/upper_arm/elbow/forearm->humanoid_anatomical:forearm",
+        "body/torso/shoulder_l/upper_arm/elbow/forearm/wrist->humanoid_anatomical:wrist",
+        "body/torso/shoulder_l/upper_arm/elbow/forearm/wrist/hand->humanoid_anatomical:hand",
+        "body/torso/hip_l->humanoid_anatomical:hip",
+        "body/torso/hip_l/thigh->humanoid_anatomical:thigh",
+        "body/torso/hip_l/thigh/knee->humanoid_anatomical:knee",
+        "body/torso/hip_l/thigh/knee/calf->humanoid_anatomical:calf",
+        "body/torso/hip_l/thigh/knee/calf/ankle->humanoid_anatomical:ankle",
+        "body/torso/hip_l/thigh/knee/calf/ankle/foot->humanoid_anatomical:foot",
+        "body/torso/shoulder_r->humanoid_anatomical:shoulder",
+        "body/torso/shoulder_r/upper_arm->humanoid_anatomical:upper_arm",
+        "body/torso/shoulder_r/upper_arm/elbow->humanoid_anatomical:elbow",
+        "body/torso/shoulder_r/upper_arm/elbow/forearm->humanoid_anatomical:forearm",
+        "body/torso/shoulder_r/upper_arm/elbow/forearm/wrist->humanoid_anatomical:wrist",
+        "body/torso/shoulder_r/upper_arm/elbow/forearm/wrist/hand->humanoid_anatomical:hand",
+        "body/torso/hip_r->humanoid_anatomical:hip",
+        "body/torso/hip_r/thigh->humanoid_anatomical:thigh",
+        "body/torso/hip_r/thigh/knee->humanoid_anatomical:knee",
+        "body/torso/hip_r/thigh/knee/calf->humanoid_anatomical:calf",
+        "body/torso/hip_r/thigh/knee/calf/ankle->humanoid_anatomical:ankle",
+        "body/torso/hip_r/thigh/knee/calf/ankle/foot->humanoid_anatomical:foot"
+      ],
+      "diag": []
+    }
+  },
+  "humanoid_legacy": {
+    "1": {
+      "ok": true,
+      "tris": 80,
+      "nodes": 2,
+      "refs": [
+        "body->humanoid:body",
+        "body/torso->humanoid:torso"
+      ],
+      "diag": []
+    },
+    "2": {
+      "ok": true,
+      "tris": 80,
+      "nodes": 2,
+      "refs": [
+        "body->humanoid:body",
+        "body/torso->humanoid:torso"
+      ],
+      "diag": []
+    },
+    "3": {
+      "ok": true,
+      "tris": 76,
+      "nodes": 4,
+      "refs": [
+        "body->humanoid:body",
+        "body/torso->humanoid:torso",
+        "body/torso/bacino->humanoid:pelvis",
+        "body/torso/petto->humanoid:chest"
+      ],
+      "diag": []
+    },
+    "4": {
+      "ok": true,
+      "tris": 76,
+      "nodes": 4,
+      "refs": [
+        "body->humanoid:body",
+        "body/torso->humanoid:torso",
+        "body/torso/bacino->humanoid:pelvis",
+        "body/torso/petto->humanoid:chest"
+      ],
+      "diag": []
+    }
+  },
+  "car": {
+    "1": {
+      "ok": true,
+      "tris": 144,
+      "nodes": 7,
+      "refs": [
+        "car->vehicle_stylized:car",
+        "car/body->vehicle_stylized:body",
+        "car/body/cabin->vehicle_stylized:cabin",
+        "car/wheel_fl->vehicle_stylized:wheel",
+        "car/wheel_fr->vehicle_stylized:wheel",
+        "car/wheel_rl->vehicle_stylized:wheel",
+        "car/wheel_rr->vehicle_stylized:wheel"
+      ],
+      "diag": []
+    },
+    "2": {
+      "ok": true,
+      "tris": 228,
+      "nodes": 14,
+      "refs": [
+        "car->vehicle_stylized:car",
+        "car/body->vehicle_stylized:body",
+        "car/body/cabin->vehicle_stylized:cabin",
+        "car/body/cabin/windshield->vehicle_stylized:windshield",
+        "car/body/hood_panel->vehicle_stylized:hood_panel",
+        "car/body/underbody->vehicle_stylized:underbody",
+        "car/body/fender_fl->vehicle_stylized:fender",
+        "car/body/fender_fr->vehicle_stylized:fender",
+        "car/body/fender_rl->vehicle_stylized:fender",
+        "car/body/fender_rr->vehicle_stylized:fender",
+        "car/wheel_fl->vehicle_stylized:wheel",
+        "car/wheel_fr->vehicle_stylized:wheel",
+        "car/wheel_rl->vehicle_stylized:wheel",
+        "car/wheel_rr->vehicle_stylized:wheel"
+      ],
+      "diag": []
+    },
+    "3": {
+      "ok": true,
+      "tris": 412,
+      "nodes": 24,
+      "refs": [
+        "car->vehicle_stylized:car",
+        "car/body->vehicle_stylized:body",
+        "car/body/cabin->vehicle_stylized:cabin",
+        "car/body/cabin/windshield->vehicle_stylized:windshield",
+        "car/body/cabin/mirror_l->vehicle_stylized:mirror",
+        "car/body/cabin/mirror_r->vehicle_stylized:mirror",
+        "car/body/cabin/roof_spoiler->vehicle_stylized:roof_spoiler",
+        "car/body/hood_panel->vehicle_stylized:hood_panel",
+        "car/body/underbody->vehicle_stylized:underbody",
+        "car/body/fender_fl->vehicle_stylized:fender",
+        "car/body/fender_fr->vehicle_stylized:fender",
+        "car/body/fender_rl->vehicle_stylized:fender",
+        "car/body/fender_rr->vehicle_stylized:fender",
+        "car/body/headlight_l->vehicle_stylized:headlight",
+        "car/body/headlight_r->vehicle_stylized:headlight",
+        "car/body/grille->vehicle_stylized:grille",
+        "car/wheel_fl->vehicle_stylized:wheel",
+        "car/wheel_fl/hubcap->vehicle_stylized:hubcap",
+        "car/wheel_fr->vehicle_stylized:wheel",
+        "car/wheel_fr/hubcap->vehicle_stylized:hubcap",
+        "car/wheel_rl->vehicle_stylized:wheel",
+        "car/wheel_rl/hubcap->vehicle_stylized:hubcap",
+        "car/wheel_rr->vehicle_stylized:wheel",
+        "car/wheel_rr/hubcap->vehicle_stylized:hubcap"
+      ],
+      "diag": []
+    },
+    "4": {
+      "ok": true,
+      "tris": 412,
+      "nodes": 24,
+      "refs": [
+        "car->vehicle_stylized:car",
+        "car/body->vehicle_stylized:body",
+        "car/body/cabin->vehicle_stylized:cabin",
+        "car/body/cabin/windshield->vehicle_stylized:windshield",
+        "car/body/cabin/mirror_l->vehicle_stylized:mirror",
+        "car/body/cabin/mirror_r->vehicle_stylized:mirror",
+        "car/body/cabin/roof_spoiler->vehicle_stylized:roof_spoiler",
+        "car/body/hood_panel->vehicle_stylized:hood_panel",
+        "car/body/underbody->vehicle_stylized:underbody",
+        "car/body/fender_fl->vehicle_stylized:fender",
+        "car/body/fender_fr->vehicle_stylized:fender",
+        "car/body/fender_rl->vehicle_stylized:fender",
+        "car/body/fender_rr->vehicle_stylized:fender",
+        "car/body/headlight_l->vehicle_stylized:headlight",
+        "car/body/headlight_r->vehicle_stylized:headlight",
+        "car/body/grille->vehicle_stylized:grille",
+        "car/wheel_fl->vehicle_stylized:wheel",
+        "car/wheel_fl/hubcap->vehicle_stylized:hubcap",
+        "car/wheel_fr->vehicle_stylized:wheel",
+        "car/wheel_fr/hubcap->vehicle_stylized:hubcap",
+        "car/wheel_rl->vehicle_stylized:wheel",
+        "car/wheel_rl/hubcap->vehicle_stylized:hubcap",
+        "car/wheel_rr->vehicle_stylized:wheel",
+        "car/wheel_rr/hubcap->vehicle_stylized:hubcap"
+      ],
+      "diag": []
+    }
+  },
+  "tree": {
+    "1": {
+      "ok": true,
+      "tris": 296,
+      "nodes": 6,
+      "refs": [
+        "tree->tree_stylized:tree",
+        "tree/trunk->tree_stylized:trunk",
+        "tree/trunk/branch_l->tree_stylized:branch",
+        "tree/trunk/branch_r->tree_stylized:branch",
+        "tree/trunk/branch_upper->tree_stylized:branch",
+        "tree/trunk/crown->tree_stylized:crown"
+      ],
+      "diag": []
+    },
+    "2": {
+      "ok": true,
+      "tris": 400,
+      "nodes": 7,
+      "refs": [
+        "tree->tree_stylized:tree",
+        "tree/trunk->tree_stylized:trunk",
+        "tree/trunk/branch_l->tree_stylized:branch",
+        "tree/trunk/branch_r->tree_stylized:branch",
+        "tree/trunk/branch_upper->tree_stylized:branch",
+        "tree/trunk/crown->tree_stylized:crown",
+        "tree/trunk/branch_rear->tree_stylized:branch"
+      ],
+      "diag": []
+    },
+    "3": {
+      "ok": true,
+      "tris": 426,
+      "nodes": 8,
+      "refs": [
+        "tree->tree_stylized:tree",
+        "tree/trunk->tree_stylized:trunk",
+        "tree/trunk/branch_l->tree_stylized:branch",
+        "tree/trunk/branch_l/fruit->tree_stylized:fruit",
+        "tree/trunk/branch_r->tree_stylized:branch",
+        "tree/trunk/branch_upper->tree_stylized:branch",
+        "tree/trunk/crown->tree_stylized:crown",
+        "tree/trunk/branch_rear->tree_stylized:branch"
+      ],
+      "diag": []
+    },
+    "4": {
+      "ok": true,
+      "tris": 426,
+      "nodes": 8,
+      "refs": [
+        "tree->tree_stylized:tree",
+        "tree/trunk->tree_stylized:trunk",
+        "tree/trunk/branch_l->tree_stylized:branch",
+        "tree/trunk/branch_l/fruit->tree_stylized:fruit",
+        "tree/trunk/branch_r->tree_stylized:branch",
+        "tree/trunk/branch_upper->tree_stylized:branch",
+        "tree/trunk/crown->tree_stylized:crown",
+        "tree/trunk/branch_rear->tree_stylized:branch"
+      ],
+      "diag": []
+    }
+  }
+}

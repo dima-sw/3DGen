@@ -1,0 +1,687 @@
+[
+  {
+    "name": "01_fox",
+    "prompt": "Una volpe cartoon low-poly.",
+    "mode": "offline",
+    "seconds": 0.423,
+    "ok": true,
+    "triangles": 412,
+    "planner": "mock",
+    "provider": "",
+    "model": "",
+    "failover": 0,
+    "diagnostics": [],
+    "describe": "richiesta: Una volpe cartoon low-poly.\nplanner: mock\nfox: fox_stylized:fox (senza geometria)\n  fox/body: fox_stylized:body (64 triangoli)\n    fox/body/head: fox_stylized:head (68 triangoli)\n      fox/body/head/ears: fox_stylized:ears (40 triangoli)\n    fox/body/front_l: fox_stylized:leg (40 triangoli)\n    fox/body/front_r: fox_stylized:leg (40 triangoli)\n    fox/body/rear_l: fox_stylized:leg (40 triangoli)\n    fox/body/rear_r: fox_stylized:leg (40 triangoli)\n    fox/body/tail: fox_stylized:tail (80 triangoli)\ntotale: 412 triangoli, 248 vertici",
+    "explain": [
+      "'fox' e' la radice: fox_stylized:fox",
+      "'fox_stylized:body' scelto per 'fox/body': fornisce 'core_mount' (capability)",
+      "'fox_stylized:head' scelto per 'fox/body/head': fornisce 'head_mount' (capability)",
+      "'fox_stylized:ears' scelto per 'fox/body/head/ears': fornisce 'hair_mount' (capability)",
+      "'fox_stylized:leg' scelto per 'fox/body/front_l': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/front_r': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/rear_l': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/rear_r': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:tail' scelto per 'fox/body/tail': fornisce 'limb_mount' (capability e tag)"
+    ],
+    "changes": [
+      "fox/body.body_length body_length: 1.0 (override)",
+      "fox/body.chunkiness chunkiness: 0.9 (override)",
+      "fox/body.ear_size ear_size: 1.0 (override)",
+      "fox/body.head_size head_size: 0.46 (override)",
+      "fox/body.leg_length leg_length: 0.72 (override)",
+      "fox/body.muzzle_length muzzle_length: 0.42 (override)",
+      "fox/body.tail_length tail_length: 1.05 (override)",
+      "fox/body.tail_volume tail_volume: 1.0 (override)",
+      "fox/body.torso_height torso_height: 0.52 (override)",
+      "fox/body/head.chunkiness chunkiness: 0.9 (override)",
+      "fox/body/head.ear_size ear_size: 1.0 (override)",
+      "fox/body/head.head_size head_size: 0.46 (override)",
+      "fox/body/head.muzzle_length muzzle_length: 0.42 (override)",
+      "fox/body/head/ears.chunkiness chunkiness: 0.9 (override)",
+      "fox/body/head/ears.ear_size ear_size: 1.0 (override)",
+      "fox/body/head/ears.head_size head_size: 0.46 (override)",
+      "fox/body/front_l.chunkiness chunkiness: 0.9 (override)",
+      "fox/body/front_l.leg_length leg_length: 0.72 (override)",
+      "fox/body/front_l.torso_height torso_height: 0.52 (override)",
+      "fox/body/front_r.chunkiness chunkiness: 0.9 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "fox -> fox_stylized:fox",
+      "fox/body -> fox_stylized:body",
+      "fox/body/head -> fox_stylized:head",
+      "fox/body/head/ears -> fox_stylized:ears",
+      "fox/body/front_l -> fox_stylized:leg",
+      "fox/body/front_r -> fox_stylized:leg",
+      "fox/body/rear_l -> fox_stylized:leg",
+      "fox/body/rear_r -> fox_stylized:leg",
+      "fox/body/tail -> fox_stylized:tail"
+    ],
+    "plan_json": {
+      "version": "1.0",
+      "style": "low_poly",
+      "detail_level": 2,
+      "seed": 0,
+      "root": {
+        "id": "fox",
+        "ref": "fox_stylized:fox"
+      }
+    },
+    "repaired": false,
+    "build_describe": "fox: fox_stylized:fox (senza geometria)\n  fox/body: fox_stylized:body (64 triangoli)\n    fox/body/head: fox_stylized:head (68 triangoli)\n      fox/body/head/ears: fox_stylized:ears (40 triangoli)\n    fox/body/front_l: fox_stylized:leg (40 triangoli)\n    fox/body/front_r: fox_stylized:leg (40 triangoli)\n    fox/body/rear_l: fox_stylized:leg (40 triangoli)\n    fox/body/rear_r: fox_stylized:leg (40 triangoli)\n    fox/body/tail: fox_stylized:tail (80 triangoli)\ntotale: 412 triangoli, 248 vertici",
+    "report": "",
+    "layout": "{'placements': [{'node': 'fox/body/tail', 'parent': 'fox/body', 'region': 'rear_tail_region', 'policy': 'fan', 'frame_index': 0, 'socket': 'rear_tail_region__fan_1', 'scale': 1.0, 'frame': {'socket': 'rear_tail_region__fan_1', 'position': [0.0, 1.006, -0.48], 'direction': [-0.1806788207622584, 0.24090509434967788, -0.9535826651341417], 'up': [0.0, 1.0, 0.0], 'radius': 0.11, 'angle': 0.0}}], 'problems': [], 'provenance': [{'region': 'rear_tail_region', 'policy': 'fan', 'requested': 1, 'placed': 1, 'scale': 1.0, 'fit': 'success'}]}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': []}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': []}",
+    "images": [
+      "01_fox_offline_front.png",
+      "01_fox_offline_three_quarter.png",
+      "01_fox_offline_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      0.697,
+      1.744,
+      2.251
+    ]
+  },
+  {
+    "name": "02_humanoid",
+    "prompt": "Un umanoide cartoon con testa enorme, gambe corte e mani grandi.",
+    "mode": "offline",
+    "seconds": 0.1,
+    "ok": true,
+    "triangles": 264,
+    "planner": "mock",
+    "provider": "",
+    "model": "",
+    "failover": 0,
+    "diagnostics": [
+      "'height' non calcolabile: 'root.height' non esiste in 'root.height'  [head]\n  perche': si usa il valore predefinito 1.8",
+      "'head_height' non calcolabile: 'root.height' non esiste in 'root.height * 0.134'  [head]\n  perche': si usa il valore predefinito 0.24"
+    ],
+    "describe": "richiesta: Un umanoide cartoon con testa enorme, gambe corte e mani grandi.\nplanner: mock\nhead: humanoid_anatomical:head (112 triangoli)\n  ear: humanoid:ear (16 triangoli)\n  mouth: humanoid:mouth (12 triangoli)\n  nose: humanoid:nose (20 triangoli)\n  head/eye_l: humanoid_anatomical:eye (52 triangoli)\n  head/eye_r: humanoid_anatomical:eye (52 triangoli)\ntotale: 264 triangoli, 154 vertici\n'height' non calcolabile: 'root.height' non esiste in 'root.height'  [head]\n  perche': si usa il valore predefinito 1.8\n'head_height' non calcolabile: 'root.height' non esiste in 'root.height * 0.134'  [head]\n  perche': si usa il valore predefinito 0.24",
+    "explain": [
+      "'head' e' la radice: humanoid_anatomical:head",
+      "'humanoid:ear' scelto per 'ear': fornisce 'face_mount' (capability)",
+      "'humanoid:mouth' scelto per 'mouth': fornisce 'face_mount' (capability e lato)",
+      "'humanoid:nose' scelto per 'nose': fornisce 'face_mount' (capability e lato)",
+      "'humanoid_anatomical:eye' scelto per 'head/eye_l': fornisce 'face_mount' (capability)",
+      "'humanoid_anatomical:eye' scelto per 'head/eye_r': fornisce 'face_mount' (capability e lato)"
+    ],
+    "changes": [
+      "head.cheek_width cheek_width: 0.14572800000000002 (derived = head_width * 0.92)",
+      "head.ear_size ear_size: 0.0552 (derived = head_height * 0.23)",
+      "head.eye_size eye_size: 0.020592000000000003 (derived = head_width * 0.13)",
+      "head.eye_spacing eye_spacing: 0.08236800000000001 (derived = head_width * 0.52)",
+      "head.head_depth head_depth: 0.1872 (derived = head_height * 0.78)",
+      "head.head_height head_height: 0.24 (derived = root.height * 0.134)",
+      "head.head_width head_width: 0.1584 (derived = head_height * 0.66)",
+      "head.height height: 1.8 (derived = root.height)",
+      "head.jaw_width jaw_width: 0.10771200000000002 (derived = head_width * 0.68)",
+      "head.mouth_width mouth_width: 0.066528 (derived = head_width * 0.42)",
+      "head.nose_length nose_length: 0.043056000000000004 (derived = head_depth * 0.23)",
+      "head.nose_width nose_width: 0.03168000000000001 (derived = head_width * 0.20)",
+      "head/eye_l.size size: 0.020592000000000003 (override)",
+      "head/eye_r.size size: 0.020592000000000003 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "head -> humanoid_anatomical:head",
+      "ear -> humanoid:ear",
+      "mouth -> humanoid:mouth",
+      "nose -> humanoid:nose",
+      "head/eye_l -> humanoid_anatomical:eye",
+      "head/eye_r -> humanoid_anatomical:eye"
+    ],
+    "plan_json": {
+      "version": "1.0",
+      "style": "low_poly",
+      "detail_level": 2,
+      "seed": 0,
+      "root": {
+        "id": "head",
+        "ref": "humanoid_anatomical:head",
+        "children": [
+          {
+            "id": "ear",
+            "ref": "humanoid:ear",
+            "at": {
+              "capability": "face_mount"
+            }
+          },
+          {
+            "id": "mouth",
+            "ref": "humanoid:mouth",
+            "at": {
+              "capability": "face_mount",
+              "side": "l"
+            }
+          },
+          {
+            "id": "nose",
+            "ref": "humanoid:nose",
+            "at": {
+              "capability": "face_mount",
+              "side": "r"
+            }
+          }
+        ],
+        "effects": [
+          {
+            "type": "perspective_exaggeration",
+            "scope": "model",
+            "amount": 0.5
+          }
+        ]
+      }
+    },
+    "repaired": false,
+    "build_describe": "head: humanoid_anatomical:head (112 triangoli)\n  ear: humanoid:ear (16 triangoli)\n  mouth: humanoid:mouth (12 triangoli)\n  nose: humanoid:nose (20 triangoli)\n  head/eye_l: humanoid_anatomical:eye (52 triangoli)\n  head/eye_r: humanoid_anatomical:eye (52 triangoli)\ntotale: 264 triangoli, 154 vertici",
+    "report": "'height' non calcolabile: 'root.height' non esiste in 'root.height'  [head]\n  perche': si usa il valore predefinito 1.8\n'head_height' non calcolabile: 'root.height' non esiste in 'root.height * 0.134'  [head]\n  perche': si usa il valore predefinito 0.24",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PARAM_EXPRESSION', 'message': \"'height' non calcolabile: 'root.height' non esiste in 'root.height'\", 'where': 'head', 'severity': 'warning'}, {'code': 'PARAM_EXPRESSION', 'message': \"'head_height' non calcolabile: 'root.height' non esiste in 'root.height * 0.134'\", 'where': 'head', 'severity': 'warning'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'PARAM_EXPRESSION', 'message': \"'height' non calcolabile: 'root.height' non esiste in 'root.height'\", 'where': 'head', 'severity': 'warning'}, {'code': 'PARAM_EXPRESSION', 'message': \"'head_height' non calcolabile: 'root.height' non esiste in 'root.height * 0.134'\", 'where': 'head', 'severity': 'warning'}]}",
+    "images": [
+      "02_humanoid_offline_front.png",
+      "02_humanoid_offline_three_quarter.png",
+      "02_humanoid_offline_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      0.204,
+      0.291,
+      0.241
+    ]
+  },
+  {
+    "name": "03_robot4arms",
+    "prompt": "Un robot con quattro braccia.",
+    "mode": "offline",
+    "seconds": 0.078,
+    "ok": true,
+    "triangles": 32,
+    "planner": "mock",
+    "provider": "",
+    "model": "",
+    "failover": 0,
+    "diagnostics": [],
+    "describe": "richiesta: Un robot con quattro braccia.\nplanner: mock\nhouse: architecture:house (12 triangoli)\n  house/tetto: architecture:roof (8 triangoli)\n  house/porta: architecture:door (12 triangoli)\ntotale: 32 triangoli, 22 vertici",
+    "explain": [
+      "'house' e' la radice: architecture:house",
+      "'architecture:roof' scelto per 'house/tetto': fornisce 'roof_mount' (capability)",
+      "'architecture:door' scelto per 'house/porta': fornisce 'opening' (capability e tag)"
+    ],
+    "changes": [
+      "house/tetto.depth depth: 5.0 (override)",
+      "house/tetto.pitch pitch: 0.45 (override)",
+      "house/tetto.width width: 6.0 (override)",
+      "house/porta.height height: 2.0 (derived = parent.height * 0.5)"
+    ],
+    "skipped": [],
+    "components": [
+      "house -> architecture:house",
+      "house/tetto -> architecture:roof",
+      "house/porta -> architecture:door"
+    ],
+    "plan_json": {
+      "version": "1.0",
+      "style": "low_poly",
+      "detail_level": 2,
+      "seed": 0,
+      "root": {
+        "id": "house",
+        "ref": "architecture:house"
+      }
+    },
+    "repaired": false,
+    "build_describe": "house: architecture:house (12 triangoli)\n  house/tetto: architecture:roof (8 triangoli)\n  house/porta: architecture:door (12 triangoli)\ntotale: 32 triangoli, 22 vertici",
+    "report": "",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': []}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': []}",
+    "images": [
+      "03_robot4arms_offline_front.png",
+      "03_robot4arms_offline_three_quarter.png",
+      "03_robot4arms_offline_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      6.36,
+      6.575,
+      7.006
+    ]
+  },
+  {
+    "name": "04_jeep6wheels",
+    "prompt": "Una jeep cartoon con sei ruote.",
+    "mode": "offline",
+    "seconds": 0.106,
+    "ok": true,
+    "triangles": 228,
+    "planner": "mock",
+    "provider": "",
+    "model": "",
+    "failover": 0,
+    "diagnostics": [],
+    "describe": "richiesta: Una jeep cartoon con sei ruote.\nplanner: mock\ncar: vehicle_stylized:car (senza geometria)\n  car/body: vehicle_stylized:body (20 triangoli)\n    car/body/cabin: vehicle_stylized:cabin (12 triangoli)\n      car/body/cabin/windshield: vehicle_stylized:windshield (12 triangoli)\n    car/body/hood_panel: vehicle_stylized:hood_panel (12 triangoli)\n    car/body/underbody: vehicle_stylized:underbody (12 triangoli)\n    car/body/fender_fl: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_fr: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_rl: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_rr: vehicle_stylized:fender (12 triangoli)\n  car/wheel_fl: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_fr: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_rl: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_rr: vehicle_stylized:wheel (28 triangoli)\ntotale: 228 triangoli, 140 vertici",
+    "explain": [
+      "'car' e' la radice: vehicle_stylized:car",
+      "'vehicle_stylized:body' scelto per 'car/body': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:cabin' scelto per 'car/body/cabin': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:windshield' scelto per 'car/body/cabin/windshield': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:hood_panel' scelto per 'car/body/hood_panel': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:underbody' scelto per 'car/body/underbody': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:fender' scelto per 'car/body/fender_fl': fornisce 'vehicle_mount' (capability e lato)",
+      "'vehicle_stylized:fender' scelto per 'car/body/fender_fr': fornisce 'vehicle_mount' (capability e lato)",
+      "'vehicle_stylized:fender' scelto per 'car/body/fender_rl': fornisce 'vehicle_mount' (capability e lato)",
+      "'vehicle_stylized:fender' scelto per 'car/body/fender_rr': fornisce 'vehicle_mount' (capability e lato)",
+      "'vehicle_stylized:wheel' scelto per 'car/wheel_fl': fornisce 'wheel_mount' (capability e lato)",
+      "'vehicle_stylized:wheel' scelto per 'car/wheel_fr': fornisce 'wheel_mount' (capability e lato)",
+      "'vehicle_stylized:wheel' scelto per 'car/wheel_rl': fornisce 'wheel_mount' (capability e lato)",
+      "'vehicle_stylized:wheel' scelto per 'car/wheel_rr': fornisce 'wheel_mount' (capability e lato)"
+    ],
+    "changes": [
+      "car/body.cabin_ratio cabin_ratio: 0.46 (override)",
+      "car/body.chunkiness chunkiness: 1.0 (override)",
+      "car/body.front_taper front_taper: 0.22 (override)",
+      "car/body.ground_clearance ground_clearance: 0.22 (override)",
+      "car/body.height height: 1.35 (override)",
+      "car/body.length length: 2.8 (override)",
+      "car/body.stance stance: 1.08 (override)",
+      "car/body.wheel_size wheel_size: 0.58 (override)",
+      "car/body.width width: 1.55 (override)",
+      "car/body/cabin.cabin_ratio cabin_ratio: 0.46 (override)",
+      "car/body/cabin.chunkiness chunkiness: 1.0 (override)",
+      "car/body/cabin.front_taper front_taper: 0.22 (override)",
+      "car/body/cabin.ground_clearance ground_clearance: 0.22 (override)",
+      "car/body/cabin.height height: 1.35 (override)",
+      "car/body/cabin.length length: 2.8 (override)",
+      "car/body/cabin.stance stance: 1.08 (override)",
+      "car/body/cabin.wheel_size wheel_size: 0.58 (override)",
+      "car/body/cabin.width width: 1.55 (override)",
+      "car/body/cabin/windshield.height height: 0.324 (override)",
+      "car/body/cabin/windshield.thickness thickness: 0.025 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "car -> vehicle_stylized:car",
+      "car/body -> vehicle_stylized:body",
+      "car/body/cabin -> vehicle_stylized:cabin",
+      "car/body/cabin/windshield -> vehicle_stylized:windshield",
+      "car/body/hood_panel -> vehicle_stylized:hood_panel",
+      "car/body/underbody -> vehicle_stylized:underbody",
+      "car/body/fender_fl -> vehicle_stylized:fender",
+      "car/body/fender_fr -> vehicle_stylized:fender",
+      "car/body/fender_rl -> vehicle_stylized:fender",
+      "car/body/fender_rr -> vehicle_stylized:fender",
+      "car/wheel_fl -> vehicle_stylized:wheel",
+      "car/wheel_fr -> vehicle_stylized:wheel",
+      "car/wheel_rl -> vehicle_stylized:wheel",
+      "car/wheel_rr -> vehicle_stylized:wheel"
+    ],
+    "plan_json": {
+      "version": "1.0",
+      "style": "low_poly",
+      "detail_level": 2,
+      "seed": 0,
+      "root": {
+        "id": "car",
+        "ref": "vehicle_stylized:car"
+      }
+    },
+    "repaired": false,
+    "build_describe": "car: vehicle_stylized:car (senza geometria)\n  car/body: vehicle_stylized:body (20 triangoli)\n    car/body/cabin: vehicle_stylized:cabin (12 triangoli)\n      car/body/cabin/windshield: vehicle_stylized:windshield (12 triangoli)\n    car/body/hood_panel: vehicle_stylized:hood_panel (12 triangoli)\n    car/body/underbody: vehicle_stylized:underbody (12 triangoli)\n    car/body/fender_fl: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_fr: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_rl: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_rr: vehicle_stylized:fender (12 triangoli)\n  car/wheel_fl: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_fr: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_rl: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_rr: vehicle_stylized:wheel (28 triangoli)\ntotale: 228 triangoli, 140 vertici",
+    "report": "",
+    "layout": "{'placements': [{'node': 'car/wheel_fl', 'parent': 'car', 'region': 'left_wheel_region', 'policy': 'linear', 'frame_index': 0, 'socket': 'left_wheel_region__linear_1', 'scale': 1.0, 'frame': {'socket': 'left_wheel_region__linear_1', 'position': [-0.8370000000000001, 0.29, -1.3299999999999998], 'direction': [-1.0, 0.0, 0.0], 'up': [0.0, 1.0, 0.0], 'radius': 0.29, 'angle': 0.0}}, {'node': 'car/wheel_rl', 'parent': 'car', 'region': 'left_wheel_region', 'policy': 'linear', 'frame_index': 1, 'socket': 'left_wheel_region__linear_2', 'scale': 1.0, 'frame': {'socket': 'left_wheel_region__linear_2', 'position': [-0.8370000000000001, 0.29, 1.3299999999999998], 'direction': [-1.0, 0.0, 0.0], 'up': [0.0, 1.0, 0.0], 'radius': 0.29, 'angle': 0.0}}, {'node': 'car/wheel_fr', 'parent': 'car', 'region': 'right_wheel_region', 'policy': 'linear', 'frame_index': 0, 'socket': 'right_wheel_region__linear_1', 'scale': 1.0, 'frame': {'socket': 'right_wheel_region__linear_1', 'position': [0.8370000000000001, 0.29, -1.3299999999999998], 'direction': [1.0, 0.0, 0.0], 'up': [0.0, 1.0, 0.0], 'radius': 0.29, 'angle': 0.0}}, {'node': 'car/wheel_rr', 'parent': 'car', 'region': 'right_wheel_region', 'policy': 'linear', 'frame_index': 1, 'socket': 'right_wheel_region__linear_2', 'scale': 1.0, 'frame': {'socket': 'right_wheel_region__linear_2', 'position': [0.8370000000000001, 0.29, 1.3299999999999998], 'direction': [1.0, 0.0, 0.0], 'up': [0.0, 1.0, 0.0], 'radius': 0.29, 'angle': 0.0}}], 'problems': [], 'proven",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': []}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': []}",
+    "images": [
+      "04_jeep6wheels_offline_front.png",
+      "04_jeep6wheels_offline_three_quarter.png",
+      "04_jeep6wheels_offline_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      2.077,
+      1.544,
+      3.24
+    ]
+  },
+  {
+    "name": "05_fishman",
+    "prompt": "Un pesce con corpo umanoide.",
+    "mode": "offline",
+    "seconds": 0.104,
+    "ok": true,
+    "triangles": 414,
+    "planner": "mock",
+    "provider": "",
+    "model": "",
+    "failover": 0,
+    "diagnostics": [
+      "l'innesto 'core' di 'humanoid_anatomical:body' porta gia' 1 componenti  [body/torso]\n  perche': 'humanoid_anatomical:body' non ha altri innesti liberi per capability 'core_mount'",
+      "'fish:fish_body' e 'humanoid:torso' occupano lo stesso posto per il 99%  [body/fish_body]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+      "'humanoid_anatomical:pelvis' e 'humanoid:thigh' occupano lo stesso posto per il 100%  [body/fish_body/pelvis]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+      "'humanoid_anatomical:pelvis' e 'humanoid:calf' occupano lo stesso posto per il 100%  [body/fish_body/pelvis]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+      "'humanoid_anatomical:pelvis' e 'humanoid:chest' occupano lo stesso posto per il 100%  [body/fish_body/pelvis]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+      "'humanoid_anatomical:pelvis' e 'humanoid:forearm' occupano lo stesso posto per il 100%  [body/fish_body/pelvis]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+      "'humanoid:thigh' e 'humanoid:calf' occupano lo stesso posto per il 100%  [body/fish_body/thigh]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+      "'humanoid:thigh' e 'humanoid:chest' occupano lo stesso posto per il 100%  [body/fish_body/thigh]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+      "'humanoid:thigh' e 'humanoid:forearm' occupano lo stesso posto per il 100%  [body/fish_body/thigh]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+      "'humanoid:calf' e 'humanoid:chest' occupano lo stesso posto per il 100%  [body/fish_body/calf]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+      "'humanoid:calf' e 'humanoid:forearm' occupano lo stesso posto per il 100%  [body/fish_body/calf]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+      "'humanoid:chest' e 'humanoid:forearm' occupano lo stesso posto per il 100%  [body/fish_body/chest]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione"
+    ],
+    "describe": "richiesta: Un pesce con corpo umanoide.\nplanner: mock\nbody: humanoid_anatomical:body (senza geometria)\n  fish_body: fish:fish_body (80 triangoli)\n    tail: fish:tail (38 triangoli)\n    fin: fish:fin (20 triangoli)\n    pelvis: humanoid_anatomical:pelvis (44 triangoli)\n    thigh: humanoid:thigh (32 triangoli)\n    calf: humanoid:calf (32 triangoli)\n    chest: humanoid:chest (44 triangoli)\n    forearm: humanoid:forearm (32 triangoli)\n    foot: humanoid:foot (12 triangoli)\n  torso: humanoid:torso (80 triangoli)\ntotale: 414 triangoli, 229 vertici\nl'innesto 'core' di 'humanoid_anatomical:body' porta gia' 1 componenti  [body/torso]\n  perche': 'humanoid_anatomical:body' non ha altri innesti liberi per capability 'core_mount'\n'fish:fish_body' e 'humanoid:torso' occupano lo stesso posto per il 99%  [body/fish_body]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid_anatomical:pelvis' e 'humanoid:thigh' occupano lo stesso posto per il 100%  [body/fish_body/pelvis]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid_anatomical:pelvis' e 'humanoid:calf' occupano lo stesso posto per il 100%  [body/fish_body/pelvis]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid_anatomical:pelvis' e 'humanoid:chest' occupano lo stesso posto per il 100%  [body/fish_body/pelvis]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid_anatomical:pelvis' e 'humanoid:forearm' occupano lo stesso posto per il 100%  [body/fish_body/pelvis]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid:thigh' e 'humanoid:calf' occupano lo stesso posto per il 100%  [body/fish_body/thigh]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid:thigh' e 'humanoid:chest' occupano lo stesso posto per il 100%  [body/fish_body/thigh]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid:thigh' e 'humanoid:forearm' occupano lo stesso posto per il 100%  [body/fish_body/thigh]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid:calf' e 'humanoid:chest' occupano lo stesso posto per il 100%  [body/fish_body/calf]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid:calf' e 'humanoid:forearm' occupano lo stesso posto per il 100%  [body/fish_body/calf]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid:chest' e 'humanoid:forearm' occupano lo stesso posto per il 100%  [body/fish_body/chest]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+    "explain": [
+      "'body' e' la radice: humanoid_anatomical:body",
+      "'fish:fish_body' scelto per 'fish_body': fornisce 'core_mount' (capability)",
+      "'fish:tail' scelto per 'tail': fornisce 'tail_mount' (capability)",
+      "'fish:fin' scelto per 'fin': fornisce 'limb_mount' (capability e lato)",
+      "'humanoid_anatomical:pelvis' scelto per 'pelvis': fornisce 'segment' (capability)",
+      "'humanoid:thigh' scelto per 'thigh': fornisce 'segment' (capability)",
+      "'humanoid:calf' scelto per 'calf': fornisce 'segment' (capability)",
+      "'humanoid:chest' scelto per 'chest': fornisce 'segment' (capability)",
+      "'humanoid:forearm' scelto per 'forearm': fornisce 'segment' (capability)",
+      "'humanoid:foot' scelto per 'foot': fornisce 'segment' (capability)",
+      "'humanoid:torso' scelto per 'torso': fornisce 'core_mount' (capability)"
+    ],
+    "changes": [
+      "torso.girth girth: 0.23562 (derived = root.height * 0.1309)",
+      "torso.length length: 0.6148800000000001 (derived = root.height * 0.3416)"
+    ],
+    "skipped": [],
+    "components": [
+      "body -> humanoid_anatomical:body",
+      "fish_body -> fish:fish_body",
+      "tail -> fish:tail",
+      "fin -> fish:fin",
+      "pelvis -> humanoid_anatomical:pelvis",
+      "thigh -> humanoid:thigh",
+      "calf -> humanoid:calf",
+      "chest -> humanoid:chest",
+      "forearm -> humanoid:forearm",
+      "foot -> humanoid:foot",
+      "torso -> humanoid:torso"
+    ],
+    "plan_json": {
+      "version": "1.0",
+      "style": "low_poly",
+      "detail_level": 2,
+      "seed": 0,
+      "root": {
+        "id": "body",
+        "ref": "humanoid_anatomical:body",
+        "children": [
+          {
+            "id": "fish_body",
+            "ref": "fish:fish_body",
+            "at": {
+              "capability": "core_mount"
+            },
+            "children": [
+              {
+                "id": "tail",
+                "ref": "fish:tail",
+                "at": {
+                  "capability": "tail_mount"
+                }
+              },
+              {
+                "id": "fin",
+                "ref": "fish:fin",
+                "at": {
+                  "capability": "limb_mount",
+                  "side": "l"
+                }
+              },
+              {
+                "id": "pelvis",
+                "ref": "humanoid_anatomical:pelvis",
+                "at": {
+                  "capability": "segment"
+                }
+              },
+              {
+                "id": "thigh",
+                "ref": "humanoid:thigh",
+                "at": {
+                  "capability": "segment"
+                }
+              },
+              {
+                "id": "calf",
+                "ref": "humanoid:calf",
+                "at": {
+                  "capability": "segment"
+                }
+              },
+              {
+                "id": "chest",
+                "ref": "humanoid:chest",
+                "at": {
+                  "capability": "segment"
+                }
+              },
+              {
+                "id": "forearm",
+                "ref": "humanoid:forearm",
+                "at": {
+                  "capability": "segment"
+                }
+              },
+              {
+                "id": "foot",
+                "ref": "humanoid:foot",
+                "at": {
+                  "capability": "segment"
+                }
+              }
+            ]
+          },
+          {
+            "id": "torso",
+            "ref": "humanoid:torso",
+            "at": {
+              "capability": "core_mount"
+            }
+          }
+        ]
+      }
+    },
+    "repaired": false,
+    "build_describe": "body: humanoid_anatomical:body (senza geometria)\n  fish_body: fish:fish_body (80 triangoli)\n    tail: fish:tail (38 triangoli)\n    fin: fish:fin (20 triangoli)\n    pelvis: humanoid_anatomical:pelvis (44 triangoli)\n    thigh: humanoid:thigh (32 triangoli)\n    calf: humanoid:calf (32 triangoli)\n    chest: humanoid:chest (44 triangoli)\n    forearm: humanoid:forearm (32 triangoli)\n    foot: humanoid:foot (12 triangoli)\n  torso: humanoid:torso (80 triangoli)\ntotale: 414 triangoli, 229 vertici",
+    "report": "l'innesto 'core' di 'humanoid_anatomical:body' porta gia' 1 componenti  [body/torso]\n  perche': 'humanoid_anatomical:body' non ha altri innesti liberi per capability 'core_mount'\n'fish:fish_body' e 'humanoid:torso' occupano lo stesso posto per il 99%  [body/fish_body]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid_anatomical:pelvis' e 'humanoid:thigh' occupano lo stesso posto per il 100%  [body/fish_body/pelvis]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid_anatomical:pelvis' e 'humanoid:calf' occupano lo stesso posto per il 100%  [body/fish_body/pelvis]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid_anatomical:pelvis' e 'humanoid:chest' occupano lo stesso posto per il 100%  [body/fish_body/pelvis]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid_anatomical:pelvis' e 'humanoid:forearm' occupano lo stesso posto per il 100%  [body/fish_body/pelvis]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid:thigh' e 'humanoid:calf' occupano lo stesso posto per il 100%  [body/fish_body/thigh]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid:thigh' e 'humanoid:chest' occupano lo stesso posto per il 100%  [body/fish_body/thigh]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid:thigh' e 'humanoid:forearm' occupano lo stesso posto per il 100%  [body/fish_body/thigh]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid:calf' e 'humanoid:chest' occupano lo stesso posto per il 100%  [body/fish_body/calf]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid:calf' e 'humanoid:forearm' occupano lo stesso posto per il 100%  [body/fish_body/calf]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\n'humanoid:chest' e 'humanoid:forearm' occupano lo stesso posto per il 100%  [body/fish_body/chest]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'MOUNT_CROWDED', 'message': \"l'innesto 'core' di 'humanoid_anatomical:body' porta gia' 1 componenti\", 'where': 'body/torso', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'fish:fish_body' e 'humanoid:torso' occupano lo stesso posto per il 99%\", 'where': 'body/fish_body', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'humanoid_anatomical:pelvis' e 'humanoid:thigh' occupano lo stesso posto per il 100%\", 'where': 'body/fish_body/pelvis', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'humanoid_anatomical:pelvis' e 'humanoid:calf' occupano lo stesso posto per il 100%\", 'where': 'body/fish_body/pelvis', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'humanoid_anatomical:pelvis' e 'humanoid:chest' occupano lo stesso posto per il 100%\", 'where': 'body/fish_body/pelvis', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'humanoid_anatomical:pelvis' e 'humanoid:forearm' occupano lo stesso posto per il 100%\", 'where': 'body/fish_body/pelvis', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'humanoid:thigh' e 'humanoid:calf' occupano lo stesso posto per il 100%\", 'where': 'body/fish_body/thigh', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'humanoid:thigh' e 'humanoid:chest' occupano lo stesso posto per il 100%\", 'where':",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'MOUNT_CROWDED', 'message': \"l'innesto 'core' di 'humanoid_anatomical:body' porta gia' 1 componenti\", 'where': 'body/torso', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'fish:fish_body' e 'humanoid:torso' occupano lo stesso posto per il 99%\", 'where': 'body/fish_body', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'humanoid_anatomical:pelvis' e 'humanoid:thigh' occupano lo stesso posto per il 100%\", 'where': 'body/fish_body/pelvis', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'humanoid_anatomical:pelvis' e 'humanoid:calf' occupano lo stesso posto per il 100%\", 'where': 'body/fish_body/pelvis', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'humanoid_anatomical:pelvis' e 'humanoid:chest' occupano lo stesso posto per il 100%\", 'where': 'body/fish_body/pelvis', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'humanoid_anatomical:pelvis' e 'humanoid:forearm' occupano lo stesso posto per il 100%\", 'where': 'body/fish_body/pelvis', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'humanoid:thigh' e 'humanoid:calf' occupano lo stesso posto per il 100%\", 'where': 'body/fish_body/thigh', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'humanoid:thigh' e 'humanoid:chest' occupano lo stesso posto per il 100%\", 'where': 'body/fis",
+    "images": [
+      "05_fishman_offline_front.png",
+      "05_fishman_offline_three_quarter.png",
+      "05_fishman_offline_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      0.564,
+      0.813,
+      0.394
+    ]
+  },
+  {
+    "name": "06_house",
+    "prompt": "Una casa alta, slanciata e leggermente curva.",
+    "mode": "offline",
+    "seconds": 0.097,
+    "ok": true,
+    "triangles": 32,
+    "planner": "mock",
+    "provider": "",
+    "model": "",
+    "failover": 0,
+    "diagnostics": [
+      "'fx:bend' non si applica a un ambito 'model'  [house]\n  perche': dichiara: part, subtree, group, role\n  alternative: part, subtree, group, role"
+    ],
+    "describe": "richiesta: Una casa alta, slanciata e leggermente curva.\nplanner: mock\nhouse: architecture:house (12 triangoli)\n  house/tetto: architecture:roof (8 triangoli)\n  house/porta: architecture:door (12 triangoli)\ntotale: 32 triangoli, 22 vertici\n'fx:bend' non si applica a un ambito 'model'  [house]\n  perche': dichiara: part, subtree, group, role\n  alternative: part, subtree, group, role",
+    "explain": [
+      "'house' e' la radice: architecture:house",
+      "'architecture:roof' scelto per 'house/tetto': fornisce 'roof_mount' (capability)",
+      "'architecture:door' scelto per 'house/porta': fornisce 'opening' (capability e tag)"
+    ],
+    "changes": [
+      "house/tetto.depth depth: 5.0 (override)",
+      "house/tetto.pitch pitch: 0.45 (override)",
+      "house/tetto.width width: 6.0 (override)",
+      "house/porta.height height: 2.0 (derived = parent.height * 0.5)"
+    ],
+    "skipped": [],
+    "components": [
+      "house -> architecture:house",
+      "house/tetto -> architecture:roof",
+      "house/porta -> architecture:door"
+    ],
+    "plan_json": {
+      "version": "1.0",
+      "style": "low_poly",
+      "detail_level": 2,
+      "seed": 0,
+      "root": {
+        "id": "house",
+        "ref": "architecture:house",
+        "effects": [
+          {
+            "type": "bend",
+            "scope": "model",
+            "amount": 0.4
+          }
+        ]
+      }
+    },
+    "repaired": false,
+    "build_describe": "house: architecture:house (12 triangoli)\n  house/tetto: architecture:roof (8 triangoli)\n  house/porta: architecture:door (12 triangoli)\ntotale: 32 triangoli, 22 vertici",
+    "report": "'fx:bend' non si applica a un ambito 'model'  [house]\n  perche': dichiara: part, subtree, group, role\n  alternative: part, subtree, group, role",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'EFFECT_INCOMPATIBLE', 'message': \"'fx:bend' non si applica a un ambito 'model'\", 'where': 'house', 'severity': 'error'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'EFFECT_INCOMPATIBLE', 'message': \"'fx:bend' non si applica a un ambito 'model'\", 'where': 'house', 'severity': 'error'}]}",
+    "images": [
+      "06_house_offline_front.png",
+      "06_house_offline_three_quarter.png",
+      "06_house_offline_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      6.36,
+      6.575,
+      7.006
+    ]
+  },
+  {
+    "name": "07_dragon",
+    "prompt": "Un drago cartoon con ali, corna e coda.",
+    "mode": "offline",
+    "seconds": 0.082,
+    "ok": true,
+    "triangles": 82,
+    "planner": "mock",
+    "provider": "",
+    "model": "",
+    "failover": 0,
+    "diagnostics": [],
+    "describe": "richiesta: Un drago cartoon con ali, corna e coda.\nplanner: mock\ndragon_head: creature:dragon_head (82 triangoli)\ntotale: 82 triangoli, 49 vertici",
+    "explain": [
+      "'dragon_head' e' la radice: creature:dragon_head"
+    ],
+    "changes": [],
+    "skipped": [],
+    "components": [
+      "dragon_head -> creature:dragon_head"
+    ],
+    "plan_json": {
+      "version": "1.0",
+      "style": "low_poly",
+      "detail_level": 2,
+      "seed": 0,
+      "root": {
+        "id": "dragon_head",
+        "ref": "creature:dragon_head"
+      }
+    },
+    "repaired": false,
+    "build_describe": "dragon_head: creature:dragon_head (82 triangoli)\ntotale: 82 triangoli, 49 vertici",
+    "report": "",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': []}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': []}",
+    "images": [
+      "07_dragon_offline_front.png",
+      "07_dragon_offline_three_quarter.png",
+      "07_dragon_offline_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      0.323,
+      0.315,
+      0.453
+    ]
+  },
+  {
+    "name": "08_tree",
+    "prompt": "Un albero fantasy con chioma asimmetrica.",
+    "mode": "offline",
+    "seconds": 0.085,
+    "ok": true,
+    "triangles": 50,
+    "planner": "mock",
+    "provider": "",
+    "model": "",
+    "failover": 0,
+    "diagnostics": [],
+    "describe": "richiesta: Un albero fantasy con chioma asimmetrica.\nplanner: mock\nwing: fantasy:wing (28 triangoli)\n  crystal: fantasy:crystal (22 triangoli)\ntotale: 50 triangoli, 29 vertici",
+    "explain": [
+      "'wing' e' la radice: fantasy:wing",
+      "'fantasy:crystal' scelto per 'crystal': fornisce 'anchor' (capability)"
+    ],
+    "changes": [],
+    "skipped": [],
+    "components": [
+      "wing -> fantasy:wing",
+      "crystal -> fantasy:crystal"
+    ],
+    "plan_json": {
+      "version": "1.0",
+      "style": "low_poly",
+      "detail_level": 2,
+      "seed": 0,
+      "root": {
+        "id": "wing",
+        "ref": "fantasy:wing",
+        "children": [
+          {
+            "id": "crystal",
+            "ref": "fantasy:crystal",
+            "at": {
+              "capability": "anchor"
+            }
+          }
+        ]
+      }
+    },
+    "repaired": false,
+    "build_describe": "wing: fantasy:wing (28 triangoli)\n  crystal: fantasy:crystal (22 triangoli)\ntotale: 50 triangoli, 29 vertici",
+    "report": "",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': []}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': []}",
+    "images": [
+      "08_tree_offline_front.png",
+      "08_tree_offline_three_quarter.png",
+      "08_tree_offline_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      0.718,
+      0.44,
+      0.1
+    ]
+  }
+]

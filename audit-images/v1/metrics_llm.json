@@ -1,0 +1,703 @@
+[
+  {
+    "name": "01_fox",
+    "prompt": "Una volpe cartoon low-poly.",
+    "mode": "llm",
+    "seconds": 2.952,
+    "ok": true,
+    "triangles": 412,
+    "planner": "llm",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "failover": 0,
+    "diagnostics": [
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Una volpe cartoon low-poly.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> groq/openai/gpt-oss-120b | failover 0\nfox: fox_stylized:fox (senza geometria)\n  fox/body: fox_stylized:body (64 triangoli)\n    fox/body/head: fox_stylized:head (68 triangoli)\n      fox/body/head/ears: fox_stylized:ears (40 triangoli)\n    fox/body/front_l: fox_stylized:leg (40 triangoli)\n    fox/body/front_r: fox_stylized:leg (40 triangoli)\n    fox/body/rear_l: fox_stylized:leg (40 triangoli)\n    fox/body/rear_r: fox_stylized:leg (40 triangoli)\n    fox/body/tail: fox_stylized:tail (80 triangoli)\ntotale: 412 triangoli, 248 vertici\nrisposta vincolata allo schema del piano",
+    "explain": [
+      "'fox' e' la radice: fox_stylized:fox",
+      "'fox_stylized:body' scelto per 'fox/body': fornisce 'core_mount' (capability)",
+      "'fox_stylized:head' scelto per 'fox/body/head': fornisce 'head_mount' (capability)",
+      "'fox_stylized:ears' scelto per 'fox/body/head/ears': fornisce 'hair_mount' (capability)",
+      "'fox_stylized:leg' scelto per 'fox/body/front_l': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/front_r': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/rear_l': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/rear_r': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:tail' scelto per 'fox/body/tail': fornisce 'limb_mount' (capability e tag)"
+    ],
+    "changes": [
+      "fox.body_length body_length: 1.0 (override)",
+      "fox.chunkiness chunkiness: 1.0 (override)",
+      "fox.ear_size ear_size: 1.0 (override)",
+      "fox.head_size head_size: 0.5 (override)",
+      "fox.leg_length leg_length: 0.8 (override)",
+      "fox.muzzle_length muzzle_length: 0.45 (override)",
+      "fox.tail_length tail_length: 1.2 (override)",
+      "fox.tail_volume tail_volume: 1.0 (override)",
+      "fox.torso_height torso_height: 0.5 (override)",
+      "fox/body.body_length body_length: 1.0 (override)",
+      "fox/body.chunkiness chunkiness: 1.0 (override)",
+      "fox/body.ear_size ear_size: 1.0 (override)",
+      "fox/body.head_size head_size: 0.5 (override)",
+      "fox/body.leg_length leg_length: 0.8 (override)",
+      "fox/body.muzzle_length muzzle_length: 0.45 (override)",
+      "fox/body.tail_length tail_length: 1.2 (override)",
+      "fox/body.tail_volume tail_volume: 1.0 (override)",
+      "fox/body.torso_height torso_height: 0.5 (override)",
+      "fox/body/head.chunkiness chunkiness: 1.0 (override)",
+      "fox/body/head.ear_size ear_size: 1.0 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "fox -> fox_stylized:fox",
+      "fox/body -> fox_stylized:body",
+      "fox/body/head -> fox_stylized:head",
+      "fox/body/head/ears -> fox_stylized:ears",
+      "fox/body/front_l -> fox_stylized:leg",
+      "fox/body/front_r -> fox_stylized:leg",
+      "fox/body/rear_l -> fox_stylized:leg",
+      "fox/body/rear_r -> fox_stylized:leg",
+      "fox/body/tail -> fox_stylized:tail"
+    ],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "fox",
+        "ref": "fox_stylized:fox",
+        "params": {
+          "body_length": 1.0,
+          "chunkiness": 1.0,
+          "ear_size": 1.0,
+          "head_size": 0.5,
+          "leg_length": 0.8,
+          "muzzle_length": 0.45,
+          "tail_length": 1.2,
+          "tail_volume": 1.0,
+          "torso_height": 0.5
+        },
+        "children": []
+      }
+    },
+    "repaired": false,
+    "build_describe": "fox: fox_stylized:fox (senza geometria)\n  fox/body: fox_stylized:body (64 triangoli)\n    fox/body/head: fox_stylized:head (68 triangoli)\n      fox/body/head/ears: fox_stylized:ears (40 triangoli)\n    fox/body/front_l: fox_stylized:leg (40 triangoli)\n    fox/body/front_r: fox_stylized:leg (40 triangoli)\n    fox/body/rear_l: fox_stylized:leg (40 triangoli)\n    fox/body/rear_r: fox_stylized:leg (40 triangoli)\n    fox/body/tail: fox_stylized:tail (80 triangoli)\ntotale: 412 triangoli, 248 vertici",
+    "report": "risposta vincolata allo schema del piano",
+    "layout": "{'placements': [{'node': 'fox/body/tail', 'parent': 'fox/body', 'region': 'rear_tail_region', 'policy': 'fan', 'frame_index': 0, 'socket': 'rear_tail_region__fan_1', 'scale': 1.0, 'frame': {'socket': 'rear_tail_region__fan_1', 'position': [0.0, 1.0750000000000002, -0.48], 'direction': [-0.1806788207622584, 0.24090509434967788, -0.9535826651341417], 'up': [0.0, 1.0, 0.0], 'radius': 0.11, 'angle': 0.0}}], 'problems': [], 'provenance': [{'region': 'rear_tail_region', 'policy': 'fan', 'requested': 1, 'placed': 1, 'scale': 1.0, 'fit': 'success'}]}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "images": [
+      "01_fox_llm_front.png",
+      "01_fox_llm_three_quarter.png",
+      "01_fox_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      0.677,
+      1.858,
+      2.44
+    ]
+  },
+  {
+    "name": "02_humanoid",
+    "prompt": "Un umanoide cartoon con testa enorme, gambe corte e mani grandi.",
+    "mode": "llm",
+    "seconds": 170.004,
+    "ok": true,
+    "triangles": 264,
+    "planner": "mock_fallback",
+    "provider": "",
+    "model": "",
+    "failover": 9,
+    "diagnostics": [
+      "'height' non calcolabile: 'root.height' non esiste in 'root.height'  [head]\n  perche': si usa il valore predefinito 1.8",
+      "'head_height' non calcolabile: 'root.height' non esiste in 'root.height * 0.134'  [head]\n  perche': si usa il valore predefinito 0.24",
+      "il planner remoto non ha risposto: Groq: Groq ha risposto 429: {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_[redacted]` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6678, Requested 6766. Please try again in 40.83s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}  | Google Gemini: JSON malformato: Expecting ',' delimiter: line 7 column 4 (char 121) | Mistral: Mistral ha risposto 429: {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429} | Cloudflare Workers AI: nessun JSON nella risposta del modello | NVIDIA NIM: NVIDIA NIM irraggiungibile: HTTPSConnectionPool(host='integrate.api.nvidia.com', port=443): Read timed out. (read timeout=60) | Cerebras: Cerebras ha risposto 402: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"} | Cohere: JSON malformato: Extra data: line 1 column 52 (char 51) | HuggingFace: HuggingFace ha risposto 402: {\"error\":\"You have no remaining credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get monthly included credits.\"} | OpenRouter: nessun JSON nella risposta del modello | Ollama (locale): Ollama (locale) irraggiungibile: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000246ACD08A50>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+    ],
+    "describe": "richiesta: Un umanoide cartoon con testa enorme, gambe corte e mani grandi.\nplanner: mock_fallback\nAI: groq/openai/gpt-oss-120b -> nessuno | failover 9\nhead: humanoid_anatomical:head (112 triangoli)\n  ear: humanoid:ear (16 triangoli)\n  mouth: humanoid:mouth (12 triangoli)\n  nose: humanoid:nose (20 triangoli)\n  head/eye_l: humanoid_anatomical:eye (52 triangoli)\n  head/eye_r: humanoid_anatomical:eye (52 triangoli)\ntotale: 264 triangoli, 154 vertici\n'height' non calcolabile: 'root.height' non esiste in 'root.height'  [head]\n  perche': si usa il valore predefinito 1.8\n'head_height' non calcolabile: 'root.height' non esiste in 'root.height * 0.134'  [head]\n  perche': si usa il valore predefinito 0.24\nil planner remoto non ha risposto: Groq: Groq ha risposto 429: {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_[redacted]` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6678, Requested 6766. Please try again in 40.83s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}  | Google Gemini: JSON malformato: Expecting ',' delimiter: line 7 column 4 (char 121) | Mistral: Mistral ha risposto 429: {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429} | Cloudflare Workers AI: nessun JSON nella risposta del modello | NVIDIA NIM: NVIDIA NIM irraggiungibile: HTTPSConnectionPool(host='integrate.api.nvidia.com', port=443): Read timed out. (read timeout=60) | Cerebras: Cerebras ha risposto 402: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"} | Cohere: JSON malformato: Extra data: line 1 column 52 (char 51) | HuggingFace: HuggingFace ha risposto 402: {\"error\":\"You have no remaining credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get monthly included credits.\"} | OpenRouter: nessun JSON nella risposta del modello | Ollama (locale): Ollama (locale) irraggiungibile: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000246ACD08A50>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "explain": [
+      "'head' e' la radice: humanoid_anatomical:head",
+      "'humanoid:ear' scelto per 'ear': fornisce 'face_mount' (capability)",
+      "'humanoid:mouth' scelto per 'mouth': fornisce 'face_mount' (capability e lato)",
+      "'humanoid:nose' scelto per 'nose': fornisce 'face_mount' (capability e lato)",
+      "'humanoid_anatomical:eye' scelto per 'head/eye_l': fornisce 'face_mount' (capability)",
+      "'humanoid_anatomical:eye' scelto per 'head/eye_r': fornisce 'face_mount' (capability e lato)"
+    ],
+    "changes": [
+      "head.cheek_width cheek_width: 0.14572800000000002 (derived = head_width * 0.92)",
+      "head.ear_size ear_size: 0.0552 (derived = head_height * 0.23)",
+      "head.eye_size eye_size: 0.020592000000000003 (derived = head_width * 0.13)",
+      "head.eye_spacing eye_spacing: 0.08236800000000001 (derived = head_width * 0.52)",
+      "head.head_depth head_depth: 0.1872 (derived = head_height * 0.78)",
+      "head.head_height head_height: 0.24 (derived = root.height * 0.134)",
+      "head.head_width head_width: 0.1584 (derived = head_height * 0.66)",
+      "head.height height: 1.8 (derived = root.height)",
+      "head.jaw_width jaw_width: 0.10771200000000002 (derived = head_width * 0.68)",
+      "head.mouth_width mouth_width: 0.066528 (derived = head_width * 0.42)",
+      "head.nose_length nose_length: 0.043056000000000004 (derived = head_depth * 0.23)",
+      "head.nose_width nose_width: 0.03168000000000001 (derived = head_width * 0.20)",
+      "head/eye_l.size size: 0.020592000000000003 (override)",
+      "head/eye_r.size size: 0.020592000000000003 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "head -> humanoid_anatomical:head",
+      "ear -> humanoid:ear",
+      "mouth -> humanoid:mouth",
+      "nose -> humanoid:nose",
+      "head/eye_l -> humanoid_anatomical:eye",
+      "head/eye_r -> humanoid_anatomical:eye"
+    ],
+    "plan_json": {
+      "version": "1.0",
+      "style": "low_poly",
+      "detail_level": 2,
+      "seed": 0,
+      "root": {
+        "id": "head",
+        "ref": "humanoid_anatomical:head",
+        "children": [
+          {
+            "id": "ear",
+            "ref": "humanoid:ear",
+            "at": {
+              "capability": "face_mount"
+            }
+          },
+          {
+            "id": "mouth",
+            "ref": "humanoid:mouth",
+            "at": {
+              "capability": "face_mount",
+              "side": "l"
+            }
+          },
+          {
+            "id": "nose",
+            "ref": "humanoid:nose",
+            "at": {
+              "capability": "face_mount",
+              "side": "r"
+            }
+          }
+        ],
+        "effects": [
+          {
+            "type": "perspective_exaggeration",
+            "scope": "model",
+            "amount": 0.5
+          }
+        ]
+      }
+    },
+    "repaired": false,
+    "build_describe": "head: humanoid_anatomical:head (112 triangoli)\n  ear: humanoid:ear (16 triangoli)\n  mouth: humanoid:mouth (12 triangoli)\n  nose: humanoid:nose (20 triangoli)\n  head/eye_l: humanoid_anatomical:eye (52 triangoli)\n  head/eye_r: humanoid_anatomical:eye (52 triangoli)\ntotale: 264 triangoli, 154 vertici",
+    "report": "'height' non calcolabile: 'root.height' non esiste in 'root.height'  [head]\n  perche': si usa il valore predefinito 1.8\n'head_height' non calcolabile: 'root.height' non esiste in 'root.height * 0.134'  [head]\n  perche': si usa il valore predefinito 0.24\nil planner remoto non ha risposto: Groq: Groq ha risposto 429: {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_[redacted]` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6678, Requested 6766. Please try again in 40.83s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}  | Google Gemini: JSON malformato: Expecting ',' delimiter: line 7 column 4 (char 121) | Mistral: Mistral ha risposto 429: {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429} | Cloudflare Workers AI: nessun JSON nella risposta del modello | NVIDIA NIM: NVIDIA NIM irraggiungibile: HTTPSConnectionPool(host='integrate.api.nvidia.com', port=443): Read timed out. (read timeout=60) | Cerebras: Cerebras ha risposto 402: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"} | Cohere: JSON malformato: Extra data: line 1 column 52 (char 51) | HuggingFace: HuggingFace ha risposto 402: {\"error\":\"You have no remaining credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get monthly included credits.\"} | OpenRouter: nessun JSON nella risposta del modello | Ollama (locale): Ollama (locale) irraggiungibile: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000246ACD08A50>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PARAM_EXPRESSION', 'message': \"'height' non calcolabile: 'root.height' non esiste in 'root.height'\", 'where': 'head', 'severity': 'warning'}, {'code': 'PARAM_EXPRESSION', 'message': \"'head_height' non calcolabile: 'root.height' non esiste in 'root.height * 0.134'\", 'where': 'head', 'severity': 'warning'}, {'code': 'PLANNER_NOTE', 'message': 'il planner remoto non ha risposto: Groq: Groq ha risposto 429: {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_[redacted]` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6678, Requested 6766. Please try again in 40.83s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}  | Google Gemini: JSON malformato: Expecting \\',\\' delimiter: line 7 column 4 (char 121) | Mistral: Mistral ha risposto 429: {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429} | Cloudflare Workers AI: nessun JSON nella risposta del modello | NVIDIA NIM: NVIDIA NIM irraggiungibile: HTTPSConnectionPool(host=\\'integrate.api.nvidia.com\\', port=443): Read timed out. (read timeout=60) | Cerebras: Cerebras ha risposto 402: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quo",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'PARAM_EXPRESSION', 'message': \"'height' non calcolabile: 'root.height' non esiste in 'root.height'\", 'where': 'head', 'severity': 'warning'}, {'code': 'PARAM_EXPRESSION', 'message': \"'head_height' non calcolabile: 'root.height' non esiste in 'root.height * 0.134'\", 'where': 'head', 'severity': 'warning'}, {'code': 'PLANNER_NOTE', 'message': 'il planner remoto non ha risposto: Groq: Groq ha risposto 429: {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_[redacted]` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6678, Requested 6766. Please try again in 40.83s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}  | Google Gemini: JSON malformato: Expecting \\',\\' delimiter: line 7 column 4 (char 121) | Mistral: Mistral ha risposto 429: {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429} | Cloudflare Workers AI: nessun JSON nella risposta del modello | NVIDIA NIM: NVIDIA NIM irraggiungibile: HTTPSConnectionPool(host=\\'integrate.api.nvidia.com\\', port=443): Read timed out. (read timeout=60) | Cerebras: Cerebras ha risposto 402: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\"",
+    "images": [
+      "02_humanoid_llm_front.png",
+      "02_humanoid_llm_three_quarter.png",
+      "02_humanoid_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      0.204,
+      0.291,
+      0.241
+    ]
+  },
+  {
+    "name": "03_robot4arms",
+    "prompt": "Un robot con quattro braccia.",
+    "mode": "llm",
+    "seconds": 2.511,
+    "ok": false,
+    "triangles": 0,
+    "planner": "llm",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "failover": 0,
+    "diagnostics": [
+      "trait non disponibile: 'instance_count'  [traits[0]]\n  alternative: botany:leafiness, std:body_mass",
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Un robot con quattro braccia.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> groq/openai/gpt-oss-120b | failover 0\ntrait non disponibile: 'instance_count'  [traits[0]]\n  alternative: botany:leafiness, std:body_mass\nrisposta vincolata allo schema del piano",
+    "explain": [],
+    "changes": [],
+    "skipped": [],
+    "components": [],
+    "plan_json": {
+      "concept": {
+        "requested": "robot with four arms",
+        "archetypes": [
+          "archetype_metadata:quadruped"
+        ],
+        "profiles": [],
+        "adaptations": [
+          {
+            "trait": "instance_count",
+            "value": 4
+          }
+        ]
+      },
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "fox",
+        "ref": "fox_stylized:fox"
+      },
+      "traits": [
+        {
+          "trait": "instance_count",
+          "value": 4
+        }
+      ],
+      "structural_traits": []
+    },
+    "repaired": false,
+    "report": "trait non disponibile: 'instance_count'  [traits[0]]\n  alternative: botany:leafiness, std:body_mass\nrisposta vincolata allo schema del piano",
+    "concept": "{'requested_concept': 'robot with four arms', 'semantic_source': 'llm', 'archetypes': ['archetype_metadata:animal', 'archetype_metadata:quadruped'], 'profiles': [], 'candidate_bindings': [{'candidate': 'archetype_metadata:fox_quadruped', 'hard_compatible': True, 'match': 'exact', 'supported': [{'trait': 'instance_count', 'value': 4, 'coverage_details': {'requested': {'trait': 'instance_count', 'value': 4}, 'contract_found': True, 'where_supported': [{'path': 'fox', 'component': 'fox_stylized:fox', 'role': 'animal'}], 'where_unsupported': [], 'where_ignored': [], 'coverage': 'fully_supported', 'materialized': True}}], 'unsupported': [], 'conflicting': [], 'preferred_hits': 1, 'score': [2, 1, 1, 2, 0, 0, -2], 'reasons': ['binding=archetype_metadata:fox_quadruped']}], 'selected_binding': 'archetype_metadata:fox_quadruped', 'selected_root_implementation': 'fox_stylized:fox', 'adaptations': [{'trait': 'instance_count', 'value': 4}], 'materialized_traits': [{'trait': 'instance_count', 'value': 4}], 'materialized_structural_traits': [], 'materialized_params': {}, 'param_role_preferences': [], 'component_preferences': [], 'style_preferences': [], 'coverage': [{'candidate': 'archetype_metadata:fox_quadruped', 'hard_compatible': True, 'match': 'exact', 'supported': [{'trait': 'instance_count', 'value': 4, 'coverage_details': {'requested': {'trait': 'instance_count', 'value': 4}, 'contract_found': True, 'where_supported': [{'path': 'fox', 'component': 'fox_stylized:fox', 'role': 'animal'}], 'where_unsupported': [], 'where_ignored': [], 'coverage': 'fully_supported', 'materialized': True}}], 'unsupported': [], 'conflicting': [], 'preferred_hits': 1, 'score': [2, 1, 1, 2, 0, 0, -2], 'reasons': ['binding=archetype_metadata:fox_quadruped']}], 'unsupported': [], 'conflicts': [], 'provenance': {'materialized_defaults': [], 'requested_concept': 'robot with four arms', 'semantic_source': 'llm', 'selected_binding': 'archetype_metadata:fox_quadruped', 'selected_root_implementation': 'fo",
+    "images": []
+  },
+  {
+    "name": "04_jeep6wheels",
+    "prompt": "Una jeep cartoon con sei ruote.",
+    "mode": "llm",
+    "seconds": 48.815,
+    "ok": true,
+    "triangles": 228,
+    "planner": "llm",
+    "provider": "cloudflare",
+    "model": "@cf/openai/gpt-oss-20b",
+    "failover": 3,
+    "diagnostics": [
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Una jeep cartoon con sei ruote.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> cloudflare/@cf/openai/gpt-oss-20b | failover 3\ncar: vehicle_stylized:car (senza geometria)\n  car/body: vehicle_stylized:body (20 triangoli)\n    car/body/cabin: vehicle_stylized:cabin (12 triangoli)\n      car/body/cabin/windshield: vehicle_stylized:windshield (12 triangoli)\n    car/body/hood_panel: vehicle_stylized:hood_panel (12 triangoli)\n    car/body/underbody: vehicle_stylized:underbody (12 triangoli)\n    car/body/fender_fl: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_fr: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_rl: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_rr: vehicle_stylized:fender (12 triangoli)\n  car/wheel_fl: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_fr: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_rl: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_rr: vehicle_stylized:wheel (28 triangoli)\ntotale: 228 triangoli, 140 vertici\nrisposta vincolata allo schema del piano",
+    "explain": [
+      "'car' e' la radice: vehicle_stylized:car",
+      "'vehicle_stylized:body' scelto per 'car/body': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:cabin' scelto per 'car/body/cabin': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:windshield' scelto per 'car/body/cabin/windshield': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:hood_panel' scelto per 'car/body/hood_panel': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:underbody' scelto per 'car/body/underbody': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:fender' scelto per 'car/body/fender_fl': fornisce 'vehicle_mount' (capability e lato)",
+      "'vehicle_stylized:fender' scelto per 'car/body/fender_fr': fornisce 'vehicle_mount' (capability e lato)",
+      "'vehicle_stylized:fender' scelto per 'car/body/fender_rl': fornisce 'vehicle_mount' (capability e lato)",
+      "'vehicle_stylized:fender' scelto per 'car/body/fender_rr': fornisce 'vehicle_mount' (capability e lato)",
+      "'vehicle_stylized:wheel' scelto per 'car/wheel_fl': fornisce 'wheel_mount' (capability e lato)",
+      "'vehicle_stylized:wheel' scelto per 'car/wheel_fr': fornisce 'wheel_mount' (capability e lato)",
+      "'vehicle_stylized:wheel' scelto per 'car/wheel_rl': fornisce 'wheel_mount' (capability e lato)",
+      "'vehicle_stylized:wheel' scelto per 'car/wheel_rr': fornisce 'wheel_mount' (capability e lato)"
+    ],
+    "changes": [
+      "car/body.cabin_ratio cabin_ratio: 0.46 (override)",
+      "car/body.chunkiness chunkiness: 1.0 (override)",
+      "car/body.front_taper front_taper: 0.22 (override)",
+      "car/body.ground_clearance ground_clearance: 0.22 (override)",
+      "car/body.height height: 1.35 (override)",
+      "car/body.length length: 2.8 (override)",
+      "car/body.stance stance: 1.08 (override)",
+      "car/body.wheel_size wheel_size: 0.58 (override)",
+      "car/body.width width: 1.55 (override)",
+      "car/body/cabin.cabin_ratio cabin_ratio: 0.46 (override)",
+      "car/body/cabin.chunkiness chunkiness: 1.0 (override)",
+      "car/body/cabin.front_taper front_taper: 0.22 (override)",
+      "car/body/cabin.ground_clearance ground_clearance: 0.22 (override)",
+      "car/body/cabin.height height: 1.35 (override)",
+      "car/body/cabin.length length: 2.8 (override)",
+      "car/body/cabin.stance stance: 1.08 (override)",
+      "car/body/cabin.wheel_size wheel_size: 0.58 (override)",
+      "car/body/cabin.width width: 1.55 (override)",
+      "car/body/cabin/windshield.height height: 0.324 (override)",
+      "car/body/cabin/windshield.thickness thickness: 0.025 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "car -> vehicle_stylized:car",
+      "car/body -> vehicle_stylized:body",
+      "car/body/cabin -> vehicle_stylized:cabin",
+      "car/body/cabin/windshield -> vehicle_stylized:windshield",
+      "car/body/hood_panel -> vehicle_stylized:hood_panel",
+      "car/body/underbody -> vehicle_stylized:underbody",
+      "car/body/fender_fl -> vehicle_stylized:fender",
+      "car/body/fender_fr -> vehicle_stylized:fender",
+      "car/body/fender_rl -> vehicle_stylized:fender",
+      "car/body/fender_rr -> vehicle_stylized:fender",
+      "car/wheel_fl -> vehicle_stylized:wheel",
+      "car/wheel_fr -> vehicle_stylized:wheel",
+      "car/wheel_rl -> vehicle_stylized:wheel",
+      "car/wheel_rr -> vehicle_stylized:wheel"
+    ],
+    "plan_json": {
+      "concept": {
+        "requested": "jeep cartoon",
+        "archetypes": [
+          "archetype_metadata:vehicle"
+        ],
+        "profiles": [],
+        "adaptations": [
+          {
+            "trait": "wheel_count",
+            "value": 6
+          }
+        ]
+      },
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "car",
+        "ref": "vehicle_stylized:car"
+      },
+      "traits": [],
+      "structural_traits": []
+    },
+    "repaired": false,
+    "build_describe": "car: vehicle_stylized:car (senza geometria)\n  car/body: vehicle_stylized:body (20 triangoli)\n    car/body/cabin: vehicle_stylized:cabin (12 triangoli)\n      car/body/cabin/windshield: vehicle_stylized:windshield (12 triangoli)\n    car/body/hood_panel: vehicle_stylized:hood_panel (12 triangoli)\n    car/body/underbody: vehicle_stylized:underbody (12 triangoli)\n    car/body/fender_fl: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_fr: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_rl: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_rr: vehicle_stylized:fender (12 triangoli)\n  car/wheel_fl: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_fr: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_rl: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_rr: vehicle_stylized:wheel (28 triangoli)\ntotale: 228 triangoli, 140 vertici",
+    "report": "risposta vincolata allo schema del piano",
+    "layout": "{'placements': [{'node': 'car/wheel_fl', 'parent': 'car', 'region': 'left_wheel_region', 'policy': 'linear', 'frame_index': 0, 'socket': 'left_wheel_region__linear_1', 'scale': 1.0, 'frame': {'socket': 'left_wheel_region__linear_1', 'position': [-0.8370000000000001, 0.29, -1.3299999999999998], 'direction': [-1.0, 0.0, 0.0], 'up': [0.0, 1.0, 0.0], 'radius': 0.29, 'angle': 0.0}}, {'node': 'car/wheel_rl', 'parent': 'car', 'region': 'left_wheel_region', 'policy': 'linear', 'frame_index': 1, 'socket': 'left_wheel_region__linear_2', 'scale': 1.0, 'frame': {'socket': 'left_wheel_region__linear_2', 'position': [-0.8370000000000001, 0.29, 1.3299999999999998], 'direction': [-1.0, 0.0, 0.0], 'up': [0.0, 1.0, 0.0], 'radius': 0.29, 'angle': 0.0}}, {'node': 'car/wheel_fr', 'parent': 'car', 'region': 'right_wheel_region', 'policy': 'linear', 'frame_index': 0, 'socket': 'right_wheel_region__linear_1', 'scale': 1.0, 'frame': {'socket': 'right_wheel_region__linear_1', 'position': [0.8370000000000001, 0.29, -1.3299999999999998], 'direction': [1.0, 0.0, 0.0], 'up': [0.0, 1.0, 0.0], 'radius': 0.29, 'angle': 0.0}}, {'node': 'car/wheel_rr', 'parent': 'car', 'region': 'right_wheel_region', 'policy': 'linear', 'frame_index': 1, 'socket': 'right_wheel_region__linear_2', 'scale': 1.0, 'frame': {'socket': 'right_wheel_region__linear_2', 'position': [0.8370000000000001, 0.29, 1.3299999999999998], 'direction': [1.0, 0.0, 0.0], 'up': [0.0, 1.0, 0.0], 'radius': 0.29, 'angle': 0.0}}], 'problems': [], 'proven",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "concept": "{'requested_concept': 'jeep cartoon', 'semantic_source': 'llm', 'archetypes': ['archetype_metadata:vehicle'], 'profiles': [], 'candidate_bindings': [{'candidate': 'archetype_metadata:stylized_car', 'hard_compatible': True, 'match': 'descendant/specialization implementation', 'supported': [], 'unsupported': [{'trait': 'wheel_count', 'value': 6, 'reason': 'no matching StructuralTraitRule', 'coverage_details': {'requested': {'trait': 'wheel_count', 'value': 6}, 'contract_found': True, 'where_supported': [], 'where_unsupported': [{'path': 'car', 'component': 'vehicle_stylized:car', 'role': 'vehicle'}], 'where_ignored': [], 'coverage': 'unsupported', 'materialized': False}}], 'conflicting': [], 'preferred_hits': 0, 'score': [1, 0, 0, 6, -1, 0, -1], 'reasons': ['binding=archetype_metadata:stylized_car']}], 'selected_binding': 'archetype_metadata:stylized_car', 'selected_root_implementation': 'vehicle_stylized:car', 'adaptations': [{'trait': 'wheel_count', 'value': 6}], 'materialized_traits': [], 'materialized_structural_traits': [], 'materialized_params': {}, 'param_role_preferences': [], 'component_preferences': [], 'style_preferences': [], 'coverage': [{'candidate': 'archetype_metadata:stylized_car', 'hard_compatible': True, 'match': 'descendant/specialization implementation', 'supported': [], 'unsupported': [{'trait': 'wheel_count', 'value': 6, 'reason': 'no matching StructuralTraitRule', 'coverage_details': {'requested': {'trait': 'wheel_count', 'value': 6}, 'contract_found': True, 'where_supported': [], 'where_unsupported': [{'path': 'car', 'component': 'vehicle_stylized:car', 'role': 'vehicle'}], 'where_ignored': [], 'coverage': 'unsupported', 'materialized': False}}], 'conflicting': [], 'preferred_hits': 0, 'score': [1, 0, 0, 6, -1, 0, -1], 'reasons': ['binding=archetype_metadata:stylized_car']}], 'unsupported': [{'trait': 'wheel_count', 'value': 6, 'reason': 'no matching StructuralTraitRule', 'coverage_details': {'requested': {'trait': 'wheel_count', 'value': 6}, ",
+    "images": [
+      "04_jeep6wheels_llm_front.png",
+      "04_jeep6wheels_llm_three_quarter.png",
+      "04_jeep6wheels_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      2.077,
+      1.544,
+      3.24
+    ]
+  },
+  {
+    "name": "05_fishman",
+    "prompt": "Un pesce con corpo umanoide.",
+    "mode": "llm",
+    "seconds": 2.541,
+    "ok": true,
+    "triangles": 412,
+    "planner": "llm",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "failover": 0,
+    "diagnostics": [
+      "risposta vincolata allo schema del piano",
+      "'std:body_mass' non ha regole compatibili su 'fox_stylized:fox'  [fox]",
+      "'std:body_mass' non ha regole compatibili su 'fox_stylized:ears'  [fox/body/head/ears]"
+    ],
+    "describe": "richiesta: Un pesce con corpo umanoide.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> groq/openai/gpt-oss-120b | failover 0\nfox: fox_stylized:fox (senza geometria)\n  fox/body: fox_stylized:body (64 triangoli)\n    fox/body/head: fox_stylized:head (68 triangoli)\n      fox/body/head/ears: fox_stylized:ears (40 triangoli)\n    fox/body/front_l: fox_stylized:leg (40 triangoli)\n    fox/body/front_r: fox_stylized:leg (40 triangoli)\n    fox/body/rear_l: fox_stylized:leg (40 triangoli)\n    fox/body/rear_r: fox_stylized:leg (40 triangoli)\n    fox/body/tail: fox_stylized:tail (80 triangoli)\ntotale: 412 triangoli, 248 vertici\nrisposta vincolata allo schema del piano\n'std:body_mass' non ha regole compatibili su 'fox_stylized:fox'  [fox]\n'std:body_mass' non ha regole compatibili su 'fox_stylized:ears'  [fox/body/head/ears]",
+    "explain": [
+      "'fox' e' la radice: fox_stylized:fox",
+      "'fox_stylized:body' scelto per 'fox/body': fornisce 'core_mount' (capability)",
+      "'fox_stylized:head' scelto per 'fox/body/head': fornisce 'head_mount' (capability)",
+      "'fox_stylized:ears' scelto per 'fox/body/head/ears': fornisce 'hair_mount' (capability)",
+      "'fox_stylized:leg' scelto per 'fox/body/front_l': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/front_r': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/rear_l': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/rear_r': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:tail' scelto per 'fox/body/tail': fornisce 'limb_mount' (capability e tag)"
+    ],
+    "changes": [
+      "fox/body.body_length body_length: 1.0 (override)",
+      "fox/body.chunkiness chunkiness: 0.9 (override)",
+      "fox/body.ear_size ear_size: 1.0 (override)",
+      "fox/body.head_size head_size: 0.46 (override)",
+      "fox/body.leg_length leg_length: 0.72 (override)",
+      "fox/body.muzzle_length muzzle_length: 0.42 (override)",
+      "fox/body.tail_length tail_length: 1.05 (override)",
+      "fox/body.tail_volume tail_volume: 1.0 (override)",
+      "fox/body.torso_height torso_height: 0.52 (override)",
+      "fox/body/head.chunkiness chunkiness: 0.9 (override)",
+      "fox/body/head.ear_size ear_size: 1.0 (override)",
+      "fox/body/head.head_size head_size: 0.46 (override)",
+      "fox/body/head.muzzle_length muzzle_length: 0.42 (override)",
+      "fox/body/head/ears.chunkiness chunkiness: 0.9 (override)",
+      "fox/body/head/ears.ear_size ear_size: 1.0 (override)",
+      "fox/body/head/ears.head_size head_size: 0.46 (override)",
+      "fox/body/front_l.chunkiness chunkiness: 0.9 (override)",
+      "fox/body/front_l.leg_length leg_length: 0.72 (override)",
+      "fox/body/front_l.torso_height torso_height: 0.52 (override)",
+      "fox/body/front_r.chunkiness chunkiness: 0.9 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "fox -> fox_stylized:fox",
+      "fox/body -> fox_stylized:body",
+      "fox/body/head -> fox_stylized:head",
+      "fox/body/head/ears -> fox_stylized:ears",
+      "fox/body/front_l -> fox_stylized:leg",
+      "fox/body/front_r -> fox_stylized:leg",
+      "fox/body/rear_l -> fox_stylized:leg",
+      "fox/body/rear_r -> fox_stylized:leg",
+      "fox/body/tail -> fox_stylized:tail"
+    ],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "concept": {
+        "requested": "pesce umanoide",
+        "archetypes": [
+          "archetype_metadata:animal"
+        ],
+        "profiles": [],
+        "adaptations": [
+          {
+            "trait": "body_mass",
+            "value": 0.5
+          }
+        ]
+      },
+      "root": {
+        "id": "fox",
+        "ref": "fox_stylized:fox"
+      },
+      "traits": [
+        {
+          "trait": "body_mass",
+          "value": 0.5
+        }
+      ],
+      "structural_traits": []
+    },
+    "repaired": false,
+    "build_describe": "fox: fox_stylized:fox (senza geometria)\n  fox/body: fox_stylized:body (64 triangoli)\n    fox/body/head: fox_stylized:head (68 triangoli)\n      fox/body/head/ears: fox_stylized:ears (40 triangoli)\n    fox/body/front_l: fox_stylized:leg (40 triangoli)\n    fox/body/front_r: fox_stylized:leg (40 triangoli)\n    fox/body/rear_l: fox_stylized:leg (40 triangoli)\n    fox/body/rear_r: fox_stylized:leg (40 triangoli)\n    fox/body/tail: fox_stylized:tail (80 triangoli)\ntotale: 412 triangoli, 248 vertici",
+    "report": "risposta vincolata allo schema del piano\n'std:body_mass' non ha regole compatibili su 'fox_stylized:fox'  [fox]\n'std:body_mass' non ha regole compatibili su 'fox_stylized:ears'  [fox/body/head/ears]",
+    "layout": "{'placements': [{'node': 'fox/body/tail', 'parent': 'fox/body', 'region': 'rear_tail_region', 'policy': 'fan', 'frame_index': 0, 'socket': 'rear_tail_region__fan_1', 'scale': 1.0, 'frame': {'socket': 'rear_tail_region__fan_1', 'position': [0.0, 1.006, -0.48], 'direction': [-0.1806788207622584, 0.24090509434967788, -0.9535826651341417], 'up': [0.0, 1.0, 0.0], 'radius': 0.11, 'angle': 0.0}}], 'problems': [], 'provenance': [{'region': 'rear_tail_region', 'policy': 'fan', 'requested': 1, 'placed': 1, 'scale': 1.0, 'fit': 'success'}]}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}, {'code': 'TRAIT_UNSUPPORTED', 'message': \"'std:body_mass' non ha regole compatibili su 'fox_stylized:fox'\", 'where': 'fox', 'severity': 'info'}, {'code': 'TRAIT_UNSUPPORTED', 'message': \"'std:body_mass' non ha regole compatibili su 'fox_stylized:ears'\", 'where': 'fox/body/head/ears', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [{'trait': 'std:body_mass', 'node': 'fox', 'ref': 'fox_stylized:fox'}, {'trait': 'std:body_mass', 'node': 'fox/body/head/ears', 'ref': 'fox_stylized:ears'}], 'conflicts': [], 'values': {'fox': {'std:body_mass': 0.5}, 'fox/body': {'std:body_mass': 0.5}, 'fox/body/front_l': {'std:body_mass': 0.5}, 'fox/body/front_r': {'std:body_mass': 0.5}, 'fox/body/head': {'std:body_mass': 0.5}, 'fox/body/head/ears': {'std:body_mass': 0.5}, 'fox/body/rear_l': {'std:body_mass': 0.5}, 'fox/body/rear_r': {'std:body_mass': 0.5}, 'fox/body/tail': {'std:body_mass': 0.5}}, 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}, {'code': 'TRAIT_UNSUPPORTED', 'message': \"'std:body_mass' non ha regole compatibili su 'fox_stylized:fox'\", 'where': 'fox', 'severity': 'info'}, {'code': 'TRAIT_UNSUPPORTED', 'message': \"'std:body_mass' non ha regole compatibili su 'fox_stylized:ears'\", 'where': 'fox/body/head/ears', 'severity': 'info'}]}",
+    "concept": "{'requested_concept': 'pesce umanoide', 'semantic_source': 'llm', 'archetypes': ['archetype_metadata:animal'], 'profiles': [], 'candidate_bindings': [{'candidate': 'archetype_metadata:fox_quadruped', 'hard_compatible': True, 'match': 'descendant/specialization implementation', 'supported': [{'trait': 'body_mass', 'value': 0.5, 'coverage_details': {'requested': {'trait': 'body_mass', 'value': 0.5}, 'contract_found': True, 'where_supported': [{'path': 'fox/body', 'component': 'fox_stylized:body', 'role': 'torso'}, {'path': 'fox/body/head', 'component': 'fox_stylized:head', 'role': 'head'}, {'path': 'fox/body/front_l', 'component': 'fox_stylized:leg', 'role': 'limb'}, {'path': 'fox/body/front_r', 'component': 'fox_stylized:leg', 'role': 'limb'}, {'path': 'fox/body/rear_l', 'component': 'fox_stylized:leg', 'role': 'limb'}, {'path': 'fox/body/rear_r', 'component': 'fox_stylized:leg', 'role': 'limb'}, {'path': 'fox/body/tail', 'component': 'fox_stylized:tail', 'role': 'tail'}], 'where_unsupported': [{'path': 'fox', 'component': 'fox_stylized:fox', 'role': 'animal'}, {'path': 'fox/body/head/ears', 'component': 'fox_stylized:ears', 'role': 'ears'}], 'where_ignored': [{'path': 'fox/body/head/eye_l', 'component': 'fox_stylized:face_accents', 'role': 'accent'}, {'path': 'fox/body/head/eye_r', 'component': 'fox_stylized:face_accents', 'role': 'accent'}, {'path': 'fox/body/head/nose', 'component': 'fox_stylized:face_accents', 'role': 'accent'}, {'path': 'fox/body/tail/tail_tip', 'component': 'fox_stylized:tail_tip', 'role': 'accent'}, {'path': 'fox/body/head/ears/inner_l', 'component': 'fox_stylized:inner_ear', 'role': 'accent'}, {'path': 'fox/body/head/ears/inner_r', 'component': 'fox_stylized:inner_ear', 'role': 'accent'}], 'coverage': 'partially_supported', 'materialized': True}}], 'unsupported': [], 'conflicting': [], 'preferred_hits': 0, 'score': [1, 1, 0, 2, 0, 0, -1], 'reasons': ['binding=archetype_metadata:fox_quadruped']}], 'selected_binding': 'archetype_metadata:fox_qu",
+    "images": [
+      "05_fishman_llm_front.png",
+      "05_fishman_llm_three_quarter.png",
+      "05_fishman_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      0.697,
+      1.744,
+      2.251
+    ]
+  },
+  {
+    "name": "06_house",
+    "prompt": "Una casa alta, slanciata e leggermente curva.",
+    "mode": "llm",
+    "seconds": 13.478,
+    "ok": true,
+    "triangles": 32,
+    "planner": "llm",
+    "provider": "gemini",
+    "model": "gemini-flash-latest",
+    "failover": 1,
+    "diagnostics": [
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Una casa alta, slanciata e leggermente curva.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> gemini/gemini-flash-latest | failover 1\ncasa_slanciata: architecture:house (12 triangoli)\n  casa_slanciata/tetto: architecture:roof (8 triangoli)\n  casa_slanciata/porta: architecture:door (12 triangoli)\ntotale: 32 triangoli, 22 vertici\nrisposta vincolata allo schema del piano",
+    "explain": [
+      "'casa_slanciata' e' la radice: architecture:house",
+      "'architecture:roof' scelto per 'casa_slanciata/tetto': fornisce 'roof_mount' (capability)",
+      "'architecture:door' scelto per 'casa_slanciata/porta': fornisce 'opening' (capability e tag)"
+    ],
+    "changes": [
+      "casa_slanciata.depth depth: 6.0 (override)",
+      "casa_slanciata.height height: 24.0 (override)",
+      "casa_slanciata.width width: 6.0 (override)",
+      "casa_slanciata/tetto.depth depth: 6.0 (override)",
+      "casa_slanciata/tetto.pitch pitch: 0.45 (override)",
+      "casa_slanciata/tetto.width width: 6.0 (override)",
+      "casa_slanciata/porta.height height: 12.0 (derived = parent.height * 0.5)"
+    ],
+    "skipped": [],
+    "components": [
+      "casa_slanciata -> architecture:house",
+      "casa_slanciata/tetto -> architecture:roof",
+      "casa_slanciata/porta -> architecture:door"
+    ],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "casa_slanciata",
+        "ref": "architecture:house",
+        "params": {
+          "height": 24.0,
+          "width": 6.0,
+          "depth": 6.0
+        },
+        "effects": [
+          {
+            "type": "fx:bend",
+            "scope": "part",
+            "amount": 0.25
+          }
+        ]
+      }
+    },
+    "repaired": false,
+    "build_describe": "casa_slanciata: architecture:house (12 triangoli)\n  casa_slanciata/tetto: architecture:roof (8 triangoli)\n  casa_slanciata/porta: architecture:door (12 triangoli)\ntotale: 32 triangoli, 22 vertici",
+    "report": "risposta vincolata allo schema del piano",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "images": [
+      "06_house_llm_front.png",
+      "06_house_llm_three_quarter.png",
+      "06_house_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      10.543,
+      26.04,
+      17.964
+    ]
+  },
+  {
+    "name": "07_dragon",
+    "prompt": "Un drago cartoon con ali, corna e coda.",
+    "mode": "llm",
+    "seconds": 15.571,
+    "ok": false,
+    "triangles": 0,
+    "planner": "llm",
+    "provider": "cloudflare",
+    "model": "@cf/openai/gpt-oss-20b",
+    "failover": 3,
+    "diagnostics": [
+      "Archetype non disponibile: 'registered:archetype_metadata:animal'  [registered:archetype_metadata:animal]",
+      "concept non registrato: 'dragon cartoon with wings, horns, tail'  [dragon cartoon with wings, horns, tail]",
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Un drago cartoon con ali, corna e coda.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> cloudflare/@cf/openai/gpt-oss-20b | failover 3\nArchetype non disponibile: 'registered:archetype_metadata:animal'  [registered:archetype_metadata:animal]\nconcept non registrato: 'dragon cartoon with wings, horns, tail'  [dragon cartoon with wings, horns, tail]\nrisposta vincolata allo schema del piano",
+    "explain": [],
+    "changes": [],
+    "skipped": [],
+    "components": [],
+    "plan_json": {
+      "concept": {
+        "requested": "dragon cartoon with wings, horns, tail",
+        "archetypes": [
+          "registered:archetype_metadata:animal"
+        ],
+        "profiles": [],
+        "adaptations": []
+      },
+      "style": "primitives:low_poly",
+      "detail_level": 2
+    },
+    "repaired": false,
+    "report": "Archetype non disponibile: 'registered:archetype_metadata:animal'  [registered:archetype_metadata:animal]\nconcept non registrato: 'dragon cartoon with wings, horns, tail'  [dragon cartoon with wings, horns, tail]\nrisposta vincolata allo schema del piano",
+    "concept": "{'requested_concept': 'dragon cartoon with wings, horns, tail', 'semantic_source': 'llm', 'archetypes': [], 'profiles': [], 'candidate_bindings': [], 'selected_binding': '', 'selected_root_implementation': '', 'adaptations': [], 'materialized_traits': [], 'materialized_structural_traits': [], 'materialized_params': {}, 'param_role_preferences': [], 'component_preferences': [], 'style_preferences': [], 'coverage': [], 'unsupported': [], 'conflicts': [], 'provenance': {}, 'diagnostics': [{'code': 'ARCHETYPE_NOT_FOUND', 'message': \"Archetype non disponibile: 'registered:archetype_metadata:animal'\", 'severity': 'error', 'where': 'registered:archetype_metadata:animal'}, {'code': 'CONCEPT_UNKNOWN', 'message': \"concept non registrato: 'dragon cartoon with wings, horns, tail'\", 'severity': 'error', 'where': 'dragon cartoon with wings, horns, tail'}]}",
+    "images": []
+  },
+  {
+    "name": "08_tree",
+    "prompt": "Un albero fantasy con chioma asimmetrica.",
+    "mode": "llm",
+    "seconds": 32.465,
+    "ok": true,
+    "triangles": 400,
+    "planner": "llm",
+    "provider": "gemini",
+    "model": "gemini-flash-latest",
+    "failover": 1,
+    "diagnostics": [
+      "risposta vincolata allo schema del piano",
+      "'botany:leafiness' non ha regole compatibili su 'tree_stylized:tree'  [albero_radice]",
+      "'botany:leafiness' non ha regole compatibili su 'tree_stylized:trunk'  [albero_radice/trunk]",
+      "'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'  [albero_radice/trunk/branch_l]",
+      "'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'  [albero_radice/trunk/branch_r]",
+      "'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'  [albero_radice/trunk/branch_upper]",
+      "'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'  [albero_radice/trunk/branch_rear]"
+    ],
+    "describe": "richiesta: Un albero fantasy con chioma asimmetrica.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> gemini/gemini-flash-latest | failover 1\nalbero_radice: tree_stylized:tree (senza geometria)\n  albero_radice/trunk: tree_stylized:trunk (80 triangoli)\n    albero_radice/trunk/branch_l: tree_stylized:branch (36 triangoli)\n    albero_radice/trunk/branch_r: tree_stylized:branch (36 triangoli)\n    albero_radice/trunk/branch_upper: tree_stylized:branch (36 triangoli)\n    albero_radice/trunk/crown: tree_stylized:crown (176 triangoli)\n    albero_radice/trunk/branch_rear: tree_stylized:branch (36 triangoli)\ntotale: 400 triangoli, 224 vertici\nrisposta vincolata allo schema del piano\n'botany:leafiness' non ha regole compatibili su 'tree_stylized:tree'  [albero_radice]\n'botany:leafiness' non ha regole compatibili su 'tree_stylized:trunk'  [albero_radice/trunk]\n'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'  [albero_radice/trunk/branch_l]\n'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'  [albero_radice/trunk/branch_r]\n'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'  [albero_radice/trunk/branch_upper]\n'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'  [albero_radice/trunk/branch_rear]",
+    "explain": [
+      "'albero_radice' e' la radice: tree_stylized:tree",
+      "'tree_stylized:trunk' scelto per 'albero_radice/trunk': fornisce 'core_mount' (capability)",
+      "'tree_stylized:branch' scelto per 'albero_radice/trunk/branch_l': fornisce 'branch_mount' (capability e lato)",
+      "'tree_stylized:branch' scelto per 'albero_radice/trunk/branch_r': fornisce 'branch_mount' (capability e lato)",
+      "'tree_stylized:branch' scelto per 'albero_radice/trunk/branch_upper': fornisce 'branch_mount' (capability e lato)",
+      "'tree_stylized:crown' scelto per 'albero_radice/trunk/crown': fornisce 'crown_mount' (capability)",
+      "'tree_stylized:branch' scelto per 'albero_radice/trunk/branch_rear': fornisce 'branch_mount' (capability e lato)"
+    ],
+    "changes": [
+      "albero_radice/trunk.asymmetry asymmetry: 0.72 (override)",
+      "albero_radice/trunk.branch_spread branch_spread: 1.0 (override)",
+      "albero_radice/trunk.crown_height crown_height: 1.7 (override)",
+      "albero_radice/trunk.crown_width crown_width: 2.55 (override)",
+      "albero_radice/trunk.height height: 3.2 (override)",
+      "albero_radice/trunk.lean lean: 0.1 (override)",
+      "albero_radice/trunk.trunk_taper trunk_taper: 0.72 (override)",
+      "albero_radice/trunk.trunk_width trunk_width: 0.46 (override)",
+      "albero_radice/trunk/branch_l.accent accent: 1.0 (override)",
+      "albero_radice/trunk/branch_l.asymmetry asymmetry: 0.72 (override)",
+      "albero_radice/trunk/branch_l.depth depth: 4.0 (override)",
+      "albero_radice/trunk/branch_l.length length: 1.3259999999999998 (override)",
+      "albero_radice/trunk/branch_l.radius radius: 0.138 (override)",
+      "albero_radice/trunk/branch_l.rise rise: 12.0 (override)",
+      "albero_radice/trunk/branch_r.asymmetry asymmetry: 0.72 (override)",
+      "albero_radice/trunk/branch_r.depth depth: -7.0 (override)",
+      "albero_radice/trunk/branch_r.length length: 1.3259999999999998 (override)",
+      "albero_radice/trunk/branch_r.radius radius: 0.138 (override)",
+      "albero_radice/trunk/branch_r.rise rise: 20.0 (override)",
+      "albero_radice/trunk/branch_upper.asymmetry asymmetry: 0.72 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "albero_radice -> tree_stylized:tree",
+      "albero_radice/trunk -> tree_stylized:trunk",
+      "albero_radice/trunk/branch_l -> tree_stylized:branch",
+      "albero_radice/trunk/branch_r -> tree_stylized:branch",
+      "albero_radice/trunk/branch_upper -> tree_stylized:branch",
+      "albero_radice/trunk/crown -> tree_stylized:crown",
+      "albero_radice/trunk/branch_rear -> tree_stylized:branch"
+    ],
+    "plan_json": {
+      "concept": {
+        "requested": "albero fantasy con chioma asimmetrica",
+        "archetypes": [
+          "archetype_metadata:tree"
+        ],
+        "profiles": [],
+        "adaptations": [
+          {
+            "trait": "leafiness",
+            "value": 0.8
+          }
+        ]
+      },
+      "root": {
+        "id": "albero_radice",
+        "children": [],
+        "ref": "tree_stylized:tree"
+      },
+      "traits": [
+        {
+          "trait": "leafiness",
+          "value": 0.8
+        }
+      ],
+      "structural_traits": []
+    },
+    "repaired": false,
+    "build_describe": "albero_radice: tree_stylized:tree (senza geometria)\n  albero_radice/trunk: tree_stylized:trunk (80 triangoli)\n    albero_radice/trunk/branch_l: tree_stylized:branch (36 triangoli)\n    albero_radice/trunk/branch_r: tree_stylized:branch (36 triangoli)\n    albero_radice/trunk/branch_upper: tree_stylized:branch (36 triangoli)\n    albero_radice/trunk/crown: tree_stylized:crown (176 triangoli)\n    albero_radice/trunk/branch_rear: tree_stylized:branch (36 triangoli)\ntotale: 400 triangoli, 224 vertici",
+    "report": "risposta vincolata allo schema del piano\n'botany:leafiness' non ha regole compatibili su 'tree_stylized:tree'  [albero_radice]\n'botany:leafiness' non ha regole compatibili su 'tree_stylized:trunk'  [albero_radice/trunk]\n'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'  [albero_radice/trunk/branch_l]\n'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'  [albero_radice/trunk/branch_r]\n'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'  [albero_radice/trunk/branch_upper]\n'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'  [albero_radice/trunk/branch_rear]",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}, {'code': 'TRAIT_UNSUPPORTED', 'message': \"'botany:leafiness' non ha regole compatibili su 'tree_stylized:tree'\", 'where': 'albero_radice', 'severity': 'info'}, {'code': 'TRAIT_UNSUPPORTED', 'message': \"'botany:leafiness' non ha regole compatibili su 'tree_stylized:trunk'\", 'where': 'albero_radice/trunk', 'severity': 'info'}, {'code': 'TRAIT_UNSUPPORTED', 'message': \"'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'\", 'where': 'albero_radice/trunk/branch_l', 'severity': 'info'}, {'code': 'TRAIT_UNSUPPORTED', 'message': \"'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'\", 'where': 'albero_radice/trunk/branch_r', 'severity': 'info'}, {'code': 'TRAIT_UNSUPPORTED', 'message': \"'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'\", 'where': 'albero_radice/trunk/branch_upper', 'severity': 'info'}, {'code': 'TRAIT_UNSUPPORTED', 'message': \"'botany:leafiness' non ha regole compatibili su 'tree_stylized:branch'\", 'where': 'albero_radice/trunk/branch_rear', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [{'kind': 'param', 'trait': 'botany:leafiness', 'request_value': 0.8, 'rule_id': 'tree_leafiness_extension:crown_height', 'node': 'albero_radice/trunk/crown', 'path': 'albero_radice/trunk/crown', 'channel': 'albero_radice/trunk/crown.crown_height', 'previous': 1.7, 'result': 1.5572, 'source': 'trait'}, {'kind': 'param', 'trait': 'botany:leafiness', 'request_value': 0.8, 'rule_id': 'tree_leafiness_extension:crown_width', 'node': 'albero_radice/trunk/crown', 'path': 'albero_radice/trunk/crown', 'channel': 'albero_radice/trunk/crown.crown_width', 'previous': 2.55, 'result': 2.3205, 'source': 'trait'}], 'skipped': [], 'unsupported': [{'trait': 'botany:leafiness', 'node': 'albero_radice', 'ref': 'tree_stylized:tree'}, {'trait': 'botany:leafiness', 'node': 'albero_radice/trunk', 'ref': 'tree_stylized:trunk'}, {'trait': 'botany:leafiness', 'node': 'albero_radice/trunk/branch_l', 'ref': 'tree_stylized:branch'}, {'trait': 'botany:leafiness', 'node': 'albero_radice/trunk/branch_r', 'ref': 'tree_stylized:branch'}, {'trait': 'botany:leafiness', 'node': 'albero_radice/trunk/branch_upper', 'ref': 'tree_stylized:branch'}, {'trait': 'botany:leafiness', 'node': 'albero_radice/trunk/branch_rear', 'ref': 'tree_stylized:branch'}], 'conflicts': [], 'values': {'albero_radice': {'botany:leafiness': 0.8}, 'albero_radice/trunk': {'botany:leafiness': 0.8}, 'albero_radice/trunk/branch_l': {'botany:leafiness': 0.8}, 'albero_radice/trunk/branch_r': {'botany:leafiness': 0.8}, 'albero_radice/tr",
+    "concept": "{'requested_concept': 'albero fantasy con chioma asimmetrica', 'semantic_source': 'llm', 'archetypes': ['archetype_metadata:tree'], 'profiles': [], 'candidate_bindings': [{'candidate': 'archetype_metadata:stylized_tree', 'hard_compatible': True, 'match': 'exact', 'supported': [{'trait': 'leafiness', 'value': 0.8, 'coverage_details': {'requested': {'trait': 'leafiness', 'value': 0.8}, 'contract_found': True, 'where_supported': [{'path': 'tree/trunk/crown', 'component': 'tree_stylized:crown', 'role': 'tree_crown'}], 'where_unsupported': [{'path': 'tree', 'component': 'tree_stylized:tree', 'role': 'tree'}, {'path': 'tree/trunk', 'component': 'tree_stylized:trunk', 'role': 'tree_trunk'}, {'path': 'tree/trunk/branch_l', 'component': 'tree_stylized:branch', 'role': 'tree_branch'}, {'path': 'tree/trunk/branch_r', 'component': 'tree_stylized:branch', 'role': 'tree_branch'}, {'path': 'tree/trunk/branch_upper', 'component': 'tree_stylized:branch', 'role': 'tree_branch'}, {'path': 'tree/trunk/branch_rear', 'component': 'tree_stylized:branch', 'role': 'tree_branch'}], 'where_ignored': [{'path': 'tree/trunk/branch_l/fruit', 'component': 'tree_stylized:fruit', 'role': 'tree_accent'}], 'coverage': 'partially_supported', 'materialized': True}}], 'unsupported': [], 'conflicting': [], 'preferred_hits': 2, 'score': [2, 1, 2, 3, 0, 0, -1], 'reasons': ['binding=archetype_metadata:stylized_tree']}], 'selected_binding': 'archetype_metadata:stylized_tree', 'selected_root_implementation': 'tree_stylized:tree', 'adaptations': [{'trait': 'leafiness', 'value': 0.8}], 'materialized_traits': [{'trait': 'leafiness', 'value': 0.8}], 'materialized_structural_traits': [], 'materialized_params': {}, 'param_role_preferences': [], 'component_preferences': [], 'style_preferences': [], 'coverage': [{'candidate': 'archetype_metadata:stylized_tree', 'hard_compatible': True, 'match': 'exact', 'supported': [{'trait': 'leafiness', 'value': 0.8, 'coverage_details': {'requested': {'trait': 'leafiness', 'value':",
+    "images": [
+      "08_tree_llm_front.png",
+      "08_tree_llm_three_quarter.png",
+      "08_tree_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      3.873,
+      3.143,
+      2.283
+    ]
+  }
+]

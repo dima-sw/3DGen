@@ -1,0 +1,149 @@
+{
+  "components": 1000,
+  "index_seconds": 0.098,
+  "full_tokens": 38453,
+  "full_chars": 153811,
+  "prompts": {
+    "un animal a quattro zampe": {
+      "shortlist": 10,
+      "tokens": 571,
+      "chars": 2284,
+      "seconds": 0.0029,
+      "families": [
+        "fauna",
+        "minerali"
+      ],
+      "fallback": "",
+      "ids": [
+        "fauna:animal_071",
+        "fauna:animal_072",
+        "fauna:animal_073",
+        "fauna:animal_074",
+        "fauna:animal_075",
+        "fauna:animal_076",
+        "fauna:animal_077",
+        "fauna:animal_078",
+        "minerali:rock_000",
+        "minerali:rock_001"
+      ]
+    },
+    "una house con un tetto": {
+      "shortlist": 10,
+      "tokens": 575,
+      "chars": 2298,
+      "seconds": 0.0027,
+      "families": [
+        "edifici",
+        "minerali"
+      ],
+      "fallback": "",
+      "ids": [
+        "edifici:house_048",
+        "edifici:house_058",
+        "edifici:house_059",
+        "edifici:house_060",
+        "edifici:house_061",
+        "edifici:house_074",
+        "edifici:house_075",
+        "edifici:house_082",
+        "minerali:rock_000",
+        "minerali:rock_001"
+      ]
+    },
+    "un vehicle con wheel": {
+      "shortlist": 10,
+      "tokens": 560,
+      "chars": 2239,
+      "seconds": 0.003,
+      "families": [
+        "minerali",
+        "veicoli"
+      ],
+      "fallback": "",
+      "ids": [
+        "minerali:rock_000",
+        "minerali:rock_001",
+        "veicoli:vehicle_063",
+        "veicoli:vehicle_064",
+        "veicoli:vehicle_065",
+        "veicoli:vehicle_066",
+        "veicoli:vehicle_079",
+        "veicoli:vehicle_080",
+        "veicoli:vehicle_081",
+        "veicoli:vehicle_082"
+      ]
+    },
+    "un fish e un humanoid": {
+      "shortlist": 18,
+      "tokens": 907,
+      "chars": 3628,
+      "seconds": 0.0032,
+      "families": [
+        "acquatici",
+        "gente",
+        "minerali"
+      ],
+      "fallback": "",
+      "ids": [
+        "acquatici:fish_000",
+        "acquatici:fish_001",
+        "acquatici:fish_002",
+        "acquatici:fish_003",
+        "acquatici:fish_004",
+        "acquatici:fish_005",
+        "acquatici:fish_006",
+        "acquatici:fish_007",
+        "gente:humanoid_063",
+        "gente:humanoid_064",
+        "gente:humanoid_065",
+        "gente:humanoid_072",
+        "gente:humanoid_073",
+        "gente:humanoid_079",
+        "gente:humanoid_080",
+        "gente:humanoid_081",
+        "minerali:rock_000",
+        "minerali:rock_001"
+      ]
+    },
+    "zzzqwerty senza riscontro": {
+      "shortlist": 28,
+      "tokens": 1236,
+      "chars": 4943,
+      "seconds": 0.001,
+      "families": [
+        "acquatici"
+      ],
+      "fallback": "nessun risultato sopra la soglia; libreria troppo grande per mostrarla tutta (1000 pezzi), mostrati i primi 28 in ordine di id",
+      "ids": [
+        "acquatici:fish_000",
+        "acquatici:fish_001",
+        "acquatici:fish_002",
+        "acquatici:fish_003",
+        "acquatici:fish_004",
+        "acquatici:fish_005",
+        "acquatici:fish_006",
+        "acquatici:fish_007",
+        "acquatici:fish_008",
+        "acquatici:fish_009",
+        "acquatici:fish_010",
+        "acquatici:fish_011",
+        "acquatici:fish_012",
+        "acquatici:fish_013",
+        "acquatici:fish_014",
+        "acquatici:fish_015",
+        "acquatici:fish_016",
+        "acquatici:fish_017",
+        "acquatici:fish_018",
+        "acquatici:fish_019",
+        "acquatici:fish_020",
+        "acquatici:fish_021",
+        "acquatici:fish_022",
+        "acquatici:fish_023",
+        "acquatici:fish_024",
+        "acquatici:fish_025",
+        "acquatici:fish_026",
+        "acquatici:fish_027"
+      ]
+    }
+  }
+}

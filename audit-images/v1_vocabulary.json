@@ -1,0 +1,576 @@
+{
+  "installed_components": 97,
+  "index_build_seconds": 0.015,
+  "full_vocabulary": {
+    "chars": 39964,
+    "tokens": 9991,
+    "components": 96
+  },
+  "prompts": {
+    "01_fox": {
+      "prompt": "Una volpe cartoon low-poly.",
+      "shortlist": 18,
+      "of_total": 96,
+      "retrieval_seconds": 0.0014,
+      "chars": 13894,
+      "tokens": 3474,
+      "reduction": 0.652,
+      "fallback": "",
+      "top": [
+        [
+          "fox_stylized:fox",
+          0.254
+        ],
+        [
+          "vehicle_stylized:fender",
+          0.062
+        ],
+        [
+          "vehicle_stylized:wheel",
+          0.058
+        ],
+        [
+          "vehicle_stylized:car",
+          0.057
+        ],
+        [
+          "tree_stylized:tree",
+          0.052
+        ],
+        [
+          "tree_stylized:crown",
+          0.052
+        ],
+        [
+          "tree_stylized:branch",
+          0.049
+        ],
+        [
+          "humanoid:hand",
+          0.046
+        ]
+      ],
+      "closure": [
+        "fish:fish_body",
+        "fox_stylized:body",
+        "vehicle_stylized:body",
+        "vehicle_stylized:cabin",
+        "space:planet",
+        "accessories:mask",
+        "accessories:piercing",
+        "nature:nest",
+        "tree_stylized:fruit",
+        "humanoid:calf"
+      ],
+      "ids": [
+        "accessories:mask",
+        "accessories:piercing",
+        "fish:fish_body",
+        "fox_stylized:body",
+        "fox_stylized:fox",
+        "humanoid:calf",
+        "humanoid:hand",
+        "nature:nest",
+        "space:planet",
+        "tree_stylized:branch",
+        "tree_stylized:crown",
+        "tree_stylized:fruit",
+        "tree_stylized:tree",
+        "vehicle_stylized:body",
+        "vehicle_stylized:cabin",
+        "vehicle_stylized:car",
+        "vehicle_stylized:fender",
+        "vehicle_stylized:wheel"
+      ]
+    },
+    "02_humanoid": {
+      "prompt": "Un umanoide cartoon con testa enorme, gambe corte e mani grandi.",
+      "shortlist": 24,
+      "of_total": 96,
+      "retrieval_seconds": 0.0016,
+      "chars": 13919,
+      "tokens": 3480,
+      "reduction": 0.652,
+      "fallback": "",
+      "top": [
+        [
+          "humanoid:body",
+          0.223
+        ],
+        [
+          "humanoid:head",
+          0.19
+        ],
+        [
+          "space:planet",
+          0.056
+        ],
+        [
+          "humanoid:ear",
+          0.186
+        ],
+        [
+          "creature:dragon_head",
+          0.177
+        ],
+        [
+          "humanoid:mouth",
+          0.181
+        ],
+        [
+          "creature:frog_head",
+          0.169
+        ],
+        [
+          "humanoid:nose",
+          0.41
+        ],
+        [
+          "humanoid_anatomical:head",
+          0.161
+        ],
+        [
+          "humanoid:chest",
+          0.404
+        ]
+      ],
+      "closure": [
+        "fish:fish_body",
+        "fox_stylized:body",
+        "accessories:mask",
+        "accessories:visor",
+        "accessories:helmet",
+        "fox_stylized:ears",
+        "accessories:piercing",
+        "fantasy:crystal",
+        "fox_stylized:head"
+      ],
+      "ids": [
+        "accessories:helmet",
+        "accessories:mask",
+        "accessories:piercing",
+        "accessories:visor",
+        "creature:dragon_head",
+        "creature:frog_head",
+        "fantasy:crystal",
+        "fish:fish_body",
+        "fox_stylized:body",
+        "fox_stylized:ears",
+        "fox_stylized:head",
+        "humanoid:body",
+        "humanoid:calf",
+        "humanoid:chest",
+        "humanoid:ear",
+        "humanoid:head",
+        "humanoid:mouth",
+        "humanoid:neck",
+        "humanoid:nose",
+        "humanoid:pelvis",
+        "humanoid:thigh",
+        "humanoid_anatomical:head",
+        "humanoid_anatomical:neck",
+        "space:planet"
+      ]
+    },
+    "03_robot4arms": {
+      "prompt": "Un robot con quattro braccia.",
+      "shortlist": 5,
+      "of_total": 96,
+      "retrieval_seconds": 0.0007,
+      "chars": 5873,
+      "tokens": 1469,
+      "reduction": 0.853,
+      "fallback": "",
+      "top": [
+        [
+          "architecture:house",
+          0.04
+        ]
+      ],
+      "closure": [
+        "space:planet",
+        "architecture:door",
+        "architecture:window",
+        "architecture:roof"
+      ],
+      "ids": [
+        "architecture:door",
+        "architecture:house",
+        "architecture:roof",
+        "architecture:window",
+        "space:planet"
+      ]
+    },
+    "04_jeep6wheels": {
+      "prompt": "Una jeep cartoon con sei ruote.",
+      "shortlist": 17,
+      "of_total": 96,
+      "retrieval_seconds": 0.0008,
+      "chars": 10286,
+      "tokens": 2572,
+      "reduction": 0.743,
+      "fallback": "",
+      "top": [
+        [
+          "vehicle_stylized:car",
+          0.575
+        ],
+        [
+          "vehicle_stylized:wheel",
+          0.627
+        ],
+        [
+          "vehicle_stylized:body",
+          0.351
+        ],
+        [
+          "vehicle_stylized:fender",
+          0.325
+        ],
+        [
+          "vehicle_stylized:cabin",
+          0.339
+        ],
+        [
+          "vehicle_stylized:headlight",
+          0.258
+        ],
+        [
+          "vehicle_stylized:hubcap",
+          0.11
+        ],
+        [
+          "vehicle_stylized:windshield",
+          0.257
+        ],
+        [
+          "vehicle_stylized:underbody",
+          0.25
+        ],
+        [
+          "vehicle_stylized:grille",
+          0.25
+        ]
+      ],
+      "closure": [
+        "vehicle_stylized:hood_panel",
+        "vehicle_stylized:roof_spoiler",
+        "accessories:mask",
+        "accessories:piercing",
+        "accessories:helmet",
+        "fantasy:crystal"
+      ],
+      "ids": [
+        "accessories:helmet",
+        "accessories:mask",
+        "accessories:piercing",
+        "fantasy:crystal",
+        "vehicle_stylized:body",
+        "vehicle_stylized:cabin",
+        "vehicle_stylized:car",
+        "vehicle_stylized:fender",
+        "vehicle_stylized:grille",
+        "vehicle_stylized:headlight",
+        "vehicle_stylized:hood_panel",
+        "vehicle_stylized:hubcap",
+        "vehicle_stylized:mirror",
+        "vehicle_stylized:roof_spoiler",
+        "vehicle_stylized:underbody",
+        "vehicle_stylized:wheel",
+        "vehicle_stylized:windshield"
+      ]
+    },
+    "05_fishman": {
+      "prompt": "Un pesce con corpo umanoide.",
+      "shortlist": 29,
+      "of_total": 96,
+      "retrieval_seconds": 0.0013,
+      "chars": 15149,
+      "tokens": 3788,
+      "reduction": 0.621,
+      "fallback": "",
+      "top": [
+        [
+          "fish:fish_body",
+          0.547
+        ],
+        [
+          "humanoid_anatomical:body",
+          0.3
+        ],
+        [
+          "humanoid:body",
+          0.561
+        ],
+        [
+          "fish:tail",
+          0.438
+        ],
+        [
+          "space:planet",
+          0.091
+        ],
+        [
+          "humanoid:ear",
+          0.468
+        ],
+        [
+          "fish:fin",
+          0.416
+        ],
+        [
+          "humanoid_anatomical:pelvis",
+          0.056
+        ],
+        [
+          "humanoid:mouth",
+          0.454
+        ],
+        [
+          "humanoid_anatomical:ear",
+          0.055
+        ]
+      ],
+      "closure": [
+        "accessories:helmet",
+        "creature:dragon_head",
+        "fantasy:wing",
+        "fox_stylized:leg",
+        "humanoid:foot",
+        "humanoid:forearm",
+        "fantasy:crystal",
+        "fox_stylized:body",
+        "humanoid:torso",
+        "accessories:mask"
+      ],
+      "ids": [
+        "accessories:helmet",
+        "accessories:mask",
+        "creature:dragon_head",
+        "fantasy:crystal",
+        "fantasy:wing",
+        "fish:fin",
+        "fish:fish_body",
+        "fish:tail",
+        "fox_stylized:body",
+        "fox_stylized:leg",
+        "humanoid:body",
+        "humanoid:calf",
+        "humanoid:chest",
+        "humanoid:ear",
+        "humanoid:foot",
+        "humanoid:forearm",
+        "humanoid:mouth",
+        "humanoid:nose",
+        "humanoid:pelvis",
+        "humanoid:thigh",
+        "humanoid:torso",
+        "humanoid_anatomical:body",
+        "humanoid_anatomical:ear",
+        "humanoid_anatomical:eye",
+        "humanoid_anatomical:hair",
+        "humanoid_anatomical:mouth",
+        "humanoid_anatomical:nose",
+        "humanoid_anatomical:pelvis",
+        "space:planet"
+      ]
+    },
+    "06_house": {
+      "prompt": "Una casa alta, slanciata e leggermente curva.",
+      "shortlist": 12,
+      "of_total": 96,
+      "retrieval_seconds": 0.0011,
+      "chars": 9270,
+      "tokens": 2318,
+      "reduction": 0.768,
+      "fallback": "",
+      "top": [
+        [
+          "architecture:house",
+          0.519
+        ],
+        [
+          "humanoid_anatomical:thigh",
+          0.116
+        ],
+        [
+          "architecture:door",
+          0.154
+        ],
+        [
+          "architecture:window",
+          0.153
+        ],
+        [
+          "architecture:roof",
+          0.137
+        ]
+      ],
+      "closure": [
+        "space:planet",
+        "humanoid:calf",
+        "humanoid:chest",
+        "accessories:mask",
+        "accessories:piercing",
+        "accessories:helmet",
+        "fantasy:crystal"
+      ],
+      "ids": [
+        "accessories:helmet",
+        "accessories:mask",
+        "accessories:piercing",
+        "architecture:door",
+        "architecture:house",
+        "architecture:roof",
+        "architecture:window",
+        "fantasy:crystal",
+        "humanoid:calf",
+        "humanoid:chest",
+        "humanoid_anatomical:thigh",
+        "space:planet"
+      ]
+    },
+    "07_dragon": {
+      "prompt": "Un drago cartoon con ali, corna e coda.",
+      "shortlist": 14,
+      "of_total": 96,
+      "retrieval_seconds": 0.0013,
+      "chars": 11009,
+      "tokens": 2753,
+      "reduction": 0.724,
+      "fallback": "",
+      "top": [
+        [
+          "creature:dragon_head",
+          0.168
+        ],
+        [
+          "nature:bird",
+          0.097
+        ],
+        [
+          "fish:tail",
+          0.265
+        ],
+        [
+          "fish:fish_body",
+          0.07
+        ]
+      ],
+      "closure": [
+        "accessories:mask",
+        "accessories:visor",
+        "accessories:helmet",
+        "fox_stylized:ears",
+        "fantasy:wing",
+        "fish:fin",
+        "creature:frog_head",
+        "fox_stylized:head",
+        "accessories:piercing",
+        "fantasy:crystal"
+      ],
+      "ids": [
+        "accessories:helmet",
+        "accessories:mask",
+        "accessories:piercing",
+        "accessories:visor",
+        "creature:dragon_head",
+        "creature:frog_head",
+        "fantasy:crystal",
+        "fantasy:wing",
+        "fish:fin",
+        "fish:fish_body",
+        "fish:tail",
+        "fox_stylized:ears",
+        "fox_stylized:head",
+        "nature:bird"
+      ]
+    },
+    "08_tree": {
+      "prompt": "Un albero fantasy con chioma asimmetrica.",
+      "shortlist": 20,
+      "of_total": 96,
+      "retrieval_seconds": 0.0015,
+      "chars": 13582,
+      "tokens": 3396,
+      "reduction": 0.66,
+      "fallback": "",
+      "top": [
+        [
+          "nature:tree",
+          0.563
+        ],
+        [
+          "fantasy:wing",
+          0.415
+        ],
+        [
+          "nature:foliage",
+          0.508
+        ],
+        [
+          "tree_stylized:tree",
+          0.254
+        ],
+        [
+          "fantasy:crystal",
+          0.393
+        ],
+        [
+          "tree_stylized:fruit",
+          0.21
+        ],
+        [
+          "creature:dragon_head",
+          0.142
+        ],
+        [
+          "tree_stylized:crown",
+          0.175
+        ],
+        [
+          "tree_stylized:branch",
+          0.165
+        ],
+        [
+          "tree_stylized:trunk",
+          0.149
+        ]
+      ],
+      "closure": [
+        "space:planet",
+        "nature:nest",
+        "accessories:mask",
+        "accessories:piercing",
+        "accessories:helmet",
+        "fish:fin",
+        "fish:fish_body",
+        "fox_stylized:body",
+        "accessories:visor",
+        "creature:bulging_eye"
+      ],
+      "ids": [
+        "accessories:helmet",
+        "accessories:mask",
+        "accessories:piercing",
+        "accessories:visor",
+        "creature:bulging_eye",
+        "creature:dragon_head",
+        "fantasy:crystal",
+        "fantasy:wing",
+        "fish:fin",
+        "fish:fish_body",
+        "fox_stylized:body",
+        "nature:foliage",
+        "nature:nest",
+        "nature:tree",
+        "space:planet",
+        "tree_stylized:branch",
+        "tree_stylized:crown",
+        "tree_stylized:fruit",
+        "tree_stylized:tree",
+        "tree_stylized:trunk"
+      ]
+    }
+  }
+}

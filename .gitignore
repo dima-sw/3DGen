@@ -11,4 +11,3 @@ dist/
 /build/
 *.spec
 .tmp-tests/
-audit-images/

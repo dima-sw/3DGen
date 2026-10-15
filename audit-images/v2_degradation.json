@@ -1,0 +1,68 @@
+{
+  "jeep": {
+    "root": "vehicle_stylized:car",
+    "match": "semantic subject proxy",
+    "conf": 0.588344,
+    "approx": true
+  },
+  "fox": {
+    "root": "fox_stylized:fox",
+    "match": "direct implementation",
+    "conf": 0.0,
+    "approx": false
+  },
+  "volpe": {
+    "root": "fox_stylized:fox",
+    "match": "semantic subject proxy",
+    "conf": 0.196991,
+    "approx": true
+  },
+  "robot": {
+    "root": "",
+    "match": "",
+    "conf": 0.0,
+    "approx": false
+  },
+  "drago": {
+    "root": "creature:dragon_head",
+    "match": "weak semantic proxy",
+    "conf": 0.247426,
+    "approx": true
+  },
+  "casa": {
+    "root": "architecture:house",
+    "match": "semantic subject proxy",
+    "conf": 0.636076,
+    "approx": true
+  },
+  "albero": {
+    "root": "tree_stylized:tree",
+    "match": "exact",
+    "conf": 0.0,
+    "approx": false
+  },
+  "pesce": {
+    "root": "fish:fish_body",
+    "match": "weak semantic proxy",
+    "conf": 0.666474,
+    "approx": true
+  },
+  "sottomarino": {
+    "root": "",
+    "match": "",
+    "conf": 0.0,
+    "approx": false
+  },
+  "suv": {
+    "root": "vehicle_stylized:car",
+    "match": "semantic subject proxy",
+    "conf": 0.588344,
+    "approx": true
+  },
+  "camion": {
+    "root": "vehicle_stylized:car",
+    "match": "semantic subject proxy",
+    "conf": 0.588344,
+    "approx": true
+  }
+}

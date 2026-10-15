@@ -1,0 +1,864 @@
+[
+  {
+    "name": "01_fox",
+    "prompt": "Una volpe cartoon low-poly.",
+    "mode": "llm",
+    "seconds": 3.308,
+    "ok": true,
+    "triangles": 412,
+    "planner": "llm",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "failover": 0,
+    "diagnostics": [
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Una volpe cartoon low-poly.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> groq/openai/gpt-oss-120b | failover 0\nfox: fox_stylized:fox (senza geometria)\n  fox/body: fox_stylized:body (64 triangoli)\n    fox/body/head: fox_stylized:head (68 triangoli)\n      fox/body/head/ears: fox_stylized:ears (40 triangoli)\n    fox/body/front_l: fox_stylized:leg (40 triangoli)\n    fox/body/front_r: fox_stylized:leg (40 triangoli)\n    fox/body/rear_l: fox_stylized:leg (40 triangoli)\n    fox/body/rear_r: fox_stylized:leg (40 triangoli)\n    fox/body/tail: fox_stylized:tail (80 triangoli)\ntotale: 412 triangoli, 248 vertici\nrisposta vincolata allo schema del piano",
+    "explain": [
+      "'fox' e' la radice: fox_stylized:fox",
+      "'fox_stylized:body' scelto per 'fox/body': fornisce 'core_mount' (capability)",
+      "'fox_stylized:head' scelto per 'fox/body/head': fornisce 'head_mount' (capability)",
+      "'fox_stylized:ears' scelto per 'fox/body/head/ears': fornisce 'hair_mount' (capability)",
+      "'fox_stylized:leg' scelto per 'fox/body/front_l': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/front_r': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/rear_l': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/rear_r': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:tail' scelto per 'fox/body/tail': fornisce 'limb_mount' (capability e tag)"
+    ],
+    "changes": [
+      "fox.body_length body_length: 1.0 (override)",
+      "fox.chunkiness chunkiness: 1.0 (override)",
+      "fox.ear_size ear_size: 1.0 (override)",
+      "fox.head_size head_size: 0.5 (override)",
+      "fox.leg_length leg_length: 0.8 (override)",
+      "fox.muzzle_length muzzle_length: 0.4 (override)",
+      "fox.tail_length tail_length: 1.2 (override)",
+      "fox.tail_volume tail_volume: 1.0 (override)",
+      "fox.torso_height torso_height: 0.5 (override)",
+      "fox/body.body_length body_length: 1.0 (override)",
+      "fox/body.chunkiness chunkiness: 1.0 (override)",
+      "fox/body.ear_size ear_size: 1.0 (override)",
+      "fox/body.head_size head_size: 0.5 (override)",
+      "fox/body.leg_length leg_length: 0.8 (override)",
+      "fox/body.muzzle_length muzzle_length: 0.4 (override)",
+      "fox/body.tail_length tail_length: 1.2 (override)",
+      "fox/body.tail_volume tail_volume: 1.0 (override)",
+      "fox/body.torso_height torso_height: 0.5 (override)",
+      "fox/body/head.chunkiness chunkiness: 1.0 (override)",
+      "fox/body/head.ear_size ear_size: 1.0 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "fox -> fox_stylized:fox",
+      "fox/body -> fox_stylized:body",
+      "fox/body/head -> fox_stylized:head",
+      "fox/body/head/ears -> fox_stylized:ears",
+      "fox/body/front_l -> fox_stylized:leg",
+      "fox/body/front_r -> fox_stylized:leg",
+      "fox/body/rear_l -> fox_stylized:leg",
+      "fox/body/rear_r -> fox_stylized:leg",
+      "fox/body/tail -> fox_stylized:tail"
+    ],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "fox",
+        "ref": "fox_stylized:fox",
+        "params": {
+          "body_length": 1.0,
+          "chunkiness": 1.0,
+          "ear_size": 1.0,
+          "head_size": 0.5,
+          "leg_length": 0.8,
+          "muzzle_length": 0.4,
+          "tail_length": 1.2,
+          "tail_volume": 1.0,
+          "torso_height": 0.5
+        }
+      }
+    },
+    "repaired": false,
+    "build_describe": "fox: fox_stylized:fox (senza geometria)\n  fox/body: fox_stylized:body (64 triangoli)\n    fox/body/head: fox_stylized:head (68 triangoli)\n      fox/body/head/ears: fox_stylized:ears (40 triangoli)\n    fox/body/front_l: fox_stylized:leg (40 triangoli)\n    fox/body/front_r: fox_stylized:leg (40 triangoli)\n    fox/body/rear_l: fox_stylized:leg (40 triangoli)\n    fox/body/rear_r: fox_stylized:leg (40 triangoli)\n    fox/body/tail: fox_stylized:tail (80 triangoli)\ntotale: 412 triangoli, 248 vertici",
+    "report": "risposta vincolata allo schema del piano",
+    "layout": "{'placements': [{'node': 'fox/body/tail', 'parent': 'fox/body', 'region': 'rear_tail_region', 'policy': 'fan', 'frame_index': 0, 'socket': 'rear_tail_region__fan_1', 'scale': 1.0, 'frame': {'socket': 'rear_tail_region__fan_1', 'position': [0.0, 1.0750000000000002, -0.48], 'direction': [-0.1806788207622584, 0.24090509434967788, -0.9535826651341417], 'up': [0.0, 1.0, 0.0], 'radius': 0.11, 'angle': 0.0}}], 'problems': [], 'provenance': [{'region': 'rear_tail_region', 'policy': 'fan', 'requested': 1, 'placed': 1, 'scale': 1.0, 'fit': 'success'}]}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "images": [
+      "01_fox_llm_front.png",
+      "01_fox_llm_three_quarter.png",
+      "01_fox_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      0.677,
+      1.858,
+      2.394
+    ]
+  },
+  {
+    "name": "02_humanoid",
+    "prompt": "Un umanoide cartoon con testa enorme, gambe corte e mani grandi.",
+    "mode": "llm",
+    "seconds": 61.437,
+    "ok": true,
+    "triangles": 20,
+    "planner": "llm",
+    "provider": "nvidia_nim",
+    "model": "openai/gpt-oss-20b",
+    "failover": 4,
+    "diagnostics": [
+      "'cartoon humanoid' non e' un concetto registrato: provo per somiglianza semantica  [cartoon humanoid]",
+      "'cartoon humanoid' non esiste: uso 'humanoid:nose' (weak semantic proxy, punteggio 0.345)  [cartoon humanoid]",
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Un umanoide cartoon con testa enorme, gambe corte e mani grandi.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> nvidia_nim/openai/gpt-oss-20b | failover 4\nnose: humanoid:nose (20 triangoli)\ntotale: 20 triangoli, 12 vertici\n'cartoon humanoid' non e' un concetto registrato: provo per somiglianza semantica  [cartoon humanoid]\n'cartoon humanoid' non esiste: uso 'humanoid:nose' (weak semantic proxy, punteggio 0.345)  [cartoon humanoid]\nrisposta vincolata allo schema del piano",
+    "explain": [
+      "richiesto: 'cartoon humanoid'",
+      "implementazione esatta: non installata",
+      "scelto per approssimazione: humanoid:nose",
+      "tipo di corrispondenza: weak semantic proxy",
+      "punteggio semantico: 0.345",
+      "gradini provati: id esatto -> nome del componente -> archetipi e binding -> approssimazione semantica",
+      "'nose' e' la radice: humanoid:nose"
+    ],
+    "changes": [],
+    "skipped": [],
+    "components": [
+      "nose -> humanoid:nose"
+    ],
+    "plan_json": {
+      "concept": {
+        "requested": "cartoon humanoid",
+        "archetypes": [],
+        "profiles": [],
+        "adaptations": [
+          {
+            "trait": "body_mass",
+            "value": 0.8
+          }
+        ]
+      },
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "nose",
+        "ref": "humanoid:nose"
+      },
+      "traits": [],
+      "structural_traits": []
+    },
+    "repaired": false,
+    "build_describe": "nose: humanoid:nose (20 triangoli)\ntotale: 20 triangoli, 12 vertici",
+    "report": "'cartoon humanoid' non e' un concetto registrato: provo per somiglianza semantica  [cartoon humanoid]\n'cartoon humanoid' non esiste: uso 'humanoid:nose' (weak semantic proxy, punteggio 0.345)  [cartoon humanoid]\nrisposta vincolata allo schema del piano",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'CONCEPT_UNKNOWN', 'message': \"'cartoon humanoid' non e' un concetto registrato: provo per somiglianza semantica\", 'where': 'cartoon humanoid', 'severity': 'warning'}, {'code': 'CONCEPT_APPROXIMATED', 'message': \"'cartoon humanoid' non esiste: uso 'humanoid:nose' (weak semantic proxy, punteggio 0.345)\", 'where': 'cartoon humanoid', 'severity': 'warning'}, {'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'CONCEPT_UNKNOWN', 'message': \"'cartoon humanoid' non e' un concetto registrato: provo per somiglianza semantica\", 'where': 'cartoon humanoid', 'severity': 'warning'}, {'code': 'CONCEPT_APPROXIMATED', 'message': \"'cartoon humanoid' non esiste: uso 'humanoid:nose' (weak semantic proxy, punteggio 0.345)\", 'where': 'cartoon humanoid', 'severity': 'warning'}, {'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "concept": "{'requested_concept': 'cartoon humanoid', 'semantic_source': 'llm', 'archetypes': [], 'profiles': [], 'candidate_bindings': [{'candidate': 'humanoid:nose', 'score': 0.344684, 'subject': False}, {'candidate': 'humanoid_anatomical:hair', 'score': 0.30707, 'subject': False}, {'candidate': 'humanoid_anatomical:nose', 'score': 0.30431, 'subject': False}, {'candidate': 'humanoid:body', 'score': 0.302264, 'subject': False}, {'candidate': 'humanoid_anatomical:leg', 'score': 0.298229, 'subject': False}, {'candidate': 'humanoid_anatomical:arm', 'score': 0.293998, 'subject': False}], 'selected_binding': '', 'selected_root_implementation': 'humanoid:nose', 'adaptations': [], 'materialized_traits': [], 'materialized_structural_traits': [], 'materialized_params': {}, 'param_role_preferences': [], 'component_preferences': [], 'style_preferences': [], 'coverage': [{'candidate': 'humanoid:nose', 'hard_compatible': True, 'match': 'weak semantic proxy', 'supported': [], 'unsupported': [], 'conflicting': [], 'preferred_hits': 0, 'score': [], 'reasons': [\"richiesto 'cartoon humanoid', non installato\", 'scelto per somiglianza semantica (0.345)']}], 'unsupported': [], 'conflicts': [], 'provenance': {'requested_concept': 'cartoon humanoid', 'semantic_source': 'llm', 'selected_root_implementation': 'humanoid:nose', 'match': 'weak semantic proxy', 'confidence': 0.344684, 'registry_plugins': {'accessories': '1.0.0', 'archetype_metadata': '1.0.0', 'architecture': '1.0.0', 'body_mass_extension': '1.0.0', 'creature': '1.0.0', 'fantasy': '1.0.0', 'fish': '1.0.0', 'fox_stylized': '1.0.0', 'fx': '1.0.0', 'humanoid': '1.0.0', 'humanoid_anatomical': '1.0.0', 'multi_arm_extension': '1.0.0', 'multi_tail_extension': '1.0.0', 'multi_wheel_extension': '1.0.0', 'nature': '1.0.0', 'primitives': '1.0.0', 'robot': '1.0.0', 'space': '1.0.0', 'tree_leafiness_extension': '1.0.0', 'tree_stylized': '1.0.0', 'vehicle_stylized': '1.0.0', 'weapon': '1.0.0'}}, 'diagnostics': [{'code': 'CONCEPT_UNKNOWN', 'message': \"'c",
+    "images": [
+      "02_humanoid_llm_front.png",
+      "02_humanoid_llm_three_quarter.png",
+      "02_humanoid_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      0.03,
+      0.03,
+      0.041
+    ]
+  },
+  {
+    "name": "03_robot4arms",
+    "prompt": "Un robot con quattro braccia.",
+    "mode": "llm",
+    "seconds": 3.193,
+    "ok": true,
+    "triangles": 412,
+    "planner": "llm",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "failover": 0,
+    "diagnostics": [
+      "'registered:archetype_metadata:quadruped' normalizzato in 'archetype_metadata:quadruped'  [registered:archetype_metadata:quadruped]",
+      "'registered:archetype_metadata:compact_quadruped' normalizzato in 'archetype_metadata:compact_quadruped'  [registered:archetype_metadata:compact_quadruped]",
+      "trait sconosciuto, ignorato: trait = 'instance_count'  [traits[1]]\n  perche': un elemento facoltativo sconosciuto non invalida il resto del piano\n  alternative: botany:leafiness, std:body_mass",
+      "risposta vincolata allo schema del piano",
+      "'std:body_mass' non ha regole compatibili su 'fox_stylized:fox'  [fox]",
+      "'std:body_mass' non ha regole compatibili su 'fox_stylized:ears'  [fox/body/head/ears]"
+    ],
+    "describe": "richiesta: Un robot con quattro braccia.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> groq/openai/gpt-oss-120b | failover 0\nfox: fox_stylized:fox (senza geometria)\n  fox/body: fox_stylized:body (64 triangoli)\n    fox/body/head: fox_stylized:head (68 triangoli)\n      fox/body/head/ears: fox_stylized:ears (40 triangoli)\n    fox/body/front_l: fox_stylized:leg (40 triangoli)\n    fox/body/front_r: fox_stylized:leg (40 triangoli)\n    fox/body/rear_l: fox_stylized:leg (40 triangoli)\n    fox/body/rear_r: fox_stylized:leg (40 triangoli)\n    fox/body/tail: fox_stylized:tail (80 triangoli)\ntotale: 412 triangoli, 248 vertici\n'registered:archetype_metadata:quadruped' normalizzato in 'archetype_metadata:quadruped'  [registered:archetype_metadata:quadruped]\n'registered:archetype_metadata:compact_quadruped' normalizzato in 'archetype_metadata:compact_quadruped'  [registered:archetype_metadata:compact_quadruped]\ntrait sconosciuto, ignorato: trait = 'instance_count'  [traits[1]]\n  perche': un elemento facoltativo sconosciuto non invalida il resto del piano\n  alternative: botany:leafiness, std:body_mass\nrisposta vincolata allo schema del piano\n'std:body_mass' non ha regole compatibili su 'fox_stylized:fox'  [fox]\n'std:body_mass' non ha regole compatibili su 'fox_stylized:ears'  [fox/body/head/ears]",
+    "explain": [
+      "'fox' e' la radice: fox_stylized:fox",
+      "'fox_stylized:body' scelto per 'fox/body': fornisce 'core_mount' (capability)",
+      "'fox_stylized:head' scelto per 'fox/body/head': fornisce 'head_mount' (capability)",
+      "'fox_stylized:ears' scelto per 'fox/body/head/ears': fornisce 'hair_mount' (capability)",
+      "'fox_stylized:leg' scelto per 'fox/body/front_l': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/front_r': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/rear_l': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:leg' scelto per 'fox/body/rear_r': fornisce 'limb_mount' (capability e lato)",
+      "'fox_stylized:tail' scelto per 'fox/body/tail': fornisce 'limb_mount' (capability e tag)"
+    ],
+    "changes": [
+      "fox/body.body_length body_length: 1.0 (override)",
+      "fox/body.chunkiness chunkiness: 0.9216000000000001 (trait = value * (1.0 + (trait - 0.5) * 0.30)) (era 0.9)",
+      "fox/body.ear_size ear_size: 1.0 (override)",
+      "fox/body.head_size head_size: 0.47104 (trait = value * (1.0 + (trait - 0.5) * 0.30)) (era 0.46)",
+      "fox/body.leg_length leg_length: 0.72 (override)",
+      "fox/body.muzzle_length muzzle_length: 0.42 (override)",
+      "fox/body.tail_length tail_length: 1.05 (override)",
+      "fox/body.tail_volume tail_volume: 1.024 (trait = value * (1.0 + (trait - 0.5) * 0.30)) (era 1.0)",
+      "fox/body.torso_height torso_height: 0.5324800000000001 (trait = value * (1.0 + (trait - 0.5) * 0.30)) (era 0.52)",
+      "fox/body/head.chunkiness chunkiness: 0.9172799999999999 (trait = value * (1.0 + (trait - 0.5) * 0.24)) (era 0.9)",
+      "fox/body/head.ear_size ear_size: 1.0 (override)",
+      "fox/body/head.head_size head_size: 0.46883199999999997 (trait = value * (1.0 + (trait - 0.5) * 0.24)) (era 0.46)",
+      "fox/body/head.muzzle_length muzzle_length: 0.42 (override)",
+      "fox/body/head/ears.chunkiness chunkiness: 0.9 (override)",
+      "fox/body/head/ears.ear_size ear_size: 1.0 (override)",
+      "fox/body/head/ears.head_size head_size: 0.46 (override)",
+      "fox/body/front_l.chunkiness chunkiness: 0.9216000000000001 (trait = value * (1.0 + (trait - 0.5) * 0.30)) (era 0.9)",
+      "fox/body/front_l.leg_length leg_length: 0.72 (override)",
+      "fox/body/front_l.torso_height torso_height: 0.5324800000000001 (trait = value * (1.0 + (trait - 0.5) * 0.30)) (era 0.52)",
+      "fox/body/front_r.chunkiness chunkiness: 0.9216000000000001 (trait = value * (1.0 + (trait - 0.5) * 0.30)) (era 0.9)"
+    ],
+    "skipped": [
+      "UNKNOWN_TRAIT_SKIPPED: trait sconosciuto, ignorato: trait = 'instance_count'"
+    ],
+    "components": [
+      "fox -> fox_stylized:fox",
+      "fox/body -> fox_stylized:body",
+      "fox/body/head -> fox_stylized:head",
+      "fox/body/head/ears -> fox_stylized:ears",
+      "fox/body/front_l -> fox_stylized:leg",
+      "fox/body/front_r -> fox_stylized:leg",
+      "fox/body/rear_l -> fox_stylized:leg",
+      "fox/body/rear_r -> fox_stylized:leg",
+      "fox/body/tail -> fox_stylized:tail"
+    ],
+    "plan_json": {
+      "concept": {
+        "requested": "robot with four arms",
+        "archetypes": [
+          "registered:archetype_metadata:quadruped"
+        ],
+        "profiles": [
+          "registered:archetype_metadata:compact_quadruped"
+        ],
+        "adaptations": [
+          {
+            "trait": "instance_count",
+            "value": 4
+          }
+        ]
+      },
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "fox",
+        "ref": "fox_stylized:fox"
+      },
+      "traits": [
+        {
+          "trait": "std:body_mass",
+          "value": 0.58,
+          "scope": "subtree"
+        },
+        {
+          "trait": "instance_count",
+          "value": 4
+        }
+      ],
+      "structural_traits": []
+    },
+    "repaired": false,
+    "build_describe": "fox: fox_stylized:fox (senza geometria)\n  fox/body: fox_stylized:body (64 triangoli)\n    fox/body/head: fox_stylized:head (68 triangoli)\n      fox/body/head/ears: fox_stylized:ears (40 triangoli)\n    fox/body/front_l: fox_stylized:leg (40 triangoli)\n    fox/body/front_r: fox_stylized:leg (40 triangoli)\n    fox/body/rear_l: fox_stylized:leg (40 triangoli)\n    fox/body/rear_r: fox_stylized:leg (40 triangoli)\n    fox/body/tail: fox_stylized:tail (80 triangoli)\ntotale: 412 triangoli, 248 vertici",
+    "report": "'registered:archetype_metadata:quadruped' normalizzato in 'archetype_metadata:quadruped'  [registered:archetype_metadata:quadruped]\n'registered:archetype_metadata:compact_quadruped' normalizzato in 'archetype_metadata:compact_quadruped'  [registered:archetype_metadata:compact_quadruped]\ntrait sconosciuto, ignorato: trait = 'instance_count'  [traits[1]]\n  perche': un elemento facoltativo sconosciuto non invalida il resto del piano\n  alternative: botany:leafiness, std:body_mass\nrisposta vincolata allo schema del piano\n'std:body_mass' non ha regole compatibili su 'fox_stylized:fox'  [fox]\n'std:body_mass' non ha regole compatibili su 'fox_stylized:ears'  [fox/body/head/ears]",
+    "layout": "{'placements': [{'node': 'fox/body/tail', 'parent': 'fox/body', 'region': 'rear_tail_region', 'policy': 'fan', 'frame_index': 0, 'socket': 'rear_tail_region__fan_1', 'scale': 1.0, 'frame': {'socket': 'rear_tail_region__fan_1', 'position': [0.0, 1.012864, -0.48], 'direction': [-0.1806788207622584, 0.24090509434967788, -0.9535826651341417], 'up': [0.0, 1.0, 0.0], 'radius': 0.11264, 'angle': 0.0}}], 'problems': [], 'provenance': [{'region': 'rear_tail_region', 'policy': 'fan', 'requested': 1, 'placed': 1, 'scale': 1.0, 'fit': 'success'}]}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'CONCEPT_ID_NORMALIZED', 'message': \"'registered:archetype_metadata:quadruped' normalizzato in 'archetype_metadata:quadruped'\", 'where': 'registered:archetype_metadata:quadruped', 'severity': 'warning'}, {'code': 'CONCEPT_ID_NORMALIZED', 'message': \"'registered:archetype_metadata:compact_quadruped' normalizzato in 'archetype_metadata:compact_quadruped'\", 'where': 'registered:archetype_metadata:compact_quadruped', 'severity': 'warning'}, {'code': 'UNKNOWN_TRAIT_SKIPPED', 'message': \"trait sconosciuto, ignorato: trait = 'instance_count'\", 'where': 'traits[1]', 'severity': 'warning'}, {'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}, {'code': 'TRAIT_UNSUPPORTED', 'message': \"'std:body_mass' non ha regole compatibili su 'fox_stylized:fox'\", 'where': 'fox', 'severity': 'info'}, {'code': 'TRAIT_UNSUPPORTED', 'message': \"'std:body_mass' non ha regole compatibili su 'fox_stylized:ears'\", 'where': 'fox/body/head/ears', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [{'kind': 'param', 'trait': 'std:body_mass', 'request_value': 0.58, 'rule_id': 'body_mass_extension:animal_body_girth', 'node': 'fox/body', 'path': 'fox/body', 'channel': 'fox/body.chunkiness', 'previous': 0.9, 'result': 0.9216000000000001, 'source': 'trait'}, {'kind': 'param', 'trait': 'std:body_mass', 'request_value': 0.58, 'rule_id': 'body_mass_extension:animal_body_girth', 'node': 'fox/body', 'path': 'fox/body', 'channel': 'fox/body.head_size', 'previous': 0.46, 'result': 0.47104, 'source': 'trait'}, {'kind': 'param', 'trait': 'std:body_mass', 'request_value': 0.58, 'rule_id': 'body_mass_extension:animal_body_girth', 'node': 'fox/body', 'path': 'fox/body', 'channel': 'fox/body.tail_volume', 'previous': 1.0, 'result': 1.024, 'source': 'trait'}, {'kind': 'param', 'trait': 'std:body_mass', 'request_value': 0.58, 'rule_id': 'body_mass_extension:animal_body_girth', 'node': 'fox/body', 'path': 'fox/body', 'channel': 'fox/body.torso_height', 'previous': 0.52, 'result': 0.5324800000000001, 'source': 'trait'}, {'kind': 'param', 'trait': 'std:body_mass', 'request_value': 0.58, 'rule_id': 'body_mass_extension:animal_body_girth', 'node': 'fox/body/front_l', 'path': 'fox/body/front_l', 'channel': 'fox/body/front_l.chunkiness', 'previous': 0.9, 'result': 0.9216000000000001, 'source': 'trait'}, {'kind': 'param', 'trait': 'std:body_mass', 'request_value': 0.58, 'rule_id': 'body_mass_extension:animal_body_girth', 'node': 'fox/body/front_l', 'path': 'fox/body/front_l', 'channel",
+    "concept": "{'requested_concept': 'robot with four arms', 'semantic_source': 'llm', 'archetypes': ['archetype_metadata:animal', 'archetype_metadata:quadruped'], 'profiles': ['archetype_metadata:compact_quadruped'], 'candidate_bindings': [{'candidate': 'archetype_metadata:fox_quadruped', 'hard_compatible': True, 'match': 'exact', 'supported': [{'trait': 'instance_count', 'value': 4, 'coverage_details': {'requested': {'trait': 'instance_count', 'value': 4}, 'contract_found': True, 'where_supported': [{'path': 'fox', 'component': 'fox_stylized:fox', 'role': 'animal'}], 'where_unsupported': [], 'where_ignored': [], 'coverage': 'fully_supported', 'materialized': True}}], 'unsupported': [], 'conflicting': [], 'preferred_hits': 1, 'score': [2, 1, 1, 2, 0, 0, -2], 'reasons': ['binding=archetype_metadata:fox_quadruped']}], 'selected_binding': 'archetype_metadata:fox_quadruped', 'selected_root_implementation': 'fox_stylized:fox', 'adaptations': [{'trait': 'instance_count', 'value': 4}], 'materialized_traits': [{'trait': 'std:body_mass', 'value': 0.58, 'scope': 'subtree'}, {'trait': 'instance_count', 'value': 4}], 'materialized_structural_traits': [], 'materialized_params': {}, 'param_role_preferences': [], 'component_preferences': [], 'style_preferences': [], 'coverage': [{'candidate': 'archetype_metadata:fox_quadruped', 'hard_compatible': True, 'match': 'exact', 'supported': [{'trait': 'instance_count', 'value': 4, 'coverage_details': {'requested': {'trait': 'instance_count', 'value': 4}, 'contract_found': True, 'where_supported': [{'path': 'fox', 'component': 'fox_stylized:fox', 'role': 'animal'}], 'where_unsupported': [], 'where_ignored': [], 'coverage': 'fully_supported', 'materialized': True}}], 'unsupported': [], 'conflicting': [], 'preferred_hits': 1, 'score': [2, 1, 1, 2, 0, 0, -2], 'reasons': ['binding=archetype_metadata:fox_quadruped']}], 'unsupported': [], 'conflicts': [], 'provenance': {'materialized_defaults': [{'channel': ['std:body_mass', 'root', 'subtree', ''], 'source': ",
+    "images": [
+      "03_robot4arms_llm_front.png",
+      "03_robot4arms_llm_three_quarter.png",
+      "03_robot4arms_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      0.729,
+      1.76,
+      2.254
+    ]
+  },
+  {
+    "name": "04_jeep6wheels",
+    "prompt": "Una jeep cartoon con sei ruote.",
+    "mode": "llm",
+    "seconds": 19.252,
+    "ok": true,
+    "triangles": 228,
+    "planner": "llm",
+    "provider": "cloudflare",
+    "model": "@cf/openai/gpt-oss-20b",
+    "failover": 3,
+    "diagnostics": [
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Una jeep cartoon con sei ruote.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> cloudflare/@cf/openai/gpt-oss-20b | failover 3\ncar: vehicle_stylized:car (senza geometria)\n  car/body: vehicle_stylized:body (20 triangoli)\n    car/body/cabin: vehicle_stylized:cabin (12 triangoli)\n      car/body/cabin/windshield: vehicle_stylized:windshield (12 triangoli)\n    car/body/hood_panel: vehicle_stylized:hood_panel (12 triangoli)\n    car/body/underbody: vehicle_stylized:underbody (12 triangoli)\n    car/body/fender_fl: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_fr: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_rl: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_rr: vehicle_stylized:fender (12 triangoli)\n  car/wheel_fl: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_fr: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_rl: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_rr: vehicle_stylized:wheel (28 triangoli)\ntotale: 228 triangoli, 140 vertici\nrisposta vincolata allo schema del piano",
+    "explain": [
+      "'car' e' la radice: vehicle_stylized:car",
+      "'vehicle_stylized:body' scelto per 'car/body': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:cabin' scelto per 'car/body/cabin': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:windshield' scelto per 'car/body/cabin/windshield': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:hood_panel' scelto per 'car/body/hood_panel': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:underbody' scelto per 'car/body/underbody': fornisce 'vehicle_mount' (capability e tag)",
+      "'vehicle_stylized:fender' scelto per 'car/body/fender_fl': fornisce 'vehicle_mount' (capability e lato)",
+      "'vehicle_stylized:fender' scelto per 'car/body/fender_fr': fornisce 'vehicle_mount' (capability e lato)",
+      "'vehicle_stylized:fender' scelto per 'car/body/fender_rl': fornisce 'vehicle_mount' (capability e lato)",
+      "'vehicle_stylized:fender' scelto per 'car/body/fender_rr': fornisce 'vehicle_mount' (capability e lato)",
+      "'vehicle_stylized:wheel' scelto per 'car/wheel_fl': fornisce 'wheel_mount' (capability e lato)",
+      "'vehicle_stylized:wheel' scelto per 'car/wheel_fr': fornisce 'wheel_mount' (capability e lato)",
+      "'vehicle_stylized:wheel' scelto per 'car/wheel_rl': fornisce 'wheel_mount' (capability e lato)",
+      "'vehicle_stylized:wheel' scelto per 'car/wheel_rr': fornisce 'wheel_mount' (capability e lato)"
+    ],
+    "changes": [
+      "car/body.cabin_ratio cabin_ratio: 0.46 (override)",
+      "car/body.chunkiness chunkiness: 1.0 (override)",
+      "car/body.front_taper front_taper: 0.22 (override)",
+      "car/body.ground_clearance ground_clearance: 0.22 (override)",
+      "car/body.height height: 1.35 (override)",
+      "car/body.length length: 2.8 (override)",
+      "car/body.stance stance: 1.08 (override)",
+      "car/body.wheel_size wheel_size: 0.58 (override)",
+      "car/body.width width: 1.55 (override)",
+      "car/body/cabin.cabin_ratio cabin_ratio: 0.46 (override)",
+      "car/body/cabin.chunkiness chunkiness: 1.0 (override)",
+      "car/body/cabin.front_taper front_taper: 0.22 (override)",
+      "car/body/cabin.ground_clearance ground_clearance: 0.22 (override)",
+      "car/body/cabin.height height: 1.35 (override)",
+      "car/body/cabin.length length: 2.8 (override)",
+      "car/body/cabin.stance stance: 1.08 (override)",
+      "car/body/cabin.wheel_size wheel_size: 0.58 (override)",
+      "car/body/cabin.width width: 1.55 (override)",
+      "car/body/cabin/windshield.height height: 0.324 (override)",
+      "car/body/cabin/windshield.thickness thickness: 0.025 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "car -> vehicle_stylized:car",
+      "car/body -> vehicle_stylized:body",
+      "car/body/cabin -> vehicle_stylized:cabin",
+      "car/body/cabin/windshield -> vehicle_stylized:windshield",
+      "car/body/hood_panel -> vehicle_stylized:hood_panel",
+      "car/body/underbody -> vehicle_stylized:underbody",
+      "car/body/fender_fl -> vehicle_stylized:fender",
+      "car/body/fender_fr -> vehicle_stylized:fender",
+      "car/body/fender_rl -> vehicle_stylized:fender",
+      "car/body/fender_rr -> vehicle_stylized:fender",
+      "car/wheel_fl -> vehicle_stylized:wheel",
+      "car/wheel_fr -> vehicle_stylized:wheel",
+      "car/wheel_rl -> vehicle_stylized:wheel",
+      "car/wheel_rr -> vehicle_stylized:wheel"
+    ],
+    "plan_json": {
+      "concept": {
+        "requested": "jeep cartoon",
+        "archetypes": [
+          "archetype_metadata:car_like"
+        ],
+        "profiles": [],
+        "adaptations": [
+          {
+            "trait": "wheel_count",
+            "value": 6
+          }
+        ]
+      },
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "car",
+        "ref": "vehicle_stylized:car"
+      },
+      "traits": [],
+      "structural_traits": []
+    },
+    "repaired": false,
+    "build_describe": "car: vehicle_stylized:car (senza geometria)\n  car/body: vehicle_stylized:body (20 triangoli)\n    car/body/cabin: vehicle_stylized:cabin (12 triangoli)\n      car/body/cabin/windshield: vehicle_stylized:windshield (12 triangoli)\n    car/body/hood_panel: vehicle_stylized:hood_panel (12 triangoli)\n    car/body/underbody: vehicle_stylized:underbody (12 triangoli)\n    car/body/fender_fl: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_fr: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_rl: vehicle_stylized:fender (12 triangoli)\n    car/body/fender_rr: vehicle_stylized:fender (12 triangoli)\n  car/wheel_fl: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_fr: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_rl: vehicle_stylized:wheel (28 triangoli)\n  car/wheel_rr: vehicle_stylized:wheel (28 triangoli)\ntotale: 228 triangoli, 140 vertici",
+    "report": "risposta vincolata allo schema del piano",
+    "layout": "{'placements': [{'node': 'car/wheel_fl', 'parent': 'car', 'region': 'left_wheel_region', 'policy': 'linear', 'frame_index': 0, 'socket': 'left_wheel_region__linear_1', 'scale': 1.0, 'frame': {'socket': 'left_wheel_region__linear_1', 'position': [-0.8370000000000001, 0.29, -1.3299999999999998], 'direction': [-1.0, 0.0, 0.0], 'up': [0.0, 1.0, 0.0], 'radius': 0.29, 'angle': 0.0}}, {'node': 'car/wheel_rl', 'parent': 'car', 'region': 'left_wheel_region', 'policy': 'linear', 'frame_index': 1, 'socket': 'left_wheel_region__linear_2', 'scale': 1.0, 'frame': {'socket': 'left_wheel_region__linear_2', 'position': [-0.8370000000000001, 0.29, 1.3299999999999998], 'direction': [-1.0, 0.0, 0.0], 'up': [0.0, 1.0, 0.0], 'radius': 0.29, 'angle': 0.0}}, {'node': 'car/wheel_fr', 'parent': 'car', 'region': 'right_wheel_region', 'policy': 'linear', 'frame_index': 0, 'socket': 'right_wheel_region__linear_1', 'scale': 1.0, 'frame': {'socket': 'right_wheel_region__linear_1', 'position': [0.8370000000000001, 0.29, -1.3299999999999998], 'direction': [1.0, 0.0, 0.0], 'up': [0.0, 1.0, 0.0], 'radius': 0.29, 'angle': 0.0}}, {'node': 'car/wheel_rr', 'parent': 'car', 'region': 'right_wheel_region', 'policy': 'linear', 'frame_index': 1, 'socket': 'right_wheel_region__linear_2', 'scale': 1.0, 'frame': {'socket': 'right_wheel_region__linear_2', 'position': [0.8370000000000001, 0.29, 1.3299999999999998], 'direction': [1.0, 0.0, 0.0], 'up': [0.0, 1.0, 0.0], 'radius': 0.29, 'angle': 0.0}}], 'problems': [], 'proven",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "concept": "{'requested_concept': 'jeep cartoon', 'semantic_source': 'llm', 'archetypes': ['archetype_metadata:vehicle', 'archetype_metadata:wheeled_vehicle', 'archetype_metadata:car_like'], 'profiles': [], 'candidate_bindings': [{'candidate': 'archetype_metadata:stylized_car', 'hard_compatible': True, 'match': 'exact', 'supported': [], 'unsupported': [{'trait': 'wheel_count', 'value': 6, 'reason': 'no matching StructuralTraitRule', 'coverage_details': {'requested': {'trait': 'wheel_count', 'value': 6}, 'contract_found': True, 'where_supported': [], 'where_unsupported': [{'path': 'car', 'component': 'vehicle_stylized:car', 'role': 'vehicle'}], 'where_ignored': [], 'coverage': 'unsupported', 'materialized': False}}], 'conflicting': [], 'preferred_hits': 1, 'score': [2, 0, 1, 6, -1, 0, -3], 'reasons': ['binding=archetype_metadata:stylized_car']}], 'selected_binding': 'archetype_metadata:stylized_car', 'selected_root_implementation': 'vehicle_stylized:car', 'adaptations': [{'trait': 'wheel_count', 'value': 6}], 'materialized_traits': [], 'materialized_structural_traits': [], 'materialized_params': {}, 'param_role_preferences': [], 'component_preferences': [], 'style_preferences': [], 'coverage': [{'candidate': 'archetype_metadata:stylized_car', 'hard_compatible': True, 'match': 'exact', 'supported': [], 'unsupported': [{'trait': 'wheel_count', 'value': 6, 'reason': 'no matching StructuralTraitRule', 'coverage_details': {'requested': {'trait': 'wheel_count', 'value': 6}, 'contract_found': True, 'where_supported': [], 'where_unsupported': [{'path': 'car', 'component': 'vehicle_stylized:car', 'role': 'vehicle'}], 'where_ignored': [], 'coverage': 'unsupported', 'materialized': False}}], 'conflicting': [], 'preferred_hits': 1, 'score': [2, 0, 1, 6, -1, 0, -3], 'reasons': ['binding=archetype_metadata:stylized_car']}], 'unsupported': [{'trait': 'wheel_count', 'value': 6, 'reason': 'no matching StructuralTraitRule', 'coverage_details': {'requested': {'trait': 'wheel_count', 'value': 6}, '",
+    "images": [
+      "04_jeep6wheels_llm_front.png",
+      "04_jeep6wheels_llm_three_quarter.png",
+      "04_jeep6wheels_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      2.077,
+      1.544,
+      3.24
+    ]
+  },
+  {
+    "name": "05_fishman",
+    "prompt": "Un pesce con corpo umanoide.",
+    "mode": "llm",
+    "seconds": 131.492,
+    "ok": true,
+    "triangles": 118,
+    "planner": "llm",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "failover": 0,
+    "diagnostics": [
+      "'fish:fish_body' non ha un innesto per capability 'core_mount'  [fish_body_root/humanoid_body]\n  perche': offre: gear_mount @dorso, head_mount @testa, limb_mount l @pinna_l, limb_mount l @ventrale_l, limb_mount r @pinna_r, limb_mount r @ventrale_r, segment @corpo, tail_mount @coda\n  alternative: fox_stylized:fox, humanoid:body, humanoid_anatomical:body, tree_stylized:tree",
+      "il piano e' stato corretto una volta\n  perche': punteggio 10040 (no_plan=1, parameter=1) prima, 1250 (unresolved=1, attachment=1) dopo"
+    ],
+    "describe": "richiesta: Un pesce con corpo umanoide.\nplanner: llm (corretto)\nAI: groq/openai/gpt-oss-120b -> groq/openai/gpt-oss-120b | failover 0\nfish_body_root: fish:fish_body (80 triangoli)\n  fish_body_root/coda: fish:tail (38 triangoli)\ntotale: 118 triangoli, 65 vertici\n'fish:fish_body' non ha un innesto per capability 'core_mount'  [fish_body_root/humanoid_body]\n  perche': offre: gear_mount @dorso, head_mount @testa, limb_mount l @pinna_l, limb_mount l @ventrale_l, limb_mount r @pinna_r, limb_mount r @ventrale_r, segment @corpo, tail_mount @coda\n  alternative: fox_stylized:fox, humanoid:body, humanoid_anatomical:body, tree_stylized:tree\nil piano e' stato corretto una volta\n  perche': punteggio 10040 (no_plan=1, parameter=1) prima, 1250 (unresolved=1, attachment=1) dopo",
+    "explain": [
+      "'fish_body_root' e' la radice: fish:fish_body",
+      "'fish:tail' scelto per 'fish_body_root/coda': fornisce 'tail_mount' (capability)"
+    ],
+    "changes": [
+      "fish_body_root.fin_size fin_size: 1.0 (override)",
+      "fish_body_root.height height: 1.0 (override)",
+      "fish_body_root.length length: 5.0 (override)",
+      "fish_body_root.tail_length tail_length: 2.0 (override)",
+      "fish_body_root.width width: 2.0 (override)",
+      "fish_body_root/coda.height height: 0.5 (override)",
+      "fish_body_root/coda.length length: 2.0 (override)",
+      "fish_body_root/coda.width width: 1.8 (override)"
+    ],
+    "skipped": [
+      "humanoid_body"
+    ],
+    "components": [
+      "fish_body_root -> fish:fish_body",
+      "fish_body_root/coda -> fish:tail"
+    ],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "fish_body_root",
+        "ref": "fish:fish_body",
+        "params": {
+          "fin_size": 1.0,
+          "height": 1.0,
+          "length": 5.0,
+          "tail_length": 2.0,
+          "width": 2.0
+        },
+        "effects": [],
+        "children": [
+          {
+            "id": "humanoid_body",
+            "ref": "humanoid:body",
+            "at": {
+              "capability": "core_mount"
+            },
+            "params": {
+              "height": 1.5
+            },
+            "children": []
+          }
+        ]
+      }
+    },
+    "repaired": true,
+    "build_describe": "fish_body_root: fish:fish_body (80 triangoli)\n  fish_body_root/coda: fish:tail (38 triangoli)\ntotale: 118 triangoli, 65 vertici",
+    "report": "'fish:fish_body' non ha un innesto per capability 'core_mount'  [fish_body_root/humanoid_body]\n  perche': offre: gear_mount @dorso, head_mount @testa, limb_mount l @pinna_l, limb_mount l @ventrale_l, limb_mount r @pinna_r, limb_mount r @ventrale_r, segment @corpo, tail_mount @coda\n  alternative: fox_stylized:fox, humanoid:body, humanoid_anatomical:body, tree_stylized:tree\nil piano e' stato corretto una volta\n  perche': punteggio 10040 (no_plan=1, parameter=1) prima, 1250 (unresolved=1, attachment=1) dopo",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'SOCKET_INCOMPATIBLE', 'message': \"'fish:fish_body' non ha un innesto per capability 'core_mount'\", 'where': 'fish_body_root/humanoid_body', 'severity': 'error'}, {'code': 'REPAIRED', 'message': \"il piano e' stato corretto una volta\", 'where': '', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'SOCKET_INCOMPATIBLE', 'message': \"'fish:fish_body' non ha un innesto per capability 'core_mount'\", 'where': 'fish_body_root/humanoid_body', 'severity': 'error'}, {'code': 'REPAIRED', 'message': \"il piano e' stato corretto una volta\", 'where': '', 'severity': 'info'}]}",
+    "images": [
+      "05_fishman_llm_front.png",
+      "05_fishman_llm_three_quarter.png",
+      "05_fishman_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      3.851,
+      6.68,
+      3.42
+    ]
+  },
+  {
+    "name": "06_house",
+    "prompt": "Una casa alta, slanciata e leggermente curva.",
+    "mode": "llm",
+    "seconds": 112.973,
+    "ok": false,
+    "triangles": 0,
+    "planner": "llm",
+    "provider": "nvidia_nim",
+    "model": "openai/gpt-oss-20b",
+    "failover": 4,
+    "diagnostics": [
+      "l'effetto 'fx:bend' non ha un parametro 'params'  [house1]\n  perche': un nome inventato sembra una richiesta e non lo e'\n  alternative: along, axis",
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Una casa alta, slanciata e leggermente curva.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> nvidia_nim/openai/gpt-oss-20b | failover 4\nl'effetto 'fx:bend' non ha un parametro 'params'  [house1]\n  perche': un nome inventato sembra una richiesta e non lo e'\n  alternative: along, axis\nrisposta vincolata allo schema del piano",
+    "explain": [],
+    "changes": [],
+    "skipped": [],
+    "components": [],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "house1",
+        "ref": "architecture:house",
+        "params": {
+          "depth": 50,
+          "height": 150,
+          "roof_pitch": 0.8,
+          "width": 50
+        },
+        "effects": [
+          {
+            "type": "fx:bend",
+            "scope": "model",
+            "amount": 0.2,
+            "params": {
+              "along": "Y",
+              "axis": "Z"
+            }
+          }
+        ],
+        "children": [
+          {
+            "id": "door1",
+            "ref": "architecture:door",
+            "at": {
+              "capability": "opening",
+              "side": "l"
+            },
+            "params": {
+              "thickness": 0.1,
+              "width": 2
+            }
+          },
+          {
+            "id": "window_left",
+            "ref": "architecture:window",
+            "at": {
+              "capability": "opening",
+              "side": "l"
+            },
+            "params": {
+              "height": 3,
+              "thickness": 0.05,
+              "width": 2
+            }
+          },
+          {
+            "id": "window_right",
+            "ref": "architecture:window",
+            "at": {
+              "capability": "opening",
+              "side": "r"
+            },
+            "params": {
+              "height": 3,
+              "thickness": 0.05,
+              "width": 2
+            }
+          },
+          {
+            "id": "roof1",
+            "ref": "architecture:roof",
+            "at": {
+              "capability": "roof_mount",
+              "side": "l"
+            },
+            "params": {
+              "depth": 50,
+              "pitch": 0.8,
+              "width": 50
+            }
+          }
+        ]
+      }
+    },
+    "repaired": false,
+    "report": "l'effetto 'fx:bend' non ha un parametro 'params'  [house1]\n  perche': un nome inventato sembra una richiesta e non lo e'\n  alternative: along, axis\nrisposta vincolata allo schema del piano",
+    "images": []
+  },
+  {
+    "name": "07_dragon",
+    "prompt": "Un drago cartoon con ali, corna e coda.",
+    "mode": "llm",
+    "seconds": 6.422,
+    "ok": true,
+    "triangles": 256,
+    "planner": "llm",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "failover": 0,
+    "diagnostics": [
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Un drago cartoon con ali, corna e coda.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> groq/openai/gpt-oss-120b | failover 0\nbody: fish:fish_body (80 triangoli)\n  head: creature:dragon_head (82 triangoli)\n  wing_left: fantasy:wing (28 triangoli)\n  wing_right: fantasy:wing (28 triangoli)\n  tail: fish:tail (38 triangoli)\ntotale: 256 triangoli, 146 vertici\nrisposta vincolata allo schema del piano",
+    "explain": [
+      "'body' e' la radice: fish:fish_body",
+      "'creature:dragon_head' scelto per 'head': fornisce 'head_mount' (capability)",
+      "'fantasy:wing' scelto per 'wing_left': fornisce 'limb_mount' (capability e lato)",
+      "'fantasy:wing' scelto per 'wing_right': fornisce 'limb_mount' (capability e lato)",
+      "'fish:tail' scelto per 'tail': fornisce 'tail_mount' (capability)"
+    ],
+    "changes": [
+      "body.fin_size fin_size: 0.5 (override)",
+      "body.height height: 3.0 (override)",
+      "body.length length: 10.0 (override)",
+      "body.tail_length tail_length: 2.0 (override)",
+      "body.width width: 2.0 (override)",
+      "head.height height: 2.0 (override)",
+      "head.horns horns: 1.5 (override)",
+      "head.snout_depth snout_depth: 0.3 (override)",
+      "head.width width: 1.5 (override)",
+      "wing_left.length length: 5.0 (override)",
+      "wing_left.thickness thickness: 0.2 (override)",
+      "wing_left.width width: 2.0 (override)",
+      "wing_right.length length: 5.0 (override)",
+      "wing_right.thickness thickness: 0.2 (override)",
+      "wing_right.width width: 2.0 (override)",
+      "tail.height height: 1.0 (override)",
+      "tail.length length: 4.0 (override)",
+      "tail.width width: 1.0 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "body -> fish:fish_body",
+      "head -> creature:dragon_head",
+      "wing_left -> fantasy:wing",
+      "wing_right -> fantasy:wing",
+      "tail -> fish:tail"
+    ],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "body",
+        "ref": "fish:fish_body",
+        "params": {
+          "length": 10,
+          "height": 3,
+          "width": 2,
+          "fin_size": 0.5,
+          "tail_length": 2
+        },
+        "children": [
+          {
+            "id": "head",
+            "ref": "creature:dragon_head",
+            "at": {
+              "capability": "head_mount"
+            },
+            "params": {
+              "horns": 1.5,
+              "height": 2,
+              "width": 1.5,
+              "snout_depth": 0.3
+            }
+          },
+          {
+            "id": "wing_left",
+            "ref": "fantasy:wing",
+            "at": {
+              "capability": "limb_mount",
+              "side": "l"
+            },
+            "params": {
+              "length": 5,
+              "thickness": 0.2,
+              "width": 2
+            }
+          },
+          {
+            "id": "wing_right",
+            "ref": "fantasy:wing",
+            "at": {
+              "capability": "limb_mount",
+              "side": "r"
+            },
+            "params": {
+              "length": 5,
+              "thickness": 0.2,
+              "width": 2
+            }
+          },
+          {
+            "id": "tail",
+            "ref": "fish:tail",
+            "at": {
+              "capability": "tail_mount"
+            },
+            "params": {
+              "length": 4,
+              "height": 1,
+              "width": 1
+            }
+          }
+        ]
+      }
+    },
+    "repaired": false,
+    "build_describe": "body: fish:fish_body (80 triangoli)\n  head: creature:dragon_head (82 triangoli)\n  wing_left: fantasy:wing (28 triangoli)\n  wing_right: fantasy:wing (28 triangoli)\n  tail: fish:tail (38 triangoli)\ntotale: 256 triangoli, 146 vertici",
+    "report": "risposta vincolata allo schema del piano",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "images": [
+      "07_dragon_llm_front.png",
+      "07_dragon_llm_three_quarter.png",
+      "07_dragon_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      12.809,
+      17.922,
+      5.887
+    ]
+  },
+  {
+    "name": "08_tree",
+    "prompt": "Un albero fantasy con chioma asimmetrica.",
+    "mode": "llm",
+    "seconds": 20.489,
+    "ok": true,
+    "triangles": 400,
+    "planner": "llm",
+    "provider": "cloudflare",
+    "model": "@cf/openai/gpt-oss-20b",
+    "failover": 3,
+    "diagnostics": [
+      "'height' portato da 1 a 1.6  [tree_root/trunk/crown]\n  perche': fuori dall'intervallo dichiarato",
+      "'tree_stylized:crown' e 'tree_stylized:branch' occupano lo stesso posto per il 68%  [tree_root/trunk/crown]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione",
+      "risposta vincolata allo schema del piano",
+      "crown.height = 1, sotto il minimo 1.6  [crown]"
+    ],
+    "describe": "richiesta: Un albero fantasy con chioma asimmetrica.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> cloudflare/@cf/openai/gpt-oss-20b | failover 3\ntree_root: tree_stylized:tree (senza geometria)\n  trunk: tree_stylized:trunk (80 triangoli)\n    crown: tree_stylized:crown (176 triangoli)\n    trunk/branch_l: tree_stylized:branch (36 triangoli)\n    trunk/branch_r: tree_stylized:branch (36 triangoli)\n    trunk/branch_upper: tree_stylized:branch (36 triangoli)\n    trunk/branch_rear: tree_stylized:branch (36 triangoli)\ntotale: 400 triangoli, 224 vertici\n'height' portato da 1 a 1.6  [tree_root/trunk/crown]\n  perche': fuori dall'intervallo dichiarato\n'tree_stylized:crown' e 'tree_stylized:branch' occupano lo stesso posto per il 68%  [tree_root/trunk/crown]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\nrisposta vincolata allo schema del piano\ncrown.height = 1, sotto il minimo 1.6  [crown]",
+    "explain": [
+      "'tree_root' e' la radice: tree_stylized:tree",
+      "'tree_stylized:trunk' scelto per 'trunk': fornisce 'core_mount' (capability)",
+      "'tree_stylized:crown' scelto per 'crown': fornisce 'crown_mount' (capability)",
+      "'tree_stylized:branch' scelto per 'trunk/branch_l': fornisce 'branch_mount' (capability e lato)",
+      "'tree_stylized:branch' scelto per 'trunk/branch_r': fornisce 'branch_mount' (capability e lato)",
+      "'tree_stylized:branch' scelto per 'trunk/branch_upper': fornisce 'branch_mount' (capability e lato)",
+      "'tree_stylized:branch' scelto per 'trunk/branch_rear': fornisce 'branch_mount' (capability e lato)"
+    ],
+    "changes": [
+      "tree_root.asymmetry asymmetry: 0.5 (override)",
+      "tree_root.branch_spread branch_spread: 1.0 (override)",
+      "tree_root.crown_height crown_height: 2.0 (override)",
+      "tree_root.crown_width crown_width: 3.0 (override)",
+      "tree_root.height height: 4.0 (override)",
+      "tree_root.lean lean: 0.0 (override)",
+      "tree_root.trunk_taper trunk_taper: 0.7 (override)",
+      "tree_root.trunk_width trunk_width: 0.5 (override)",
+      "trunk.asymmetry asymmetry: 0.4 (override)",
+      "trunk.branch_spread branch_spread: 1.0 (override)",
+      "trunk.crown_height crown_height: 1.5 (override)",
+      "trunk.crown_width crown_width: 2.5 (override)",
+      "trunk.height height: 3.5 (override)",
+      "trunk.lean lean: 0.1 (override)",
+      "trunk.trunk_taper trunk_taper: 0.6 (override)",
+      "trunk.trunk_width trunk_width: 0.4 (override)",
+      "crown.asymmetry asymmetry: 0.6 (override)",
+      "crown.branch_spread branch_spread: 1.2 (override)",
+      "crown.crown_height crown_height: 1.2 (override)",
+      "crown.crown_width crown_width: 2.0 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "tree_root -> tree_stylized:tree",
+      "trunk -> tree_stylized:trunk",
+      "crown -> tree_stylized:crown",
+      "trunk/branch_l -> tree_stylized:branch",
+      "trunk/branch_r -> tree_stylized:branch",
+      "trunk/branch_upper -> tree_stylized:branch",
+      "trunk/branch_rear -> tree_stylized:branch"
+    ],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "tree_root",
+        "ref": "tree_stylized:tree",
+        "params": {
+          "asymmetry": 0.5,
+          "branch_spread": 1,
+          "crown_height": 2,
+          "crown_width": 3,
+          "height": 4,
+          "lean": 0,
+          "trunk_taper": 0.7,
+          "trunk_width": 0.5
+        },
+        "effects": [],
+        "children": [
+          {
+            "id": "trunk",
+            "ref": "tree_stylized:trunk",
+            "at": {
+              "capability": "core_mount",
+              "side": "l"
+            },
+            "params": {
+              "asymmetry": 0.4,
+              "branch_spread": 1,
+              "crown_height": 1.5,
+              "crown_width": 2.5,
+              "height": 3.5,
+              "lean": 0.1,
+              "trunk_taper": 0.6,
+              "trunk_width": 0.4
+            },
+            "effects": [],
+            "children": [
+              {
+                "id": "crown",
+                "ref": "tree_stylized:crown",
+                "at": {
+                  "capability": "crown_mount",
+                  "side": "l"
+                },
+                "params": {
+                  "asymmetry": 0.6,
+                  "branch_spread": 1.2,
+                  "crown_height": 1.2,
+                  "crown_width": 2,
+                  "height": 1,
+                  "lean": 0,
+                  "trunk_taper": 0.5,
+                  "trunk_width": 0.3
+                },
+                "effects": [],
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "repaired": false,
+    "build_describe": "tree_root: tree_stylized:tree (senza geometria)\n  trunk: tree_stylized:trunk (80 triangoli)\n    crown: tree_stylized:crown (176 triangoli)\n    trunk/branch_l: tree_stylized:branch (36 triangoli)\n    trunk/branch_r: tree_stylized:branch (36 triangoli)\n    trunk/branch_upper: tree_stylized:branch (36 triangoli)\n    trunk/branch_rear: tree_stylized:branch (36 triangoli)\ntotale: 400 triangoli, 224 vertici",
+    "report": "'height' portato da 1 a 1.6  [tree_root/trunk/crown]\n  perche': fuori dall'intervallo dichiarato\n'tree_stylized:crown' e 'tree_stylized:branch' occupano lo stesso posto per il 68%  [tree_root/trunk/crown]\n  perche': non si tengono a vicenda, quindi nessun innesto prevedeva questa sovrapposizione\nrisposta vincolata allo schema del piano\ncrown.height = 1, sotto il minimo 1.6  [crown]",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PARAM_CLAMPED', 'message': \"'height' portato da 1 a 1.6\", 'where': 'tree_root/trunk/crown', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'tree_stylized:crown' e 'tree_stylized:branch' occupano lo stesso posto per il 68%\", 'where': 'tree_root/trunk/crown', 'severity': 'warning'}, {'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}, {'code': 'PARAM_OUT_OF_RANGE', 'message': 'crown.height = 1, sotto il minimo 1.6', 'where': 'crown', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'PARAM_CLAMPED', 'message': \"'height' portato da 1 a 1.6\", 'where': 'tree_root/trunk/crown', 'severity': 'warning'}, {'code': 'PARTS_INTERPENETRATE', 'message': \"'tree_stylized:crown' e 'tree_stylized:branch' occupano lo stesso posto per il 68%\", 'where': 'tree_root/trunk/crown', 'severity': 'warning'}, {'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}, {'code': 'PARAM_OUT_OF_RANGE', 'message': 'crown.height = 1, sotto il minimo 1.6', 'where': 'crown', 'severity': 'info'}]}",
+    "images": [
+      "08_tree_llm_front.png",
+      "08_tree_llm_three_quarter.png",
+      "08_tree_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      3.296,
+      2.8,
+      1.968
+    ]
+  }
+]

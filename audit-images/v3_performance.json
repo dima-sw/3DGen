@@ -1,0 +1,104 @@
+{
+  "runs": 25,
+  "cases": {
+    "wheels 6": {
+      "nodes": 8,
+      "structural_rewrite_ms": {
+        "median": 1.188,
+        "p95": 1.656
+      },
+      "layout_ms": {
+        "median": 0.281,
+        "p95": 0.367
+      },
+      "identities_ms": {
+        "median": 0.042,
+        "p95": 0.059
+      },
+      "resolve_without_trait_ms": {
+        "median": 0.573,
+        "p95": 0.664
+      }
+    },
+    "wheels 8": {
+      "nodes": 10,
+      "structural_rewrite_ms": {
+        "median": 1.575,
+        "p95": 1.974
+      },
+      "layout_ms": {
+        "median": 0.302,
+        "p95": 0.339
+      },
+      "identities_ms": {
+        "median": 0.05,
+        "p95": 0.058
+      },
+      "resolve_without_trait_ms": {
+        "median": 0.641,
+        "p95": 0.757
+      }
+    },
+    "arms 4 d1": {
+      "nodes": 9,
+      "structural_rewrite_ms": {
+        "median": 1.52,
+        "p95": 2.181
+      },
+      "layout_ms": {
+        "median": 0.5,
+        "p95": 0.626
+      },
+      "identities_ms": {
+        "median": 0.049,
+        "p95": 0.061
+      },
+      "resolve_without_trait_ms": {
+        "median": 0.933,
+        "p95": 1.555
+      }
+    },
+    "arms 6 d2": {
+      "nodes": 14,
+      "structural_rewrite_ms": {
+        "median": 5.139,
+        "p95": 5.892
+      },
+      "layout_ms": {
+        "median": 0.766,
+        "p95": 0.851
+      },
+      "identities_ms": {
+        "median": 0.075,
+        "p95": 0.079
+      },
+      "resolve_without_trait_ms": {
+        "median": 4.002,
+        "p95": 5.077
+      }
+    },
+    "tails 9": {
+      "nodes": 16,
+      "structural_rewrite_ms": {
+        "median": 2.727,
+        "p95": 3.679
+      },
+      "layout_ms": {
+        "median": 0.687,
+        "p95": 0.842
+      },
+      "identities_ms": {
+        "median": 0.075,
+        "p95": 0.103
+      },
+      "resolve_without_trait_ms": {
+        "median": 0.746,
+        "p95": 1.349
+      }
+    }
+  },
+  "identities_200_nodes_ms": {
+    "median": 0.61,
+    "p95": 0.924
+  }
+}

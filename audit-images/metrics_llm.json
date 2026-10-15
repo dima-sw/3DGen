@@ -1,0 +1,505 @@
+[
+  {
+    "name": "01_fox",
+    "prompt": "Una volpe cartoon low-poly.",
+    "mode": "llm",
+    "seconds": 3.162,
+    "ok": false,
+    "triangles": 0,
+    "planner": "llm",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "failover": 0,
+    "diagnostics": [
+      "Archetype non disponibile: 'registered:archetype_metadata:felid'  [registered:archetype_metadata:felid]",
+      "Profile non disponibile: 'registered:archetype_metadata:compact_quadruped'  [registered:archetype_metadata:compact_quadruped]",
+      "concept non registrato: 'volpe cartoon low-poly'  [volpe cartoon low-poly]",
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Una volpe cartoon low-poly.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> groq/openai/gpt-oss-120b | failover 0\nArchetype non disponibile: 'registered:archetype_metadata:felid'  [registered:archetype_metadata:felid]\nProfile non disponibile: 'registered:archetype_metadata:compact_quadruped'  [registered:archetype_metadata:compact_quadruped]\nconcept non registrato: 'volpe cartoon low-poly'  [volpe cartoon low-poly]\nrisposta vincolata allo schema del piano",
+    "explain": [],
+    "changes": [],
+    "skipped": [],
+    "components": [],
+    "plan_json": {
+      "concept": {
+        "requested": "volpe cartoon low-poly",
+        "archetypes": [
+          "registered:archetype_metadata:felid"
+        ],
+        "profiles": [
+          "registered:archetype_metadata:compact_quadruped"
+        ],
+        "adaptations": []
+      },
+      "style": "primitives:low_poly",
+      "detail_level": 2
+    },
+    "repaired": false,
+    "report": "Archetype non disponibile: 'registered:archetype_metadata:felid'  [registered:archetype_metadata:felid]\nProfile non disponibile: 'registered:archetype_metadata:compact_quadruped'  [registered:archetype_metadata:compact_quadruped]\nconcept non registrato: 'volpe cartoon low-poly'  [volpe cartoon low-poly]\nrisposta vincolata allo schema del piano",
+    "concept": "{'requested_concept': 'volpe cartoon low-poly', 'semantic_source': 'llm', 'archetypes': [], 'profiles': [], 'candidate_bindings': [], 'selected_binding': '', 'selected_root_implementation': '', 'adaptations': [], 'materialized_traits': [], 'materialized_structural_traits': [], 'materialized_params': {}, 'param_role_preferences': [], 'component_preferences': [], 'style_preferences': [], 'coverage': [], 'unsupported': [], 'conflicts': [], 'provenance': {}, 'diagnostics': [{'code': 'ARCHETYPE_NOT_FOUND', 'message': \"Archetype non disponibile: 'registered:archetype_metadata:felid'\", 'severity': 'error', 'where': 'registered:archetype_metadata:felid'}, {'code': 'PROFILE_NOT_FOUND', 'message': \"Profile non disponibile: 'registered:archetype_metadata:compact_quadruped'\", 'severity': 'error', 'where': 'registered:archetype_metadata:compact_quadruped'}, {'code': 'CONCEPT_UNKNOWN', 'message': \"concept non registrato: 'volpe cartoon low-poly'\", 'severity': 'error', 'where': 'volpe cartoon low-poly'}]}",
+    "images": []
+  },
+  {
+    "name": "02_humanoid",
+    "prompt": "Un umanoide cartoon con testa enorme, gambe corte e mani grandi.",
+    "mode": "llm",
+    "seconds": 68.011,
+    "ok": false,
+    "triangles": 0,
+    "planner": "llm",
+    "provider": "cloudflare",
+    "model": "@cf/openai/gpt-oss-20b",
+    "failover": 3,
+    "diagnostics": [
+      "Archetype non disponibile: 'registered:archetype_metadata:animal'  [registered:archetype_metadata:animal]",
+      "concept non registrato: 'humanoid cartoon'  [humanoid cartoon]",
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Un umanoide cartoon con testa enorme, gambe corte e mani grandi.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> cloudflare/@cf/openai/gpt-oss-20b | failover 3\nArchetype non disponibile: 'registered:archetype_metadata:animal'  [registered:archetype_metadata:animal]\nconcept non registrato: 'humanoid cartoon'  [humanoid cartoon]\nrisposta vincolata allo schema del piano",
+    "explain": [],
+    "changes": [],
+    "skipped": [],
+    "components": [],
+    "plan_json": {
+      "concept": {
+        "requested": "humanoid cartoon",
+        "archetypes": [
+          "registered:archetype_metadata:animal"
+        ],
+        "profiles": [],
+        "adaptations": [
+          {
+            "trait": "registered:body_mass",
+            "value": 0.8
+          }
+        ]
+      },
+      "style": "primitives:low_poly",
+      "detail_level": 2
+    },
+    "repaired": false,
+    "report": "Archetype non disponibile: 'registered:archetype_metadata:animal'  [registered:archetype_metadata:animal]\nconcept non registrato: 'humanoid cartoon'  [humanoid cartoon]\nrisposta vincolata allo schema del piano",
+    "concept": "{'requested_concept': 'humanoid cartoon', 'semantic_source': 'llm', 'archetypes': [], 'profiles': [], 'candidate_bindings': [], 'selected_binding': '', 'selected_root_implementation': '', 'adaptations': [], 'materialized_traits': [], 'materialized_structural_traits': [], 'materialized_params': {}, 'param_role_preferences': [], 'component_preferences': [], 'style_preferences': [], 'coverage': [], 'unsupported': [], 'conflicts': [], 'provenance': {}, 'diagnostics': [{'code': 'ARCHETYPE_NOT_FOUND', 'message': \"Archetype non disponibile: 'registered:archetype_metadata:animal'\", 'severity': 'error', 'where': 'registered:archetype_metadata:animal'}, {'code': 'CONCEPT_UNKNOWN', 'message': \"concept non registrato: 'humanoid cartoon'\", 'severity': 'error', 'where': 'humanoid cartoon'}]}",
+    "images": []
+  },
+  {
+    "name": "03_robot4arms",
+    "prompt": "Un robot con quattro braccia.",
+    "mode": "llm",
+    "seconds": 2.696,
+    "ok": false,
+    "triangles": 0,
+    "planner": "llm",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "failover": 0,
+    "diagnostics": [
+      "concept non registrato: 'robot with four arms'  [robot with four arms]",
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Un robot con quattro braccia.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> groq/openai/gpt-oss-120b | failover 0\nconcept non registrato: 'robot with four arms'  [robot with four arms]\nrisposta vincolata allo schema del piano",
+    "explain": [],
+    "changes": [],
+    "skipped": [],
+    "components": [],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "concept": {
+        "requested": "robot with four arms"
+      },
+      "structural_traits": [
+        {
+          "trait": "arm_count",
+          "value": 4
+        }
+      ]
+    },
+    "repaired": false,
+    "report": "concept non registrato: 'robot with four arms'  [robot with four arms]\nrisposta vincolata allo schema del piano",
+    "concept": "{'requested_concept': 'robot with four arms', 'semantic_source': 'llm', 'archetypes': [], 'profiles': [], 'candidate_bindings': [], 'selected_binding': '', 'selected_root_implementation': '', 'adaptations': [], 'materialized_traits': [], 'materialized_structural_traits': [], 'materialized_params': {}, 'param_role_preferences': [], 'component_preferences': [], 'style_preferences': [], 'coverage': [], 'unsupported': [], 'conflicts': [], 'provenance': {}, 'diagnostics': [{'code': 'CONCEPT_UNKNOWN', 'message': \"concept non registrato: 'robot with four arms'\", 'severity': 'error', 'where': 'robot with four arms'}]}",
+    "images": []
+  },
+  {
+    "name": "04_jeep6wheels",
+    "prompt": "Una jeep cartoon con sei ruote.",
+    "mode": "llm",
+    "seconds": 147.36,
+    "ok": true,
+    "triangles": 56,
+    "planner": "mock_fallback",
+    "provider": "",
+    "model": "",
+    "failover": 9,
+    "diagnostics": [
+      "il planner remoto non ha risposto: Groq: Groq ha risposto 429: {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_[redacted]` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7851, Requested 7809. Please try again in 57.45s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}  | Google Gemini: Google Gemini ha risposto 503: [{   \"error\": {     \"code\": 503,     \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",     \"status\": \"UNAVAILABLE\"   } } ] | Mistral: Mistral ha risposto 429: {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429} | Cloudflare Workers AI: nessun JSON nella risposta del modello | NVIDIA NIM: NVIDIA NIM irraggiungibile: HTTPSConnectionPool(host='integrate.api.nvidia.com', port=443): Read timed out. (read timeout=60) | Cerebras: Cerebras ha risposto 402: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"} | Cohere: JSON malformato: Extra data: line 1 column 51 (char 50) | HuggingFace: HuggingFace ha risposto 402: {\"error\":\"You have no remaining credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get monthly included credits.\"} | OpenRouter: nessun JSON nella risposta del modello | Ollama (locale): Ollama (locale) irraggiungibile: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000120ED869090>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+    ],
+    "describe": "richiesta: Una jeep cartoon con sei ruote.\nplanner: mock_fallback\nAI: groq/openai/gpt-oss-120b -> nessuno | failover 9\nhelmet: accessories:helmet (56 triangoli)\ntotale: 56 triangoli, 32 vertici\nil planner remoto non ha risposto: Groq: Groq ha risposto 429: {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_[redacted]` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7851, Requested 7809. Please try again in 57.45s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}  | Google Gemini: Google Gemini ha risposto 503: [{   \"error\": {     \"code\": 503,     \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",     \"status\": \"UNAVAILABLE\"   } } ] | Mistral: Mistral ha risposto 429: {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429} | Cloudflare Workers AI: nessun JSON nella risposta del modello | NVIDIA NIM: NVIDIA NIM irraggiungibile: HTTPSConnectionPool(host='integrate.api.nvidia.com', port=443): Read timed out. (read timeout=60) | Cerebras: Cerebras ha risposto 402: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"} | Cohere: JSON malformato: Extra data: line 1 column 51 (char 50) | HuggingFace: HuggingFace ha risposto 402: {\"error\":\"You have no remaining credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get monthly included credits.\"} | OpenRouter: nessun JSON nella risposta del modello | Ollama (locale): Ollama (locale) irraggiungibile: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000120ED869090>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "explain": [
+      "'helmet' e' la radice: accessories:helmet"
+    ],
+    "changes": [],
+    "skipped": [],
+    "components": [
+      "helmet -> accessories:helmet"
+    ],
+    "plan_json": {
+      "version": "1.0",
+      "style": "low_poly",
+      "detail_level": 2,
+      "seed": 0,
+      "root": {
+        "id": "helmet",
+        "ref": "accessories:helmet"
+      }
+    },
+    "repaired": false,
+    "build_describe": "helmet: accessories:helmet (56 triangoli)\ntotale: 56 triangoli, 32 vertici",
+    "report": "il planner remoto non ha risposto: Groq: Groq ha risposto 429: {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_[redacted]` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7851, Requested 7809. Please try again in 57.45s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}  | Google Gemini: Google Gemini ha risposto 503: [{   \"error\": {     \"code\": 503,     \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",     \"status\": \"UNAVAILABLE\"   } } ] | Mistral: Mistral ha risposto 429: {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429} | Cloudflare Workers AI: nessun JSON nella risposta del modello | NVIDIA NIM: NVIDIA NIM irraggiungibile: HTTPSConnectionPool(host='integrate.api.nvidia.com', port=443): Read timed out. (read timeout=60) | Cerebras: Cerebras ha risposto 402: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"} | Cohere: JSON malformato: Extra data: line 1 column 51 (char 50) | HuggingFace: HuggingFace ha risposto 402: {\"error\":\"You have no remaining credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get monthly included credits.\"} | OpenRouter: nessun JSON nella risposta del modello | Ollama (locale): Ollama (locale) irraggiungibile: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /v1/chat/completions (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000120ED869090>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'il planner remoto non ha risposto: Groq: Groq ha risposto 429: {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_[redacted]` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7851, Requested 7809. Please try again in 57.45s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}  | Google Gemini: Google Gemini ha risposto 503: [{   \"error\": {     \"code\": 503,     \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",     \"status\": \"UNAVAILABLE\"   } } ] | Mistral: Mistral ha risposto 429: {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429} | Cloudflare Workers AI: nessun JSON nella risposta del modello | NVIDIA NIM: NVIDIA NIM irraggiungibile: HTTPSConnectionPool(host=\\'integrate.api.nvidia.com\\', port=443): Read timed out. (read timeout=60) | Cerebras: Cerebras ha risposto 402: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"} | Cohere: JSON malformato: Extra data: line 1 column 51 (char 50) | HuggingFace: HuggingFace ha risposto 402: {\"error\":\"You h",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'il planner remoto non ha risposto: Groq: Groq ha risposto 429: {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organization `org_[redacted]` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7851, Requested 7809. Please try again in 57.45s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}  | Google Gemini: Google Gemini ha risposto 503: [{   \"error\": {     \"code\": 503,     \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",     \"status\": \"UNAVAILABLE\"   } } ] | Mistral: Mistral ha risposto 429: {\"object\":\"error\",\"message\":\"Rate limit exceeded\",\"type\":\"rate_limited\",\"param\":null,\"code\":\"1300\",\"raw_status_code\":429} | Cloudflare Workers AI: nessun JSON nella risposta del modello | NVIDIA NIM: NVIDIA NIM irraggiungibile: HTTPSConnectionPool(host=\\'integrate.api.nvidia.com\\', port=443): Read timed out. (read timeout=60) | Cerebras: Cerebras ha risposto 402: {\"message\":\"Payment required to access this resource. Visit your billing tab.\",\"type\":\"payment_required_error\",\"param\":\"quota\",\"code\":\"payment_required\"} | Cohere: JSON malformato: Extra data: line 1 column 51 (char 50) | HuggingFace: HuggingFace ha risposto 402: {\"error\":\"You have no rem",
+    "images": [
+      "04_jeep6wheels_llm_front.png",
+      "04_jeep6wheels_llm_three_quarter.png",
+      "04_jeep6wheels_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      0.265,
+      0.15,
+      0.24
+    ]
+  },
+  {
+    "name": "05_fishman",
+    "prompt": "Un pesce con corpo umanoide.",
+    "mode": "llm",
+    "seconds": 34.843,
+    "ok": true,
+    "triangles": 198,
+    "planner": "llm",
+    "provider": "cloudflare",
+    "model": "@cf/openai/gpt-oss-20b",
+    "failover": 3,
+    "diagnostics": [
+      "'fish:fish_body' non ha un innesto per capability 'core_mount' + lato 'l'  [fish_body_01/humanoid_body_01]\n  perche': offre: gear_mount @dorso, head_mount @testa, limb_mount l @pinna_l, limb_mount l @ventrale_l, limb_mount r @pinna_r, limb_mount r @ventrale_r, segment @corpo, tail_mount @coda\n  alternative: fox_stylized:fox, humanoid:body, humanoid_anatomical:body, tree_stylized:tree",
+      "risposta vincolata allo schema del piano",
+      "la correzione non ha migliorato il piano\n  perche': punteggio 1250 (unresolved=1, attachment=1) prima, 1250 (unresolved=1, attachment=1) dopo (piu' basso e' meglio)"
+    ],
+    "describe": "richiesta: Un pesce con corpo umanoide.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> cloudflare/@cf/openai/gpt-oss-20b | failover 3\nfish_body_01: fish:fish_body (80 triangoli)\n  humanoid_head_01: humanoid:head (80 triangoli)\n  fish_body_01/coda: fish:tail (38 triangoli)\ntotale: 198 triangoli, 109 vertici\n'fish:fish_body' non ha un innesto per capability 'core_mount' + lato 'l'  [fish_body_01/humanoid_body_01]\n  perche': offre: gear_mount @dorso, head_mount @testa, limb_mount l @pinna_l, limb_mount l @ventrale_l, limb_mount r @pinna_r, limb_mount r @ventrale_r, segment @corpo, tail_mount @coda\n  alternative: fox_stylized:fox, humanoid:body, humanoid_anatomical:body, tree_stylized:tree\nrisposta vincolata allo schema del piano\nla correzione non ha migliorato il piano\n  perche': punteggio 1250 (unresolved=1, attachment=1) prima, 1250 (unresolved=1, attachment=1) dopo (piu' basso e' meglio)",
+    "explain": [
+      "'fish_body_01' e' la radice: fish:fish_body",
+      "'humanoid:head' scelto per 'humanoid_head_01': fornisce 'head_mount' (capability)",
+      "'fish:tail' scelto per 'fish_body_01/coda': fornisce 'tail_mount' (capability)"
+    ],
+    "changes": [
+      "fish_body_01.fin_size fin_size: 0.5 (override)",
+      "fish_body_01.height height: 1.0 (override)",
+      "fish_body_01.length length: 5.0 (override)",
+      "fish_body_01.tail_length tail_length: 1.0 (override)",
+      "fish_body_01.width width: 1.0 (override)",
+      "humanoid_head_01.eye_size eye_size: 1.0 (override)",
+      "humanoid_head_01.flat flat: 0.8 (override)",
+      "humanoid_head_01.girth girth: 0.070702 (derived = length * 0.46)",
+      "humanoid_head_01.hair hair: 0.3 (override)",
+      "humanoid_head_01.length length: 0.1537 (derived = root.height * 0.1537)",
+      "humanoid_head_01.muzzle muzzle: 0.2 (override)",
+      "humanoid_head_01.squash squash: 0.1 (override)",
+      "fish_body_01/coda.height height: 0.5 (override)",
+      "fish_body_01/coda.length length: 1.0 (override)",
+      "fish_body_01/coda.width width: 0.9 (override)"
+    ],
+    "skipped": [
+      "humanoid_body_01"
+    ],
+    "components": [
+      "fish_body_01 -> fish:fish_body",
+      "humanoid_head_01 -> humanoid:head",
+      "fish_body_01/coda -> fish:tail"
+    ],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "fish_body_01",
+        "ref": "fish:fish_body",
+        "params": {
+          "fin_size": 0.5,
+          "height": 1.0,
+          "length": 5.0,
+          "tail_length": 1.0,
+          "width": 1.0
+        },
+        "children": [
+          {
+            "id": "humanoid_body_01",
+            "ref": "humanoid:body",
+            "at": {
+              "capability": "core_mount",
+              "side": "l"
+            },
+            "params": {
+              "height": 2.0
+            }
+          },
+          {
+            "id": "humanoid_head_01",
+            "ref": "humanoid:head",
+            "at": {
+              "capability": "head_mount",
+              "side": "l"
+            },
+            "params": {
+              "eye_size": 1.0,
+              "flat": 0.8,
+              "hair": 0.3,
+              "muzzle": 0.2,
+              "squash": 0.1
+            }
+          }
+        ]
+      }
+    },
+    "repaired": false,
+    "build_describe": "fish_body_01: fish:fish_body (80 triangoli)\n  humanoid_head_01: humanoid:head (80 triangoli)\n  fish_body_01/coda: fish:tail (38 triangoli)\ntotale: 198 triangoli, 109 vertici",
+    "report": "'fish:fish_body' non ha un innesto per capability 'core_mount' + lato 'l'  [fish_body_01/humanoid_body_01]\n  perche': offre: gear_mount @dorso, head_mount @testa, limb_mount l @pinna_l, limb_mount l @ventrale_l, limb_mount r @pinna_r, limb_mount r @ventrale_r, segment @corpo, tail_mount @coda\n  alternative: fox_stylized:fox, humanoid:body, humanoid_anatomical:body, tree_stylized:tree\nrisposta vincolata allo schema del piano\nla correzione non ha migliorato il piano\n  perche': punteggio 1250 (unresolved=1, attachment=1) prima, 1250 (unresolved=1, attachment=1) dopo (piu' basso e' meglio)",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'SOCKET_INCOMPATIBLE', 'message': \"'fish:fish_body' non ha un innesto per capability 'core_mount' + lato 'l'\", 'where': 'fish_body_01/humanoid_body_01', 'severity': 'error'}, {'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}, {'code': 'REPAIR_NOT_BETTER', 'message': 'la correzione non ha migliorato il piano', 'where': '', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'SOCKET_INCOMPATIBLE', 'message': \"'fish:fish_body' non ha un innesto per capability 'core_mount' + lato 'l'\", 'where': 'fish_body_01/humanoid_body_01', 'severity': 'error'}, {'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}, {'code': 'REPAIR_NOT_BETTER', 'message': 'la correzione non ha migliorato il piano', 'where': '', 'severity': 'info'}]}",
+    "images": [
+      "05_fishman_llm_front.png",
+      "05_fishman_llm_three_quarter.png",
+      "05_fishman_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      1.926,
+      5.84,
+      1.962
+    ]
+  },
+  {
+    "name": "06_house",
+    "prompt": "Una casa alta, slanciata e leggermente curva.",
+    "mode": "llm",
+    "seconds": 20.897,
+    "ok": false,
+    "triangles": 0,
+    "planner": "llm",
+    "provider": "cloudflare",
+    "model": "@cf/openai/gpt-oss-20b",
+    "failover": 3,
+    "diagnostics": [
+      "l'effetto 'fx:bend' non ha un parametro 'params'  [house1]\n  perche': un nome inventato sembra una richiesta e non lo e'\n  alternative: along, axis",
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Una casa alta, slanciata e leggermente curva.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> cloudflare/@cf/openai/gpt-oss-20b | failover 3\nl'effetto 'fx:bend' non ha un parametro 'params'  [house1]\n  perche': un nome inventato sembra una richiesta e non lo e'\n  alternative: along, axis\nrisposta vincolata allo schema del piano",
+    "explain": [],
+    "changes": [],
+    "skipped": [],
+    "components": [],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "house1",
+        "ref": "architecture:house",
+        "params": {
+          "depth": 10,
+          "height": 20,
+          "roof_pitch": 0.5,
+          "width": 8
+        },
+        "effects": [
+          {
+            "type": "fx:bend",
+            "scope": "model",
+            "amount": 0.2,
+            "params": {
+              "along": "Y",
+              "axis": "Z"
+            }
+          }
+        ],
+        "children": [
+          {
+            "id": "roof1",
+            "ref": "architecture:roof",
+            "at": {
+              "capability": "roof_mount",
+              "side": "l"
+            },
+            "params": {
+              "depth": 8,
+              "pitch": 0.3,
+              "width": 8
+            }
+          },
+          {
+            "id": "window_left",
+            "ref": "architecture:window",
+            "at": {
+              "capability": "opening:l",
+              "side": "l"
+            },
+            "params": {
+              "height": 3,
+              "width": 2,
+              "thickness": 0.1
+            }
+          },
+          {
+            "id": "window_right",
+            "ref": "architecture:window",
+            "at": {
+              "capability": "opening:r",
+              "side": "r"
+            },
+            "params": {
+              "height": 3,
+              "width": 2,
+              "thickness": 0.1
+            }
+          }
+        ]
+      }
+    },
+    "repaired": false,
+    "report": "l'effetto 'fx:bend' non ha un parametro 'params'  [house1]\n  perche': un nome inventato sembra una richiesta e non lo e'\n  alternative: along, axis\nrisposta vincolata allo schema del piano",
+    "images": []
+  },
+  {
+    "name": "07_dragon",
+    "prompt": "Un drago cartoon con ali, corna e coda.",
+    "mode": "llm",
+    "seconds": 2.578,
+    "ok": false,
+    "triangles": 0,
+    "planner": "llm",
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "failover": 0,
+    "diagnostics": [
+      "nessuna implementation compatibile per 'drago_cartoon'  [drago_cartoon]",
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Un drago cartoon con ali, corna e coda.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> groq/openai/gpt-oss-120b | failover 0\nnessuna implementation compatibile per 'drago_cartoon'  [drago_cartoon]\nrisposta vincolata allo schema del piano",
+    "explain": [],
+    "changes": [],
+    "skipped": [],
+    "components": [],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "concept": {
+        "requested": "drago_cartoon",
+        "archetypes": [
+          "archetype_metadata:quadruped",
+          "archetype_metadata:raptor"
+        ],
+        "profiles": [
+          "archetype_metadata:compact_quadruped"
+        ],
+        "adaptations": []
+      }
+    },
+    "repaired": false,
+    "report": "nessuna implementation compatibile per 'drago_cartoon'  [drago_cartoon]\nrisposta vincolata allo schema del piano",
+    "concept": "{'requested_concept': 'drago_cartoon', 'semantic_source': 'llm', 'archetypes': ['archetype_metadata:animal', 'archetype_metadata:quadruped', 'archetype_metadata:bird', 'archetype_metadata:raptor'], 'profiles': ['archetype_metadata:compact_quadruped'], 'candidate_bindings': [{'candidate': 'archetype_metadata:fox_quadruped', 'hard_compatible': False, 'match': 'exact', 'supported': [], 'unsupported': [], 'conflicting': [{'kind': 'required_capability', 'source': 'archetype_metadata:bird', 'alternatives': ['bird']}], 'preferred_hits': 1, 'score': [2, 0, 1, 2, 0, -1, -4], 'reasons': ['binding=archetype_metadata:fox_quadruped', 'hard requirements failed']}], 'selected_binding': '', 'selected_root_implementation': '', 'adaptations': [], 'materialized_traits': [], 'materialized_structural_traits': [], 'materialized_params': {}, 'param_role_preferences': [], 'component_preferences': [], 'style_preferences': [], 'coverage': [{'candidate': 'archetype_metadata:fox_quadruped', 'hard_compatible': False, 'match': 'exact', 'supported': [], 'unsupported': [], 'conflicting': [{'kind': 'required_capability', 'source': 'archetype_metadata:bird', 'alternatives': ['bird']}], 'preferred_hits': 1, 'score': [2, 0, 1, 2, 0, -1, -4], 'reasons': ['binding=archetype_metadata:fox_quadruped', 'hard requirements failed']}], 'unsupported': [], 'conflicts': [], 'provenance': {'materialized_defaults': [{'channel': ['std:body_mass', 'root', 'subtree', ''], 'source': 'archetype_metadata:compact_quadruped', 'value': 0.58}], 'implementation_hint': ''}, 'diagnostics': [{'code': 'IMPLEMENTATION_NOT_FOUND', 'message': \"nessuna implementation compatibile per 'drago_cartoon'\", 'severity': 'error', 'where': 'drago_cartoon'}]}",
+    "images": []
+  },
+  {
+    "name": "08_tree",
+    "prompt": "Un albero fantasy con chioma asimmetrica.",
+    "mode": "llm",
+    "seconds": 74.324,
+    "ok": true,
+    "triangles": 400,
+    "planner": "llm",
+    "provider": "nvidia_nim",
+    "model": "openai/gpt-oss-20b",
+    "failover": 4,
+    "diagnostics": [
+      "risposta vincolata allo schema del piano"
+    ],
+    "describe": "richiesta: Un albero fantasy con chioma asimmetrica.\nplanner: llm\nAI: groq/openai/gpt-oss-120b -> nvidia_nim/openai/gpt-oss-20b | failover 4\nfantasy_tree_01: tree_stylized:tree (senza geometria)\n  fantasy_tree_01/trunk: tree_stylized:trunk (80 triangoli)\n    fantasy_tree_01/trunk/branch_l: tree_stylized:branch (36 triangoli)\n    fantasy_tree_01/trunk/branch_r: tree_stylized:branch (36 triangoli)\n    fantasy_tree_01/trunk/branch_upper: tree_stylized:branch (36 triangoli)\n    fantasy_tree_01/trunk/crown: tree_stylized:crown (176 triangoli)\n    fantasy_tree_01/trunk/branch_rear: tree_stylized:branch (36 triangoli)\ntotale: 400 triangoli, 224 vertici\nrisposta vincolata allo schema del piano",
+    "explain": [
+      "'fantasy_tree_01' e' la radice: tree_stylized:tree",
+      "'tree_stylized:trunk' scelto per 'fantasy_tree_01/trunk': fornisce 'core_mount' (capability)",
+      "'tree_stylized:branch' scelto per 'fantasy_tree_01/trunk/branch_l': fornisce 'branch_mount' (capability e lato)",
+      "'tree_stylized:branch' scelto per 'fantasy_tree_01/trunk/branch_r': fornisce 'branch_mount' (capability e lato)",
+      "'tree_stylized:branch' scelto per 'fantasy_tree_01/trunk/branch_upper': fornisce 'branch_mount' (capability e lato)",
+      "'tree_stylized:crown' scelto per 'fantasy_tree_01/trunk/crown': fornisce 'crown_mount' (capability)",
+      "'tree_stylized:branch' scelto per 'fantasy_tree_01/trunk/branch_rear': fornisce 'branch_mount' (capability e lato)"
+    ],
+    "changes": [
+      "fantasy_tree_01.asymmetry asymmetry: 0.7 (override)",
+      "fantasy_tree_01.branch_spread branch_spread: 1.0 (override)",
+      "fantasy_tree_01.crown_height crown_height: 3.0 (override)",
+      "fantasy_tree_01.crown_width crown_width: 3.0 (override)",
+      "fantasy_tree_01.height height: 4.0 (override)",
+      "fantasy_tree_01.lean lean: 0.1 (override)",
+      "fantasy_tree_01.trunk_taper trunk_taper: 0.6 (override)",
+      "fantasy_tree_01.trunk_width trunk_width: 0.5 (override)",
+      "fantasy_tree_01/trunk.asymmetry asymmetry: 0.7 (override)",
+      "fantasy_tree_01/trunk.branch_spread branch_spread: 1.0 (override)",
+      "fantasy_tree_01/trunk.crown_height crown_height: 3.0 (override)",
+      "fantasy_tree_01/trunk.crown_width crown_width: 3.0 (override)",
+      "fantasy_tree_01/trunk.height height: 4.0 (override)",
+      "fantasy_tree_01/trunk.lean lean: 0.1 (override)",
+      "fantasy_tree_01/trunk.trunk_taper trunk_taper: 0.6 (override)",
+      "fantasy_tree_01/trunk.trunk_width trunk_width: 0.5 (override)",
+      "fantasy_tree_01/trunk/branch_l.accent accent: 1.0 (override)",
+      "fantasy_tree_01/trunk/branch_l.asymmetry asymmetry: 0.7 (override)",
+      "fantasy_tree_01/trunk/branch_l.depth depth: 4.0 (override)",
+      "fantasy_tree_01/trunk/branch_l.length length: 1.56 (override)"
+    ],
+    "skipped": [],
+    "components": [
+      "fantasy_tree_01 -> tree_stylized:tree",
+      "fantasy_tree_01/trunk -> tree_stylized:trunk",
+      "fantasy_tree_01/trunk/branch_l -> tree_stylized:branch",
+      "fantasy_tree_01/trunk/branch_r -> tree_stylized:branch",
+      "fantasy_tree_01/trunk/branch_upper -> tree_stylized:branch",
+      "fantasy_tree_01/trunk/crown -> tree_stylized:crown",
+      "fantasy_tree_01/trunk/branch_rear -> tree_stylized:branch"
+    ],
+    "plan_json": {
+      "style": "primitives:low_poly",
+      "detail_level": 2,
+      "root": {
+        "id": "fantasy_tree_01",
+        "ref": "tree_stylized:tree",
+        "params": {
+          "asymmetry": 0.7,
+          "branch_spread": 1.0,
+          "crown_height": 3.0,
+          "crown_width": 3.0,
+          "height": 4.0,
+          "lean": 0.1,
+          "trunk_taper": 0.6,
+          "trunk_width": 0.5
+        }
+      }
+    },
+    "repaired": false,
+    "build_describe": "fantasy_tree_01: tree_stylized:tree (senza geometria)\n  fantasy_tree_01/trunk: tree_stylized:trunk (80 triangoli)\n    fantasy_tree_01/trunk/branch_l: tree_stylized:branch (36 triangoli)\n    fantasy_tree_01/trunk/branch_r: tree_stylized:branch (36 triangoli)\n    fantasy_tree_01/trunk/branch_upper: tree_stylized:branch (36 triangoli)\n    fantasy_tree_01/trunk/crown: tree_stylized:crown (176 triangoli)\n    fantasy_tree_01/trunk/branch_rear: tree_stylized:branch (36 triangoli)\ntotale: 400 triangoli, 224 vertici",
+    "report": "risposta vincolata allo schema del piano",
+    "layout": "{'placements': [], 'problems': [], 'provenance': []}",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "traits_res": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': [{'code': 'PLANNER_NOTE', 'message': 'risposta vincolata allo schema del piano', 'where': '', 'severity': 'info'}]}",
+    "images": [
+      "08_tree_llm_front.png",
+      "08_tree_llm_three_quarter.png",
+      "08_tree_llm_side.png"
+    ],
+    "parts": 0,
+    "bbox": [
+      5.001,
+      3.933,
+      2.952
+    ]
+  }
+]

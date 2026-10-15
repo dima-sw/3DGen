@@ -1,0 +1,278 @@
+[
+  {
+    "name": "m01_fox",
+    "ok": true,
+    "tris": 476,
+    "seconds": 0.289,
+    "nodes": 15,
+    "refs": [
+      "fox->fox_stylized:fox",
+      "fox/body->fox_stylized:body",
+      "fox/body/head->fox_stylized:head",
+      "fox/body/head/ears->fox_stylized:ears",
+      "fox/body/head/ears/inner_l->fox_stylized:inner_ear",
+      "fox/body/head/ears/inner_r->fox_stylized:inner_ear",
+      "fox/body/head/eye_l->fox_stylized:face_accents",
+      "fox/body/head/eye_r->fox_stylized:face_accents",
+      "fox/body/head/nose->fox_stylized:face_accents",
+      "fox/body/front_l->fox_stylized:leg",
+      "fox/body/front_r->fox_stylized:leg",
+      "fox/body/rear_l->fox_stylized:leg",
+      "fox/body/rear_r->fox_stylized:leg",
+      "fox/body/tail->fox_stylized:tail",
+      "fox/body/tail/tail_tip->fox_stylized:tail_tip"
+    ],
+    "diag": [],
+    "report": "",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': []}",
+    "traits": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': []}",
+    "concept": "",
+    "images": [
+      "m01_fox_front.png",
+      "m01_fox_three_quarter.png",
+      "m01_fox_side.png"
+    ]
+  },
+  {
+    "name": "m01b_fox_concept",
+    "ok": false,
+    "tris": 0,
+    "seconds": 0.033,
+    "nodes": 0,
+    "refs": [],
+    "diag": [
+      "un piano concept deve essere materializzato dal backend  [concept]"
+    ],
+    "report": "un piano concept deve essere materializzato dal backend  [concept]",
+    "structural": "",
+    "traits": "",
+    "concept": ""
+  },
+  {
+    "name": "m02_humanoid_cartoon",
+    "ok": true,
+    "tris": 1142,
+    "seconds": 0.141,
+    "nodes": 37,
+    "refs": [
+      "body->humanoid_anatomical:body",
+      "body/torso->humanoid_anatomical:torso",
+      "body/torso/pelvis->humanoid_anatomical:pelvis",
+      "body/torso/abdomen->humanoid_anatomical:abdomen",
+      "body/torso/ribcage->humanoid_anatomical:ribcage",
+      "body/torso/neck->humanoid_anatomical:neck",
+      "body/torso/neck/head->humanoid_anatomical:head",
+      "body/torso/neck/head/nose->humanoid_anatomical:nose",
+      "body/torso/neck/head/mouth->humanoid_anatomical:mouth",
+      "body/torso/neck/head/eye_l->humanoid_anatomical:eye",
+      "body/torso/neck/head/ear_l->humanoid_anatomical:ear",
+      "body/torso/neck/head/eye_r->humanoid_anatomical:eye",
+      "body/torso/neck/head/ear_r->humanoid_anatomical:ear",
+      "body/torso/shoulder_l->humanoid_anatomical:shoulder",
+      "body/torso/shoulder_l/upper_arm->humanoid_anatomical:upper_arm",
+      "body/torso/shoulder_l/upper_arm/elbow->humanoid_anatomical:elbow",
+      "body/torso/shoulder_l/upper_arm/elbow/forearm->humanoid_anatomical:forearm",
+      "body/torso/shoulder_l/upper_arm/elbow/forearm/wrist->humanoid_anatomical:wrist",
+      "body/torso/shoulder_l/upper_arm/elbow/forearm/wrist/hand->humanoid_anatomical:hand",
+      "body/torso/hip_l->humanoid_anatomical:hip",
+      "body/torso/hip_l/thigh->humanoid_anatomical:thigh",
+      "body/torso/hip_l/thigh/knee->humanoid_anatomical:knee",
+      "body/torso/hip_l/thigh/knee/calf->humanoid_anatomical:calf",
+      "body/torso/hip_l/thigh/knee/calf/ankle->humanoid_anatomical:ankle",
+      "body/torso/hip_l/thigh/knee/calf/ankle/foot->humanoid_anatomical:foot",
+      "body/torso/shoulder_r->humanoid_anatomical:shoulder",
+      "body/torso/shoulder_r/upper_arm->humanoid_anatomical:upper_arm",
+      "body/torso/shoulder_r/upper_arm/elbow->humanoid_anatomical:elbow",
+      "body/torso/shoulder_r/upper_arm/elbow/forearm->humanoid_anatomical:forearm",
+      "body/torso/shoulder_r/upper_arm/elbow/forearm/wrist->humanoid_anatomical:wrist",
+      "body/torso/shoulder_r/upper_arm/elbow/forearm/wrist/hand->humanoid_anatomical:hand",
+      "body/torso/hip_r->humanoid_anatomical:hip",
+      "body/torso/hip_r/thigh->humanoid_anatomical:thigh",
+      "body/torso/hip_r/thigh/knee->humanoid_anatomical:knee",
+      "body/torso/hip_r/thigh/knee/calf->humanoid_anatomical:calf",
+      "body/torso/hip_r/thigh/knee/calf/ankle->humanoid_anatomical:ankle",
+      "body/torso/hip_r/thigh/knee/calf/ankle/foot->humanoid_anatomical:foot"
+    ],
+    "diag": [
+      "'std:body_mass' non ha regole compatibili su 'humanoid_anatomical:neck'  [body/torso/neck]",
+      "'fx:chunky' non si riapplica dentro 'torso'  [body/torso/pelvis]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto",
+      "'fx:chunky' non si riapplica dentro 'torso'  [body/torso/abdomen]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto",
+      "'fx:chunky' non si riapplica dentro 'torso'  [body/torso/ribcage]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto",
+      "'fx:chunky' non si riapplica dentro 'arm'  [body/torso/shoulder_l/upper_arm]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto",
+      "'fx:chunky' non si riapplica dentro 'leg'  [body/torso/hip_l/thigh]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto",
+      "'fx:chunky' non si riapplica dentro 'arm'  [body/torso/shoulder_r/upper_arm]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto",
+      "'fx:chunky' non si riapplica dentro 'leg'  [body/torso/hip_r/thigh]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto"
+    ],
+    "report": "'std:body_mass' non ha regole compatibili su 'humanoid_anatomical:neck'  [body/torso/neck]\n'fx:chunky' non si riapplica dentro 'torso'  [body/torso/pelvis]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto\n'fx:chunky' non si riapplica dentro 'torso'  [body/torso/abdomen]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto\n'fx:chunky' non si riapplica dentro 'torso'  [body/torso/ribcage]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto\n'fx:chunky' non si riapplica dentro 'arm'  [body/torso/shoulder_l/upper_arm]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto\n'fx:chunky' non si riapplica dentro 'leg'  [body/torso/hip_l/thigh]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto\n'fx:chunky' non si riapplica dentro 'arm'  [body/torso/shoulder_r/upper_arm]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto\n'fx:chunky' non si riapplica dentro 'leg'  [body/torso/hip_r/thigh]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto\n'fx:chunky' non si riapplica dentro 'arm'  [body/torso/shoulder_l/upper_arm/elbow]\n  perche': un antenato con lo stesso ruolo l'ha gia' ricevuto\n'fx:chunky' non si riapplica dentro 'leg'  ",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'TRAIT_UNSUPPORTED', 'message': \"'std:body_mass' non ha regole compatibili su 'humanoid_anatomical:neck'\", 'where': 'body/torso/neck', 'severity': 'info'}, {'code': 'EFFECT_SKIPPED_IN_LINEAGE', 'message': \"'fx:chunky' non si riapplica dentro 'torso'\", 'where': 'body/torso/pelvis', 'severity': 'info'}, {'code': 'EFFECT_SKIPPED_IN_LINEAGE', 'message': \"'fx:chunky' non si riapplica dentro 'torso'\", 'where': 'body/torso/abdomen', 'severity': 'info'}, {'code': 'EFFECT_SKIPPED_IN_LINEA",
+    "traits": "{'applied': [{'kind': 'param', 'trait': 'std:body_mass', 'request_value': 0.8, 'rule_id': 'body_mass_extension:body_root_param', 'node': 'body', 'path': 'body', 'channel': 'body.body_mass', 'previous': 1.0, 'result': 1.21, 'source': 'trait'}, {'kind': 'param', 'trait': 'std:body_mass', 'request_value': 0.8, 'rule_id': 'body_mass_extension:humanoid_torso_girth', 'node': 'body/torso', 'path': 'body/torso', 'channel': 'body/torso.chest_depth', 'previous': 0.2016, 'result': 0.22700159999999997, 'source': 'trait'}, {'kind': 'param', 'trait': 'std:body_mass', 'request_value': 0.8, 'rule_id': 'body_m",
+    "concept": "",
+    "images": [
+      "m02_humanoid_cartoon_front.png",
+      "m02_humanoid_cartoon_three_quarter.png",
+      "m02_humanoid_cartoon_side.png"
+    ]
+  },
+  {
+    "name": "m03_robot_4arms",
+    "ok": false,
+    "tris": 0,
+    "seconds": 0.034,
+    "nodes": 0,
+    "refs": [],
+    "diag": [
+      "'robot:head' non e' fatto per lo stile 'low_poly'  [rhead]\n  alternative: accessories:helmet, accessories:mask, accessories:piercing, accessories:visor, architecture:door, architecture:house"
+    ],
+    "report": "'robot:head' non e' fatto per lo stile 'low_poly'  [rhead]\n  alternative: accessories:helmet, accessories:mask, accessories:piercing, accessories:visor, architecture:door, architecture:house",
+    "structural": "",
+    "traits": "",
+    "concept": ""
+  },
+  {
+    "name": "m03b_humanoid_4arms",
+    "ok": false,
+    "tris": 0,
+    "seconds": 0.039,
+    "nodes": 0,
+    "refs": [],
+    "diag": [
+      "parent prototype non disponibile: 'corpo/torso'  [corpo/torso]"
+    ],
+    "report": "parent prototype non disponibile: 'corpo/torso'  [corpo/torso]",
+    "structural": "{'plan': {'operations': [{'op': 'ensure_count', 'prototype': 'corpo/torso/arm_l', 'count': 4, 'group': 'arms', 'mode': 'best_effort', 'trait': 'character:arm_count', 'rule': 'multi_arm_extension:arm_count', 'component': 'humanoid_anatomical:arm', 'target': {'role': 'arm', 'capability': '', 'tags': ['arm'], 'components': []}}]}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': [{'code': 'STRUCTURAL_PARENT_NOT_FOUND', 'message': \"parent prototype non disponibile: 'corpo/torso'\", 'where': 'corpo/torso', 'severity': 'error'}]}",
+    "traits": "",
+    "concept": ""
+  },
+  {
+    "name": "m04_car_6wheels",
+    "ok": true,
+    "tris": 524,
+    "seconds": 0.095,
+    "nodes": 28,
+    "refs": [
+      "car->vehicle_stylized:car",
+      "wheel_fl->vehicle_stylized:wheel",
+      "wheel_fl/hubcap->vehicle_stylized:hubcap",
+      "body->vehicle_stylized:body",
+      "body/cabin->vehicle_stylized:cabin",
+      "body/cabin/windshield->vehicle_stylized:windshield",
+      "body/cabin/mirror_l->vehicle_stylized:mirror",
+      "body/cabin/mirror_r->vehicle_stylized:mirror",
+      "body/cabin/roof_spoiler->vehicle_stylized:roof_spoiler",
+      "body/hood_panel->vehicle_stylized:hood_panel",
+      "body/underbody->vehicle_stylized:underbody",
+      "body/fender_fl->vehicle_stylized:fender",
+      "body/fender_fr->vehicle_stylized:fender",
+      "body/fender_rl->vehicle_stylized:fender",
+      "body/fender_rr->vehicle_stylized:fender",
+      "body/headlight_l->vehicle_stylized:headlight",
+      "body/headlight_r->vehicle_stylized:headlight",
+      "body/grille->vehicle_stylized:grille",
+      "wheel_fr->vehicle_stylized:wheel",
+      "wheel_fr/hubcap->vehicle_stylized:hubcap",
+      "wheel_rl->vehicle_stylized:wheel",
+      "wheel_rl/hubcap->vehicle_stylized:hubcap",
+      "wheel_rr->vehicle_stylized:wheel",
+      "wheel_rr/hubcap->vehicle_stylized:hubcap",
+      "wheel_fl_2->vehicle_stylized:wheel",
+      "wheel_fl_2/hubcap->vehicle_stylized:hubcap",
+      "wheel_fr_2->vehicle_stylized:wheel",
+      "wheel_fr_2/hubcap->vehicle_stylized:hubcap"
+    ],
+    "diag": [],
+    "report": "",
+    "structural": "{'plan': {'operations': [{'op': 'ensure_count', 'prototype': 'car/wheel_fl', 'count': 6, 'group': 'wheels', 'mode': 'best_effort', 'trait': 'vehicle:wheel_count', 'rule': 'multi_wheel_extension:wheel_count', 'component': 'vehicle_stylized:wheel', 'target': {'role': 'wheel', 'capability': '', 'tags': ['wheel'], 'components': []}}]}, 'applied': [{'operation': {'op': 'ensure_count', 'prototype': 'car/wheel_fl', 'count': 6, 'group': 'wheels', 'mode': 'best_effort', 'trait': 'vehicle:wheel_count', 'rule': 'multi_wheel_extension:wheel_count', 'component': 'vehicle_stylized:wheel', 'target': {'role':",
+    "traits": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': []}",
+    "concept": "",
+    "images": [
+      "m04_car_6wheels_front.png",
+      "m04_car_6wheels_three_quarter.png",
+      "m04_car_6wheels_side.png"
+    ]
+  },
+  {
+    "name": "m05_fishman",
+    "ok": true,
+    "tris": 118,
+    "seconds": 0.039,
+    "nodes": 3,
+    "refs": [
+      "body->humanoid_anatomical:body",
+      "torso->fish:fish_body",
+      "torso/coda->fish:tail"
+    ],
+    "diag": [],
+    "report": "",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': []}",
+    "traits": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': []}",
+    "concept": "",
+    "images": [
+      "m05_fishman_front.png",
+      "m05_fishman_three_quarter.png",
+      "m05_fishman_side.png"
+    ]
+  },
+  {
+    "name": "m06_house_tall",
+    "ok": true,
+    "tris": 80,
+    "seconds": 0.056,
+    "nodes": 5,
+    "refs": [
+      "house->architecture:house",
+      "house/tetto->architecture:roof",
+      "house/porta->architecture:door",
+      "house/finestra_l->architecture:window",
+      "house/finestra_r->architecture:window"
+    ],
+    "diag": [],
+    "report": "",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': []}",
+    "traits": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': []}",
+    "concept": "",
+    "images": [
+      "m06_house_tall_front.png",
+      "m06_house_tall_three_quarter.png",
+      "m06_house_tall_side.png"
+    ]
+  },
+  {
+    "name": "m07_dragon",
+    "ok": true,
+    "tris": 256,
+    "seconds": 0.051,
+    "nodes": 5,
+    "refs": [
+      "body->fish:fish_body",
+      "head->creature:dragon_head",
+      "wing_l->fantasy:wing",
+      "wing_r->fantasy:wing",
+      "body/coda->fish:tail"
+    ],
+    "diag": [],
+    "report": "",
+    "structural": "{'plan': {'operations': []}, 'applied': [], 'created': [], 'skipped': [], 'conflicts': [], 'diagnostics': []}",
+    "traits": "{'applied': [], 'skipped': [], 'unsupported': [], 'conflicts': [], 'values': {}, 'diagnostics': []}",
+    "concept": "",
+    "images": [
+      "m07_dragon_front.png",
+      "m07_dragon_three_quarter.png",
+      "m07_dragon_side.png"
+    ]
+  },
+  {
+    "name": "m08_tree",
+    "ok": false,
+    "tris": 0,
+    "seconds": 0.032,
+    "nodes": 0,
+    "refs": [],
+    "diag": [
+      "trait non disponibile: 'tree:leafiness'  [traits[0]]\n  alternative: botany:leafiness, std:body_mass"
+    ],
+    "report": "trait non disponibile: 'tree:leafiness'  [traits[0]]\n  alternative: botany:leafiness, std:body_mass",
+    "structural": "",
+    "traits": "",
+    "concept": ""
+  }
+]
